@@ -33,6 +33,7 @@ namespace SIGEP_ProyectoFinal.Controllers
         [HttpPost]
         public IActionResult IniciarSesion(Usuario usuario)
         {
+            //utilizar estos datos para validar e ingresar al sistema
             var coordinador = "118810955";
             var nombreCoordinador = "Ariana";
             var estudiante = "305550650";
@@ -66,7 +67,7 @@ namespace SIGEP_ProyectoFinal.Controllers
             if (!credencialesValidas)
             {
                 TempData["SwalError"] = "Lo sentimos, el usuario no se encuentra registrado. Por favor, crea una cuenta";
-                return View("Login", usuario);
+                return View("IniciarSesion", usuario);
             }
 
             return RedirectToAction("Index");
@@ -101,7 +102,7 @@ namespace SIGEP_ProyectoFinal.Controllers
             if (usuario.Cedula == cedula)
             {
                 TempData["SwalSuccess"] = "Hemos enviado un link de recuperación al correo ari*****@gmail.com";
-                return RedirectToAction("Login");
+                return RedirectToAction("IniciarSesion");
             }
             else
             {
@@ -115,7 +116,7 @@ namespace SIGEP_ProyectoFinal.Controllers
         public IActionResult CerrarSesion()
         {
             HttpContext.Session.Clear();
-            return RedirectToAction("Login");
+            return RedirectToAction("IniciarSesion");
         }
     }
 }

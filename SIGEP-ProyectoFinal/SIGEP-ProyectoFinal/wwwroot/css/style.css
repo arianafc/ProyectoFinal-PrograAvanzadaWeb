@@ -11,13 +11,16 @@ File: scss
 /*Shadow*/
 /*transitions*/
 /*Dark transparent bg*/
-@import url(icons/font-awesome/css/fontawesome-all.css);
-@import url(icons/simple-line-icons/css/simple-line-icons.css);
-@import url(icons/weather-icons/css/weather-icons.min.css);
-@import url(icons/themify-icons/themify-icons.css);
-@import url(icons/flag-icon-css/flag-icon.min.css);
-@import url(icons/material-design-iconic-font/css/materialdesignicons.min.css);
-@import url(icons/crypto-icons/cryptocoins.css);
+
+@import url('../icons/font-awesome/css/fontawesome-all.css');
+@import url('../icons/simple-line-icons/css/simple-line-icons.css');
+@import url('../icons/weather-icons/css/weather-icons.min.css');
+@import url('../icons/themify-icons/themify-icons.css');
+@import url('../icons/flag-icon-css/flag-icon.min.css');
+@import url('../icons/material-design-iconic-font/css/materialdesignicons.min.css');
+@import url('../icons/crypto-icons/cryptocoins.css');
+
+
 .search-box .app-search .form-control, .topbar .mega-dropdown .dropdown-menu {
   border-radius: 0px; }
 

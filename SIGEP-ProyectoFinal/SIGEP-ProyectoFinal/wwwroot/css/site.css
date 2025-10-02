@@ -1,6 +1,6 @@
 ﻿/* Set padding to keep content from hitting the edges */
 .body-content {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', sans-serif !important;
     margin-top: 15px;
     padding-left: 15px;
     padding-right: 15px;
@@ -18,7 +18,7 @@
 
 
 .gradient-custom {
-    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('imagenes/CTP_BG.jpg') no-repeat center center fixed;
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('../imagenes/ctp_bg.jpg') no-repeat center center fixed;
     background-size: cover;
     min-height: 100vh;
     display: flex;
@@ -27,7 +27,7 @@
 }
 
 .cardLogin {
-    background-color: #2d594d;
+    background-color: #2d594d !important;
     color: white;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
 }
@@ -90,7 +90,7 @@
 
 .btnInicio {
     background-color: transparent !important;
-    border: 1px solid white;
+    border: 1px solid white !important;
     color: white;
     padding: 0.6rem 1.5rem;
     font-size: 1rem;
