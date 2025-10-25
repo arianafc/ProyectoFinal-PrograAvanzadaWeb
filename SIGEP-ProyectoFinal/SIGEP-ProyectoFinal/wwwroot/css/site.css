@@ -213,3 +213,10 @@
     margin-bottom: 1rem;
 }
 
+
+.password-input::-ms-reveal,
+.password-input::-ms-clear,
+.password-input::-webkit-credentials-auto-fill-button,
+.password-input::-webkit-password-toggle-button {
+    display: none !important;
+}
