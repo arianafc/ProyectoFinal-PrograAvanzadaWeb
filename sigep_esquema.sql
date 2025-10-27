@@ -295,5 +295,3 @@ CREATE TABLE AuditoriaGlobal (
 GO
 
 -- Fin del esquema
-
-INSERT INTO dbo.Estados (Descripcion) VALUES ('Activo'), ('Inactivo')

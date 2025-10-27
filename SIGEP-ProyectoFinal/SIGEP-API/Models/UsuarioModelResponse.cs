@@ -1,6 +1,6 @@
-﻿namespace SIGEP_ProyectoFinal.Models
+﻿namespace SIGEP_API.Models
 {
-    public class Usuario
+    public class UsuarioModelResponse
     {
         public string? Cedula { get; set; }
         public string? Contrasenna { get; set; }
@@ -11,7 +11,7 @@
 
         public int IdRol { get; set; }
 
-        public int IdEstado { get; set; }   
+        public int IdEstado { get; set; }
 
         public string? Apellido1 { get; set; }
 

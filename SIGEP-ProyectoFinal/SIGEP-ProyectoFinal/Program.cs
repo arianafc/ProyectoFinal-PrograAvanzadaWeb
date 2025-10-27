@@ -1,36 +1,28 @@
 ﻿var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
-
-// 👇 necesario para que funcione la sesión
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddSession(options =>
-{
-    options.IdleTimeout = TimeSpan.FromMinutes(30);
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
-});
+builder.Services.AddHttpClient();
+builder.Services.AddSession();
 
 var app = builder.Build();
 
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
-}
+app.UseExceptionHandler("/Error/MostrarError");
 
-app.UseStaticFiles();
-
-
-app.UseHttpsRedirection();
-app.UseRouting();
+app.UseHsts();
 
 app.UseSession();
 
+app.UseHttpsRedirection();
+
+app.UseRouting();
+
 app.UseAuthorization();
+
+app.MapStaticAssets();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Home}/{action=Index}/{id?}")
+    .WithStaticAssets();
 
 app.Run();

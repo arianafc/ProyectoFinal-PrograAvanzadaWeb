@@ -7,16 +7,16 @@ namespace SIGEP_ProyectoFinal.Controllers
     public class HomeController : Controller
     {
 
-        //ACTIONS ADAPTADOS PARA LA PRACTICA
+        private readonly IHttpClientFactory _http;
+        private readonly IConfiguration _configuration;
 
-
-        private readonly ILogger<HomeController> _logger;
-
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(IHttpClientFactory http, IConfiguration configuration)
         {
-            _logger = logger;
+            _http = http;
+            _configuration = configuration;
         }
 
+        [HttpGet]
         public IActionResult Index()
         {
             ViewBag.Nombre = HttpContext.Session.GetString("nombre");
@@ -33,44 +33,25 @@ namespace SIGEP_ProyectoFinal.Controllers
         [HttpPost]
         public IActionResult IniciarSesion(Usuario usuario)
         {
-            //utilizar estos datos para validar e ingresar al sistema
-            var coordinador = "118810955";
-            var nombreCoordinador = "Ariana";
-            var estudiante = "305550650";
-            var nombreEstudiante = "Johnny";
-            var profesor = "112233445";
-            var nombreProfesor = "Jean Pool";
-            var contrasenna = "Hola123456";
+            using (var context = _http.CreateClient()) {
+                var urlApi = _configuration["Valores:UrlApi"] + "Home/IniciarSesion";
+                var respuesta = context.PostAsJsonAsync(urlApi, usuario).Result;
 
-            bool credencialesValidas = false;
+                if(respuesta.IsSuccessStatusCode)
+                {                     
+                    var usuarioRespuesta = respuesta.Content.ReadFromJsonAsync<Usuario>().Result;
+                    HttpContext.Session.SetString("nombre", usuarioRespuesta.Nombre ?? "");
+                    HttpContext.Session.SetInt32("rol", usuarioRespuesta.IdRol); 
+                    TempData["SwalSuccess"] = "Bienvenido a SIGEP," + usuario.Nombre;
+                    return RedirectToAction("Index");
+                }
+                else
+                {
+                    TempData["SwalError"] = "Cédula o contraseña incorrecta";
+                    return View();
+                }
 
-            if (usuario.Cedula == coordinador && usuario.Contrasenna == contrasenna)
-            {
-                HttpContext.Session.SetInt32("rol", 1);
-                HttpContext.Session.SetString("nombre", nombreCoordinador);
-                credencialesValidas = true;
             }
-            else if (usuario.Cedula == estudiante && usuario.Contrasenna == contrasenna)
-            {
-                HttpContext.Session.SetInt32("rol", 2);
-                HttpContext.Session.SetString("nombre", nombreEstudiante);
-                
-                credencialesValidas = true;
-            }
-            else if (usuario.Cedula == profesor && usuario.Contrasenna == contrasenna)
-            {
-                HttpContext.Session.SetInt32("rol", 3);
-                HttpContext.Session.SetString("nombre", nombreProfesor);
-                credencialesValidas = true;
-            }
-
-            if (!credencialesValidas)
-            {
-                TempData["SwalError"] = "Lo sentimos, el usuario no se encuentra registrado. Por favor, crea una cuenta";
-                return View("IniciarSesion", usuario);
-            }
-
-            return RedirectToAction("Index");
         }
 
         [HttpGet]
