@@ -4,105 +4,11 @@
     Layout = "~/Views/Shared/_LayoutExterno.cshtml";
 }
 
-<!--PENDIENTE MOVER ESTOS ESTILOS AL CSS-->
+<input type="hidden" id="TempError" value="@TempData["SwalError"]" />
+<input type="hidden" id="TempSuccess" value="@TempData["SwalSuccess"]" />
 
-<style>
 
-   
-    .ui-datepicker {
-       
-        background: #fff;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        padding: 0; /* sin padding global */
-        font-family: 'Rubik', sans-serif;
-        font-size: 0.95em;
-        z-index: 9999 !important; 
-    }
-
-    
-    .ui-datepicker-header {
-        background: #f5f5f5;
-        color: #2D594D !important;
-        border-radius: 6px 6px 0 0;
-        padding: 0.6em;
-        text-align: center;
-        font-weight: bold;
-    }
-
-  
-    .ui-datepicker-prev, .ui-datepicker-next {
-        cursor: pointer;
-        color: #2D594D;
-        font-size: 1.2em;
-        padding: 0 0.5em;
-        text-indent: 0; 
-    }
-
-        .ui-datepicker-prev:hover, .ui-datepicker-next:hover {
-            color: #145214;
-        }
-
-    
-    .ui-datepicker td,
-    .ui-datepicker th {
-        padding: 5px;
-        text-align: center;
-    }
-
-  
-    .ui-datepicker-calendar td a {
-        color: #2D594D !important;
-        padding: 0.4em;
-        border-radius: 4px;
-        text-decoration: none;
-        display: inline-block;
-        transition: all 0.2s ease-in-out;
-    }
-
-        .ui-datepicker-calendar td a:hover {
-            background-color: #d4f0d5;
-            color: #145214 !important;
-        }
-
-   
-    .ui-datepicker-today a {
-        color: #2D594D !important;
-        font-weight: bold;
-        border-radius: 50%;
-        border: 1px solid #2D594D;
-    }
-
-  
-    .ui-datepicker .ui-state-active {
-        background: #2D594D !important;
-        color: #fff !important;
-        border-radius: 50%;
-    }
-
-    
-    .ui-datepicker-close {
-        background: #2D594D !important;
-        color: white;
-        border: none;
-        padding: 0.4em 0.8em;
-        border-radius: 5px;
-        cursor: pointer;
-        margin-top: 10px;
-    }
-
-        .ui-datepicker-close:hover {
-            background: #245238;
-        }
-
-    .password-input::-ms-reveal,
-    .password-input::-ms-clear,
-    .password-input::-webkit-credentials-auto-fill-button,
-    .password-input::-webkit-password-toggle-button {
-        display: none !important;
-    }
-</style>
-<section class="vh-100 gradient-custom">
+<section class="gradient-custom">
     <div class="container py-5 h-100">
         <div class="row d-flex justify-content-center align-items-center h-100">
             <div class="col-12 col-md-8 col-lg-8 col-xl-6">
@@ -113,19 +19,19 @@
 
                             <h2 class="fw-bold mb-2 ">CREA TU CUENTA</h2>
                             <hr />
-                            <form id="loginForm" method="post" action="@Url.Action("Registro", "Home")" class="custom-form container mt-4">
+                            <form id="RegistroForm" method="post" asp-action="Registro" asp-controller="Home" class="custom-form container mt-4">
                                 <div class="row g-3">
                                     <!-- Cédula - Nombre -->
                                     <div class="col-md-6">
                                         <div class="input-icon-container mb-3">
                                             <i class="fas fa-id-card"></i>
-                                            <input type="text" id="cedula" name="cedula" placeholder="Ingresa tu cédula" class="input-field" />
+                                            <input type="text" id="CedulaRegistro" name="Cedula" asp-for="Cedula" placeholder="Ingresa tu cédula" class="input-field" />
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="input-icon-container mb-3">
                                             <i class="fas fa-users"></i>
-                                            <input type="text" id="nombre" name="nombreRegistro" placeholder="Nombre" class="input-field" />
+                                            <input type="text" id="NombreRegistro" name="Nombre" asp-for="Nombre" placeholder="Nombre" class="input-field" />
                                         </div>
                                     </div>
 
@@ -133,26 +39,21 @@
                                     <div class="col-md-6">
                                         <div class="input-icon-container mb-3">
                                             <i class="fas fa-user"></i>
-                                            <input type="text" id="apellido1" name="primerApellido" placeholder="Primer Apellido" class="input-field" readonly />
+                                            <input type="text" id="Apellido1Registro" name="Apellido1" asp-for="Apellido1" placeholder="Primer Apellido" class="input-field" readonly />
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="input-icon-container mb-3">
                                             <i class="fas fa-user"></i>
-                                            <input type="text" id="apellido2" name="segundoApellido" placeholder="Segundo Apellido" class="input-field" readonly />
+                                            <input type="text" id="Apellido2Registro" name="Apellido2" asp-for="Apellido2" placeholder="Segundo Apellido" class="input-field" readonly />
                                         </div>
                                     </div>
-                                    <!-- Especialidad -->
                                     <div class="col-md-6">
                                         <div class="input-icon-container mb-3">
                                             <i class="fas fa-briefcase"></i>
-                                            <select id="especialidad" name="especialidad" class="input-field">
+                                            <select asp-for="IdEspecialidad" id="EspecialidadRegistro" class="input-field"
+                                                    asp-items="@(new SelectList(Model.ListaEspecialidades, "IdEspecialidad", "Nombre"))">
                                                 <option value="">Especialidad</option>
-                                                <option value="1">Desarrollo de software</option>
-                                                <option value="2">Ejecutivo para centros de servicios</option>
-                                                <option value="3">Mecánica</option>
-                                                <option value="4">Secretariado Ejecutivo</option>
-                                                <option value="5">Electrotecnia</option>
                                             </select>
                                         </div>
                                     </div>
@@ -161,45 +62,43 @@
                                     <div class="col-md-6">
                                         <div class="input-icon-container mb-3">
                                             <i class="fas fa-briefcase"></i>
-                                            <select id="seccion" name="seccion" class="input-field">
+                                            <select asp-for="IdSeccion" id="SeccionRegistro" class="input-field"
+                                                    asp-items="@(new SelectList(Model.ListaSecciones, "IdSeccion", "Seccion"))">
                                                 <option value="">Sección</option>
-                                                <option value="1">12-1</option>
-                                                <option value="1">12-2</option>
-                                                <option value="1">12-3</option>
-                                                <option value="1">12-4</option>
-                                                <option value="1">12-5</option>
-                                                <option value="1">No Aplica</option>
                                             </select>
                                         </div>
                                     </div>
-                                </div>
+                                    <!-- Correo - Fecha de Nacimiento -->
+                                    <div class="col-md-12">
+                                        <div class="input-icon-container mb-3">
+                                            <i class="fas fa-envelope-open"></i>
+                                            <input type="email" id="CorreoRegistro" name="CorreoPersonal" asp-for="CorreoPersonal" placeholder="Correo Electrónico" class="input-field" autocomplete="off" />
+                                        </div>
+                                    </div>
+
                                 <div class="row">
                                     <div class="col-md-12">
                                         <div class="input-icon-container mb-3">
                                             <i class="fas fa-calendar-alt"></i>
-                                            <input type="text" id="fechaNacimiento" name="fechaNacimiento" placeholder="Fecha de Nacimiento" class="input-field" autocomplete="off" />
+                                            <input type="text" id="FechaNacimientoRegistro" asp-for="FechaNacimiento" placeholder="Fecha de Nacimiento" class="input-field" autocomplete="off" />
                                         </div>
                                     </div>
                                     <div class="col-md-12">
                                         <div class="input-icon-container mb-3">
                                             <i class="fas fa-key"></i>
-                                            <input type="password" id="contrasennaRegistro" name="contrasenna" placeholder="Ingresa tu contraseña" class="input-field password-input" />
+                                            <input type="password" id="ContrasennaRegistro" name="Contrasenna" asp-for="Contrasenna" placeholder="Ingresa tu contraseña" class="input-field password-input" />
                                             <i class="fas fa-eye-slash toggle-password"></i>
                                         </div>
                                     </div>
                                     <div class="col-md-12">
                                         <div class="input-icon-container mb-3">
                                             <i class="fas fa-key"></i>
-                                            <input type="password" id="contrasennaConfirmar" name="contrasenna" placeholder="Confirmar contraseña" class="input-field password-input" />
+                                            <input type="password" id="ContrasennaConfirmar" name="ConfirmarContrasenna" asp-for="ConfirmarContrasenna" placeholder="Confirmar contraseña" class="input-field password-input" />
                                             <i class="fas fa-eye-slash toggle-password"></i>
                                         </div>
                                     </div>
                                 </div>
-                                <!-- Fecha de nacimiento -->
-                                <!-- Contraseña - Confirmar contraseña -->
-
-
-
+                                <br />
                                 <div class="text-center mt-4">
                                     <button id="IniciarSesionBTN" class="btnInicio btn btn-lg px-5" type="submit">
                                         Registrarse
@@ -209,10 +108,10 @@
 
 
                         </div>
-
+                        <br />
                         <div>
                             <p class="mb-0">
-                                ¿Ya tienes una cuenta? <a href="@Url.Action("IniciarSesion", "Home")" class="text-white-50 fw-bold">Iniciar Sesión</a>
+                                ¿Ya tienes una cuenta? <a asp-action="IniciarSesion" asp-controller="Home" class="text-white-50 fw-bold">Iniciar Sesión</a>
                             </p>
                         </div>
 
@@ -222,103 +121,11 @@
         </div>
     </div>
 </section>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="~/js/script.js" ></script>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-
-        $("#loginForm").on("submit", function (e) {
-            e.preventDefault();
-
-            const cedula = $("#cedula").val().trim();
-            const nombre = $("#nombre").val().trim();
-            const apellido1 = $("#apellido1").val().trim();
-            const apellido2 = $("#apellido2").val().trim();
-            const especialidad = $("#especialidad").val().trim();
-            const fechaNacimiento = $("#fechaNacimiento").val().trim();
-            const contrasenna = $("#contrasennaRegistro").val().trim();
-            const confirmar = $("#contrasennaConfirmar").val().trim();
-
-            if (!cedula || !nombre || !apellido1 || !apellido2 || !especialidad || !fechaNacimiento || !contrasenna || !confirmar) {
-                Swal.fire({
-                    icon: "warning",
-                    title: "Campos obligatorios",
-                    text: "Debes completar todos los campos antes de continuar.",
-                    confirmButtonColor: "#2D594D"
-                });
-                return;
-            }
-
-            if (contrasenna.length < 8) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Contraseña insegura",
-                    text: "La contraseña debe tener al menos 8 caracteres.",
-                    confirmButtonColor: "#2D594D"
-                });
-                return;
-            }
-
-            if (contrasenna !== confirmar) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Contraseñas no coinciden",
-                    text: "Asegúrate de que ambas contraseñas sean iguales.",
-                    confirmButtonColor: "#2D594D"
-                });
-                return;
-            }
-
-            this.submit();
-        });
-        $("#fechaNacimiento").datepicker({
-            dateFormat: "yy-mm-dd",
-            changeMonth: true,
-            changeYear: true,
-            yearRange: "1950:2025",
-            defaultDate: "-18y"
-        });
 
 
-        document.querySelectorAll('.toggle-password').forEach(function (toggle) {
-            toggle.addEventListener('click', function () {
-                const input = this.previousElementSibling;
+@section Scripts {
 
-                if (input && input.classList.contains('password-input')) {
-                    const type = input.type === 'password' ? 'text' : 'password';
-                    input.type = type;
+    <script src="~/js/script.js"></script>
+    <script src="~/js/registro/registro.js"></script>
 
-                    this.classList.toggle('fa-eye');
-                    this.classList.toggle('fa-eye-slash');
-                }
-            });
-        });
-
-        $("#loginForm").on("submit", function (e) {
-            e.preventDefault();
-
-            let cedula = $("#cedula").val().trim();
-            let contrasenna = $("#contrasenna").val().trim();
-
-            if (!cedula || !contrasenna) {
-                Swal.fire({
-                    icon: "warning",
-                    title: "Campos vacíos",
-                    text: "Por favor, completa ambos campos para continuar.",
-                    confirmButtonColor: "#2D594D"
-                });
-                return;
-            }
-
-            this.submit();
-        });
-
-
-        $(".fa-calendar-alt").on("click", function () {
-            $("#fechaNacimiento").focus();
-        });
-    });
-
-
-
-</script>
+}

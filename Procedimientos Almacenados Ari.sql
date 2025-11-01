@@ -125,3 +125,42 @@ END;
 GO
 
 
+CREATE OR ALTER PROCEDURE ObtenerSeccionesSP 
+AS
+BEGIN
+    SELECT IdSeccion, Seccion
+    FROM Secciones WHERE IdEstado = 1;
+END;
+
+CREATE OR ALTER PROCEDURE ObtenerEspecialidadesSP 
+AS
+BEGIN
+    SELECT IdEspecialidad, Nombre
+    FROM Especialidades WHERE IdEstado = 1;
+END;
+
+
+ CREATE OR ALTER PROCEDURE ValidarUsuarioSP 
+  (@Cedula VARCHAR(255))
+  AS
+  BEGIN
+
+
+SELECT [IdUsuario]
+      ,[Cedula]
+      ,[Nombre]
+      ,[Apellido1]
+      ,[Apellido2]
+      ,[Contrasenna]
+      ,[FechaNacimiento]
+      ,[FechaRegistro]
+      ,[FechaEgreso]
+      ,[IdSeccion]
+      ,[IdEstado]
+      ,[IdDireccion]
+      ,[IdRol]
+  FROM [dbo].[Usuarios]
+  WHERE Cedula = @Cedula;
+
+END
+

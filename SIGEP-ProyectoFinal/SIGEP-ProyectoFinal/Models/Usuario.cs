@@ -2,10 +2,12 @@
 {
     public class Usuario
     {
+        public int IdUsuario { get; set; }
         public string? Cedula { get; set; }
         public string? Contrasenna { get; set; }
 
-        public string? Correo { get; set; }
+        public string? CorreoPersonal { get; set; }
+        public string? CorreoMEP { get; set; }
 
         public string? Nombre { get; set; }
 
@@ -25,6 +27,13 @@
 
         public string? Telefono { get; set; }
 
+        public List<Secciones> ListaSecciones { get; set; } = new List<Secciones>();
+
+        public List<Especialidades> ListaEspecialidades { get; set; } = new List<Especialidades>();
+
+        public DateTime? FechaNacimiento { get; set; }
+
+        public string? ConfirmarContrasenna { get; set; }
 
     }
 }
