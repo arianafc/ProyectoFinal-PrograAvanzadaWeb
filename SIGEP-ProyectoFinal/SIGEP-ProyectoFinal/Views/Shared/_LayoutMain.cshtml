@@ -41,13 +41,11 @@
                         <i class="ti-menu ti-close"></i>
                     </a>
                     <div class="navbar-brand">
-                        <a href="@Url.Action("Index", "Home")" class="logo">
+                        <a asp-action="Index" asp-controller="Home" class="logo">
                             <span class="logo-icon">
                                 <img src="~/imagenes/logoSIGEP.png" alt="homepage" class="dark-logo" width="25" />
                                 <img src="~/imagenes/logoSIGEP.png" alt="homepage" class="light-logo" width="25" />
-
                             </span>
-
                             <span class="logo-text text-white">SIGEP</span>
                         </a>
                         <a class="sidebartoggler d-none d-md-block" href="javascript:void(0)" data-sidebartype="mini-sidebar">
@@ -78,7 +76,7 @@
                     <ul id="sidebarnav">
 
                         <!-- PRÁCTICAS -->
-                        @if (rol == 1 || rol == 4 || rol == 2)
+                        @if (rol == 1 || rol == 2)
                         {
                             <li class="nav-small-cap">
                                 <i class="mdi mdi-dots-horizontal"></i>
@@ -86,7 +84,7 @@
                             </li>
                         }
                         
-                        @if (rol == 1 || rol == 4)
+                        @if (rol == 2) 
                         {
                             <li class="sidebar-item">
                                 <a class="sidebar-link has-arrow waves-effect waves-dark" href="javascript:void(0)" aria-expanded="false">
@@ -94,32 +92,23 @@
                                     <span class="hide-menu">Prácticas Profesionales</span>
                                 </a>
                                 <ul aria-expanded="false" class="collapse first-level">
-                                    @if (rol == 1)
-                                    {
+                              
                                         <li class="sidebar-item">
-                                            <a href="@Url.Action("VacantesEstudiantes", "Practicas")" class="sidebar-link">
+                                            <a asp-action="VacantesEstudiantes" asp-controller="Practicas" class="sidebar-link">
                                                 <i class="fas fa-briefcase"></i>
                                                 <span class="hide-menu">Gestión de Vacantes</span>
                                             </a>
                                         </li>
-                                    }
-                                    @if (rol == 4)
-                                    {
-                                        <li class="sidebar-item">
-                                            <a href="@Url.Action("VistaVacantesProfesor", "Practicas")" class="sidebar-link">
-                                                <i class="fas fa-briefcase"></i>
-                                                <span class="hide-menu">Vacantes Disponibles</span>
-                                            </a>
-                                        </li>
-                                    }
+                                    
+                                   
                                     <li class="sidebar-item">
-                                        <a href="@Url.Action("PracticasCoordinador", "Practicas")" class="sidebar-link">
+                                        <a asp-action="PracticasCoordinador" asp-controller="Practicas" class="sidebar-link">
                                             <i class="fas fa-user"></i>
                                             <span class="hide-menu">Gestión de Prácticas</span>
                                         </a>
                                     </li>
                                     <li class="sidebar-item">
-                                        <a href="@Url.Action("ListarEstudianteConPractica", "Evaluacion")" class="sidebar-link">
+                                        <a asp-action="ListarEstudianteConPractica" asp-controller="Evaluacion" class="sidebar-link">
                                             <i class="fas fa-graduation-cap"></i>
                                             <span class="hide-menu">Evaluaciones</span>
                                         </a>
@@ -128,15 +117,15 @@
                             </li>
 
                             <li class="sidebar-item">
-                                <a class="sidebar-link waves-effect waves-dark sidebar-link" href="@Url.Action("ListarEstudiante", "Estudiante")">
+                                <a class="sidebar-link waves-effect waves-dark sidebar-link" asp-action="ListarEstudiante" asp-controller="Estudiante" >
                                     <i class="ti-user"></i>
                                     <span class="hide-menu">Estudiantes</span>
                                 </a>
                             </li>
-                           if (rol == 1)
+                           if (rol == 2)
                             {
                                 <li class="sidebar-item">
-                                    <a class="sidebar-link waves-effect waves-dark sidebar-link" href="@Url.Action("ListaEmpresas", "Empresa")">
+                                    <a class="sidebar-link waves-effect waves-dark sidebar-link" asp-action="ListaEmpresas" asp-controller="Empresa">
                                         <i class="fas fa-building"></i>
                                         <span class="hide-menu">Empresas</span>
                                     </a>
@@ -144,16 +133,16 @@
                                 }
                             }
 
-                            @* Empresas para rol 2 *@
-                            @if (rol == 2)
+                           
+                            @if (rol == 1)
                             {
                                 <li class="sidebar-item">
-                                    <a href="@Url.Action("PostulacionesEstudiantes", "Practicas")" class="sidebar-link">
+                                <a asp-action="PostulacionesEstudiantes" asp-controller="Practicas" class="sidebar-link">
                                         <i class="fas fa-briefcase"></i><span class="hide-menu">Mis Postulaciones</span>
                                     </a>
                                 </li>
                                 <li class="sidebar-item">
-                                    <a href="@Url.Action("VisualizacionPostulacion", "Practicas")" class="sidebar-link">
+                                <a asp-action="VisualizacionPostulacion" asp-controller="Practicas" class="sidebar-link">
                                         <i class="fas fa-briefcase"></i>
                                         <span class="hide-menu">Mi Práctica</span>
                                     </a>
@@ -166,55 +155,22 @@
                                 <span class="hide-menu">COMUNICACIONES</span>
                             </li>
                             <li class="sidebar-item">
-                                <a class="sidebar-link waves-effect waves-dark sidebar-link" href="@Url.Action("Comunicados", "Comunicados")">
+                            <a class="sidebar-link waves-effect waves-dark sidebar-link" asp-action="Comunicados" asp-controller="Comunicados">
                                     <i class="ti-announcement"></i>
                                     <span class="hide-menu">Comunicados</span>
                                 </a>
                             </li>
 
-                            <!-- EGRESADOS -->
-                            @if (rol == 1 || rol == 3)
-                            {
-                                <li class="nav-small-cap">
-                                    <i class="mdi mdi-dots-horizontal"></i>
-                                    <span class="hide-menu">EGRESADOS</span>
-                                </li>
-
-                                if (rol == 1)
-                                {
-                                    <li class="sidebar-item">
-                                        <a class="sidebar-link waves-effect waves-dark sidebar-link" href="@Url.Action("ListaEgresados", "Coordinador")">
-                                            <i class="ti-id-badge"></i>
-                                            <span class="hide-menu">Historial</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item">
-                                        <a class="sidebar-link waves-effect waves-dark sidebar-link" href="@Url.Action("ListaVacanteCoordinador", "Vacante")">
-                                            <i class="ti-id-badge"></i>
-                                            <span class="hide-menu">Bolsa de Empleo</span>
-                                        </a>
-                                    </li>
-                                }
-                                else
-                                {
-                                    <li class="sidebar-item">
-                                        <a class="sidebar-link waves-effect waves-dark sidebar-link" href="@Url.Action("ListaVacantesEgresado", "Vacante")">
-                                            <i class="ti-id-badge"></i>
-                                            <span class="hide-menu">Bolsa de Empleo</span>
-                                        </a>
-                                    </li>
-                                }
-                            }
-
-                            <!-- ADMINISTRACIÓN -->
+                                            <!-- ADMINISTRACIÓN -->
                             <li class="nav-small-cap">
                                 <i class="mdi mdi-dots-horizontal"></i>
                                 <span class="hide-menu">ADMINISTRACIÓN</span>
                             </li>
-                            @if (rol == 1)
+                            @if (rol == 2)
                             {
                                 <li class="sidebar-item">
-                                    <a class="sidebar-link waves-effect waves-dark sidebar-link" href="@Url.Action("GestionAdministracion", "AdministracionGeneral")">
+                                            <!-- ADMINISTRACIÓN -->
+                                <a class="sidebar-link waves-effect waves-dark sidebar-link" asp-action="GestionAdministracion" asp-controller="Practicas" >
                                         <i class="ti-id-badge"></i>
                                         <span class="hide-menu">Administración General</span>
                                     </a>
@@ -222,7 +178,7 @@
                             }
 
                             <li class="sidebar-item">
-                                <a class="sidebar-link waves-effect waves-dark sidebar-link" href="@Url.Action("MiPerfil", "Perfil")">
+                            <a class="sidebar-link waves-effect waves-dark sidebar-link" asp-action="Perfil" asp-controller="Perfil">
                                     <i class="ti-id-badge"></i>
                                     <span class="hide-menu">Mi Perfil</span>
                                 </a>
@@ -231,15 +187,17 @@
                             <li class="sidebar-item">
                                 @if (nombre != null)
                                 {
-                                    using (Html.BeginForm("CerrarSesion", "Home", FormMethod.Post, new { id = "logoutForm", style = "display:none;" }))
-                                    {
-                                        @Html.AntiForgeryToken()
-                                    }
-                                    <a class="sidebar-link waves-effect waves-dark sidebar-link" href="#" onclick="event.preventDefault(); document.getElementById('logoutForm').submit();" aria-expanded="false">
+                                <form id="logoutForm" asp-action="CerrarSesion" asp-controller="Home" method="post">
+                                    <a href="#"
+                                       class="sidebar-link waves-effect waves-dark sidebar-link"
+                                       onclick="event.preventDefault(); document.getElementById('logoutForm').submit();"
+                                       aria-expanded="false">
                                         <i class="ti-power-off"></i>
                                         <span class="hide-menu">Cerrar Sesión</span>
                                     </a>
-                                }
+                                </form>
+
+                                  }
                             </li>
 
                         </ul>

@@ -18,16 +18,5 @@
         });
     }
 
-
-    $("#FechaNacimientoRegistro").datepicker({
-        dateFormat: "yy-mm-dd",
-        changeMonth: true,
-        changeYear: true,
-        yearRange: "1950:" + new Date().getFullYear(),
-        maxDate: new Date(new Date().getFullYear() - 17, 11, 31), 
-        defaultDate: new Date(new Date().getFullYear() - 17, 0, 1) 
-    });
-
-
 });
 

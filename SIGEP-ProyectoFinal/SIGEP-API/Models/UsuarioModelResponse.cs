@@ -28,5 +28,23 @@
 
         public DateTime? FechaNacimiento { get; set; }
 
+        public string? Sexo { get; set; }
+
+        public string? Nacionalidad { get; set; }
+
+        public string? Provincia { get; set; }
+
+        public string? Distrito { get; set; }
+
+        public string? Canton { get; set; }
+
+        public string? DireccionExacta { get; set; }
+
+        public string? Padecimiento { get; set; }
+
+        public string? Medicamento { get; set; }
+
+        public string? Alergia { get; set; }
+
     }
 }

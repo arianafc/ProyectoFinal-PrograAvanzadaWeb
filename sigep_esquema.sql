@@ -75,6 +75,8 @@ CREATE TABLE Usuarios (
     FechaNacimiento DATETIME NULL,
     FechaRegistro DATETIME NULL,
     FechaEgreso DATETIME NULL,
+    Sexo VARCHAR(100),
+    Nacionalidad VARCHAR(255),
     IdSeccion INT NULL,
     IdEstado INT NOT NULL,
     IdDireccion INT NULL,

@@ -1,0 +1,23 @@
+﻿namespace SIGEP_API.Models
+{
+    public class EncargadoResponseModel
+    {
+
+        public int IdEstado { get; set; }
+        public int IdEncargado { get; set; }
+        public string? Nombre { get; set; }
+
+        public string? Apellido1 { get; set; }
+
+        public string? Apellido2 { get; set; }
+        public string? Telefono { get; set; }
+        public string? Parentesco { get; set; }
+        public string? LugarTrabajo { get; set; }
+        public string? Ocupacion { get; set; }
+
+        public string? Correo { get; set; }
+
+        public string? Cedula { get; set; }
+        public DateTime FechaRegistro { get; set; }
+    }
+}

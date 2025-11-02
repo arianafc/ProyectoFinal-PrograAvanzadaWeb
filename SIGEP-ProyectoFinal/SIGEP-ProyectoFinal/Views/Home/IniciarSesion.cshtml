@@ -22,33 +22,32 @@
                             <hr />
                             <p style="color:red">@ViewBag.Mensaje</p>
 
-                            @using (Html.BeginForm("IniciarSesion", "Home", FormMethod.Post, new { @id = "loginForm", @class = "custom-form" }))
-                            {
+                            <form id="loginForm" class="custom-form" method="post" asp-action="IniciarSesion" asp-controller="Home">
                                 <div class="input-icon-container mb-3">
                                     <i class="fas fa-envelope"></i>
-                                    @Html.TextBoxFor(m => m.Cedula, new { @id = "cedulaLogin", @class = "input-field", placeholder = "Ingresa tu cédula" })
+                                    <input asp-for="Cedula" id="cedulaLogin" class="input-field" placeholder="Ingresa tu cédula">
                                 </div>
 
                                 <div class="input-icon-container mb-3">
                                     <i class="fas fa-lock"></i>
-                                    @Html.PasswordFor(m => m.Contrasenna, new { @id = "contrasenna", @class = "input-field password-input", placeholder = "Ingresa tu contraseña" })
+                                    <input type="password" id="contrasenna" class="input-field password-input" placeholder="Ingresa tu contraseña" asp-for="Contrasenna" />
                                     <i class="fas fa-eye-slash toggle-password"></i>
                                 </div>
 
                                 <br />
 
-                                <p><a class="text-white-50" href="@Url.Action("RecuperarAcceso", "Home")">¿Olvidaste tu contraseña? Recupera tu acceso!</a></p>
+                                <p><a class="text-white-50" asp-action="RecuperarAcceso" asp-controller="Home">¿Olvidaste tu contraseña? Recupera tu acceso!</a></p>
 
                                 <button id="IniciarSesionBTN" class="btnInicio btn btn-lg px-5" type="submit">
                                     Iniciar Sesión
                                 </button>
-                            }
+                            </form>
 
                         </div>
 
                         <div>
                             <p class="mb-0">
-                                ¿No tienes una cuenta? <a href="@Url.Action("Registro", "Home")" class="text-white-50 fw-bold">Regístrate</a>
+                                ¿No tienes una cuenta? <a asp-action="Registro" asp-controller="Home" class="text-white-50 fw-bold">Regístrate</a>
                             </p>
                         </div>
 

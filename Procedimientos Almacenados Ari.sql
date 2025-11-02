@@ -144,23 +144,91 @@ END;
   (@Cedula VARCHAR(255))
   AS
   BEGIN
-
-
-SELECT [IdUsuario]
-      ,[Cedula]
-      ,[Nombre]
-      ,[Apellido1]
-      ,[Apellido2]
-      ,[Contrasenna]
-      ,[FechaNacimiento]
-      ,[FechaRegistro]
-      ,[FechaEgreso]
-      ,[IdSeccion]
-      ,[IdEstado]
-      ,[IdDireccion]
-      ,[IdRol]
-  FROM [dbo].[Usuarios]
+SELECT U.IdUsuario, U.Cedula, U.Nombre, U.Apellido1, U.Apellido2, U.FechaNacimiento,
+    U.FechaRegistro, U.FechaEgreso, U.IdRol, U.IdSeccion, U.IdEstado, E.Email AS Correo, T.Telefono, D.DireccionExacta,
+    D.IdDistrito, D.IdDireccion, DD.Nombre as Distrito, C.Nombre AS Canton, C.IdCanton, P.Nombre As Provincia, P.IdProvincia,
+    IM.Padecimiento, IM.Tratamiento, IM.Alergia, IM.IdInformacionMedica
+    FROM Usuarios U
+    LEFT JOIN Emails E
+    ON U.IdUsuario = E.IdUsuario
+    LEFT JOIN Telefonos T
+    ON U.IdUsuario = T.IdUsuario
+    LEFT JOIN Direcciones D
+    ON U.IdDireccion = D.IdDireccion
+    LEFT JOIN Distritos DD
+    ON D.IdDistrito = DD.IdDistrito
+    LEFT JOIN Cantones C
+    ON DD.IdCanton = C.IdCanton
+    LEFT JOIN Provincias P
+    ON C.IdProvincia = P.IdProvincia
+    LEFT JOIN InformacionMedica IM
+    ON U.IdUsuario = IM.IdUsuario
   WHERE Cedula = @Cedula;
-
 END
+
+
+ CREATE OR ALTER PROCEDURE ObtenerPefilSP 
+  (@IdUsuario int)
+  AS
+  BEGIN
+SELECT U.IdUsuario, U.Cedula, U.Nombre, U.Apellido1, U.Apellido2, U.FechaNacimiento,
+    U.FechaRegistro, U.FechaEgreso, U.IdRol, U.IdSeccion, U.IdEstado, E.Email AS Correo, T.Telefono, D.DireccionExacta,
+    D.IdDistrito, D.IdDireccion, DD.Nombre as Distrito, C.Nombre AS Canton, C.IdCanton, P.Nombre As Provincia, P.IdProvincia,
+    IM.Padecimiento, IM.Tratamiento, IM.Alergia, IM.IdInformacionMedica
+    FROM Usuarios U
+    LEFT JOIN Emails E
+    ON U.IdUsuario = E.IdUsuario
+    LEFT JOIN Telefonos T
+    ON U.IdUsuario = T.IdUsuario
+    LEFT JOIN Direcciones D
+    ON U.IdDireccion = D.IdDireccion
+    LEFT JOIN Distritos DD
+    ON D.IdDistrito = DD.IdDistrito
+    LEFT JOIN Cantones C
+    ON DD.IdCanton = C.IdCanton
+    LEFT JOIN Provincias P
+    ON C.IdProvincia = P.IdProvincia
+    LEFT JOIN InformacionMedica IM
+    ON U.IdUsuario = IM.IdUsuario
+  WHERE u.IdUsuario = @IdUsuario;
+END
+
+
+
+
+
+/****** Object:  StoredProcedure [dbo].[ActualizarContrasenna]    Script Date: 11/1/2025 12:53:17 AM ******/
+SET ANSI_NULLS ON
+GO
+
+CREATE  OR ALTER  PROCEDURE [dbo].[ActualizarContrasennaSP]
+    @Cedula VARCHAR(100),
+    @Contrasenna VARCHAR(100)
+AS
+BEGIN
+    -- Verifica si el usuario exist
+    -- Actualiza la contraseña encriptada
+    UPDATE Usuarios
+    SET Contrasenna = CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', @Contrasenna), 2)
+    WHERE Cedula = @CEDULA;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE ObtenerEncargadosSP (
+@IdUsuario INT)
+AS
+BEGIN
+    SELECT E.Cedula, E.Nombre, E.Apellido1, E.Apellido2, E.FechaRegistro, E.Ocupacion, E.LugarTrabajo, E.IdEncargado,
+    EE.Parentesco, C.Email as Correo
+    FROM Encargados E
+    INNER JOIN EstudianteEncargado EE
+    ON E.IdEncargado = EE.IdEncargado
+    LEFT JOIN Emails C
+    ON C.IdEncargado = E.IdEncargado
+    WHERE EE.IdUsuario = @IdUsuario
+    AND EE.IdEstado = 1;
+END;
+
+
 

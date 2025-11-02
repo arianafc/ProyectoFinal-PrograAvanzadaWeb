@@ -17,4 +17,53 @@ namespace SIGEP_ProyectoFinal.Models
             }           
         }
     }
+
+
+    public class FiltroEstudiante : ActionFilterAttribute
+    {
+        public override void OnActionExecuting(ActionExecutingContext context)
+        {
+            var httpContext = context.HttpContext;
+            var session = httpContext.Session;
+
+            var rol = session.GetString("Rol");
+
+            if (string.IsNullOrEmpty(rol) || rol != "1")
+            {
+                if (context.Controller is Controller controller)
+                {
+                    controller.TempData["SwalError"] = "No tienes permiso para acceder a esta página.";
+                }
+
+                context.Result = new RedirectResult("~/Home/Index");
+            }
+
+            base.OnActionExecuting(context);
+        }
+    }
+
+    public class FiltroUsuarioAdmin : ActionFilterAttribute
+    {
+        public override void OnActionExecuting(ActionExecutingContext context)
+        {
+            var httpContext = context.HttpContext;
+            var session = httpContext.Session;
+
+            var idUsuario = session.GetInt32("IdUsuario");
+            var idRol = session.GetString("IdRol");
+
+         
+            if (idUsuario == null || idRol != "2")
+            {
+                if (context.Controller is Controller controller)
+                {
+                    controller.TempData["SwalError"] = "No tienes permiso para acceder a esta página.";
+                }
+
+                context.Result = new RedirectResult("~/Home/Index");
+            }
+
+            base.OnActionExecuting(context);
+        }
+    }
 }

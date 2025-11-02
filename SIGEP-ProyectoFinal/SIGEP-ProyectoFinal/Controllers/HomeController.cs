@@ -19,8 +19,8 @@ namespace SIGEP_ProyectoFinal.Controllers
         [Seguridad]
         public IActionResult Index()
         {
-            ViewBag.Nombre = HttpContext.Session.GetString("nombre");
-            ViewBag.Rol = HttpContext.Session.GetInt32("rol");
+            ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
+            ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
             return View();
         }
 
@@ -43,10 +43,10 @@ namespace SIGEP_ProyectoFinal.Controllers
                 if (respuesta.IsSuccessStatusCode)
                 {
                     var usuarioRespuesta = respuesta.Content.ReadFromJsonAsync<Usuario>().Result;
-                    HttpContext.Session.SetString("nombre", usuarioRespuesta.Nombre ?? "");
-                    HttpContext.Session.SetString("cedula", usuarioRespuesta.Cedula ?? "");
+                    HttpContext.Session.SetString("Nombre", usuarioRespuesta.Nombre ?? "");
+                    HttpContext.Session.SetString("Cedula", usuarioRespuesta.Cedula ?? "");
                     HttpContext.Session.SetInt32("IdUsuario", usuarioRespuesta.IdUsuario);
-                    HttpContext.Session.SetInt32("rol", usuarioRespuesta.IdRol);
+                    HttpContext.Session.SetInt32("Rol", usuarioRespuesta.IdRol);
                     TempData["SwalSuccess"] = "Bienvenido a SIGEP," + usuario.Nombre;
                     return RedirectToAction("Index");
                 }
@@ -148,16 +148,36 @@ namespace SIGEP_ProyectoFinal.Controllers
 
         public IActionResult RecuperarAcceso(Usuario usuario)
         {
-            var cedula = "118810955";
-            if (usuario.Cedula == cedula)
+            using (var context = _http.CreateClient())
             {
-                TempData["SwalSuccess"] = "Hemos enviado un link de recuperación al correo ari*****@gmail.com";
-                return RedirectToAction("IniciarSesion");
-            }
-            else
-            {
-                TempData["SwalError"] = "La cédula proporcionada no se encuentra registrada";
-                return View();
+                var urlApi = _configuration["Valores:UrlAPI"] + "Home/RecuperarAcceso?Cedula="+usuario.Cedula;
+                var respuesta = context.GetAsync(urlApi).Result;
+
+                if (respuesta.IsSuccessStatusCode)
+                {
+                    var datosApi = respuesta.Content.ReadFromJsonAsync<Usuario>().Result;
+
+                    if (datosApi != null)
+                    {
+                        TempData["SwalSuccess"] = "Hemos enviado una contraseña temporal al correo electrónico registrado. Por favor, cambie su contraseña al ingresar al sistema.";
+                        return RedirectToAction("IniciarSesion");
+                    }
+
+                    TempData["SwalError"] = "Lo sentimos. Hubo un error al cambiar la contraseña.";
+                    return View();
+
+                }
+                else
+                {
+                    var mensajeError = respuesta.Content.ReadAsStringAsync().Result;
+
+                    TempData["SwalError"] = string.IsNullOrEmpty(mensajeError)
+                        ? "Error al recuperar acceso."
+                        : mensajeError;
+
+                    return RedirectToAction("Registro"); ;
+                }
+
             }
         }
 

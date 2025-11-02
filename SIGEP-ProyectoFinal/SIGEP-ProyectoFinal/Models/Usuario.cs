@@ -6,8 +6,7 @@
         public string? Cedula { get; set; }
         public string? Contrasenna { get; set; }
 
-        public string? CorreoPersonal { get; set; }
-        public string? CorreoMEP { get; set; }
+        public string? Correo { get; set; }
 
         public string? Nombre { get; set; }
 
@@ -34,6 +33,28 @@
         public DateTime? FechaNacimiento { get; set; }
 
         public string? ConfirmarContrasenna { get; set; }
+
+        public string? Sexo {  get; set; }
+
+        public string? Nacionalidad { get; set; }
+
+        public string? Provincia { get; set; }
+
+        public string? Distrito { get; set; }
+
+        public string? Canton {  get; set; }
+
+        public string? DireccionExacta { get; set; }
+
+        public string? Padecimiento { get; set; }
+
+        public string? Medicamento { get; set; }
+
+        public string? Alergia { get; set; }
+
+        public List<Encargado>? ListaEncargado { get; set; }
+
+        public List<Encargado>? EncargadoMostrar { get; set; }
 
     }
 }
