@@ -47,7 +47,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                     HttpContext.Session.SetString("Cedula", usuarioRespuesta.Cedula ?? "");
                     HttpContext.Session.SetInt32("IdUsuario", usuarioRespuesta.IdUsuario);
                     HttpContext.Session.SetInt32("Rol", usuarioRespuesta.IdRol);
-                    TempData["SwalSuccess"] = "Bienvenido a SIGEP," + usuario.Nombre;
+                    TempData["SwalSuccess"] = "Bienvenido a SIGEP," + usuarioRespuesta.Nombre;
                     return RedirectToAction("Index");
                 }
                 else
@@ -178,6 +178,40 @@ namespace SIGEP_ProyectoFinal.Controllers
                     return RedirectToAction("Registro"); ;
                 }
 
+            }
+        }
+
+
+        [HttpPost]
+
+        public IActionResult CambiarContrasenna(Usuario usuario)
+        {
+
+            var IdUsuario = HttpContext.Session.GetInt32("IdUsuario");
+            using (var context = _http.CreateClient())
+            {
+                var urlApi = _configuration["Valores:UrlAPI"] + "Home/CambiarContrasenna";
+                usuario.IdUsuario = (int)IdUsuario;
+                var respuesta = context.PostAsJsonAsync(urlApi, usuario).Result;
+                if (respuesta.IsSuccessStatusCode)
+                {
+                    var datosApi = respuesta.Content.ReadFromJsonAsync<int>().Result;
+                    if (datosApi > 0)
+                    {
+                        TempData["SwalSuccess"] = "Contraseña cambiada correctamente.";
+                        return RedirectToAction("IniciarSesion");
+                    }
+                    TempData["SwalError"] = "Lo sentimos. Hubo un error al cambiar la contraseña.";
+                    return View();
+                }
+                else
+                {
+                    var mensajeError = respuesta.Content.ReadAsStringAsync().Result;
+                    TempData["SwalError"] = string.IsNullOrEmpty(mensajeError)
+                        ? "Error al cambiar la contraseña. Intente nuevamente."
+                        : mensajeError;
+                    return RedirectToAction("Registro"); ;
+                }
             }
         }
 

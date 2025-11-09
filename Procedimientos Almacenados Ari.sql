@@ -167,7 +167,7 @@ SELECT U.IdUsuario, U.Cedula, U.Nombre, U.Apellido1, U.Apellido2, U.FechaNacimie
 END
 
 
- CREATE OR ALTER PROCEDURE ObtenerPefilSP 
+ CREATE OR ALTER PROCEDURE ObtenerPerfilSP 
   (@IdUsuario int)
   AS
   BEGIN
@@ -194,15 +194,15 @@ SELECT U.IdUsuario, U.Cedula, U.Nombre, U.Apellido1, U.Apellido2, U.FechaNacimie
 END
 
 
-
+drop procedure ObtenerPefilSP
 
 
 /****** Object:  StoredProcedure [dbo].[ActualizarContrasenna]    Script Date: 11/1/2025 12:53:17 AM ******/
 SET ANSI_NULLS ON
 GO
 
-CREATE  OR ALTER  PROCEDURE [dbo].[ActualizarContrasennaSP]
-    @Cedula VARCHAR(100),
+CREATE OR ALTER   PROCEDURE [dbo].[ActualizarContrasennaSP]
+    @IdUsuario VARCHAR(100),
     @Contrasenna VARCHAR(100)
 AS
 BEGIN
@@ -210,16 +210,17 @@ BEGIN
     -- Actualiza la contraseña encriptada
     UPDATE Usuarios
     SET Contrasenna = CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', @Contrasenna), 2)
-    WHERE Cedula = @CEDULA;
+    WHERE IdUsuario = @IdUsuario;
 END;
 GO
+
 
 
 CREATE OR ALTER PROCEDURE ObtenerEncargadosSP (
 @IdUsuario INT)
 AS
 BEGIN
-    SELECT E.Cedula, E.Nombre, E.Apellido1, E.Apellido2, E.FechaRegistro, E.Ocupacion, E.LugarTrabajo, E.IdEncargado,
+    SELECT E.Cedula, E.Nombre, E.Apellido1, E.Apellido2, E.FechaRegistro, E.Ocupacion, E.LugarTrabajo, E.IdEncargado, EE.IdEstado,
     EE.Parentesco, C.Email as Correo
     FROM Encargados E
     INNER JOIN EstudianteEncargado EE
@@ -229,6 +230,5 @@ BEGIN
     WHERE EE.IdUsuario = @IdUsuario
     AND EE.IdEstado = 1;
 END;
-
 
 

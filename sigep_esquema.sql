@@ -286,13 +286,9 @@ GO
 CREATE TABLE AuditoriaGlobal (
     IdAuditoria INT IDENTITY(1,1) PRIMARY KEY,
     IdUsuario INT,
-    TablaAfectada VARCHAR(100),
-    IdRegistro INT,
-    Accion VARCHAR(100),
-    CampoAfectado VARCHAR(100),
-    DatoAntes VARCHAR(255),
-    DatoDespues VARCHAR(255),
-    CONSTRAINT FK_AuditoriaGlobal_Usuario FOREIGN KEY (IdUsuario) REFERENCES Usuarios(IdUsuario)
+   	[Mensaje] [varchar](max) NOT NULL,
+	[Origen] [varchar](50) NOT NULL,
+	[FechaHora] [datetime] NOT NULL,
 );
 GO
 

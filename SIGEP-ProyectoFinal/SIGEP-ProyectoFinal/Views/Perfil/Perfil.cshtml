@@ -148,12 +148,13 @@
 
             <div class="col-md-12 form-group">
                 <label>Contraseña</label>
-                @Html.PasswordFor(m => m.Contrasenna, new { @id = "ContrasennaNueva", @type = "password", @class = "form-control", placeholder = "Ingresa tu nueva contraseña" })
+                <input type="password" class="form-control" id="ContrasennaNueva" asp-for="Contrasenna" name="Contrasenna" placeholder="Ingresa tu contraseña actual" />
+              
 
             </div>
             <div class="col-md-12 form-group">
                 <label>Confirmar Contraseña</label>
-                @Html.PasswordFor(m => m.ConfirmarContrasenna, new { @id = "ConfirmarContrasenna", @type = "password", @class = "form-control", placeholder = "Confirma tu contraseña" })
+                <input type="password" class="form-control" id="ContrasennaNuevaPerfil" asp-for="ConfirmarContrasenna" placeholder="Confirma tu contraseña" />
 
             </div>
 

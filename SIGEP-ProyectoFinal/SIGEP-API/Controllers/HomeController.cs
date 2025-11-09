@@ -202,5 +202,42 @@ namespace SIGEP_API.Controllers
 
         #endregion
 
+
+        #region CambiarContrasenna
+
+        [HttpPost]
+        [Route("CambiarContrasenna")]
+
+        public IActionResult CambiarContrasenna(CambioContrasennaRequestModel usuario)
+        {
+            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            {
+
+                if(usuario.Contrasenna != usuario.ConfirmarContrasenna)
+                {
+                    return BadRequest("Error. Las contraseñas no coinciden.");
+                }
+                else if (usuario.Contrasenna.Length
+                    < 8)
+                {
+                    return BadRequest("Error. La contraseña debe tener al menos 8 caracteres.");
+                }
+
+
+                var parametros = new DynamicParameters();
+                parametros.Add("@IdUsuario", usuario.IdUsuario);
+                parametros.Add("@Contrasenna", usuario.Contrasenna);
+
+
+                var resultado = context.Execute("ActualizarContrasennaSP", parametros);
+
+                return Ok(resultado);
+            }
+        }
+
+
+
+        #endregion
+
     }
 }
