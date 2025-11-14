@@ -11,7 +11,7 @@ namespace SIGEP_API.Models
         [Required]
         public string? Contrasenna { get; set; }
         [Required]
-        public string? CorreoPersonal { get; set; }
+        public string? Correo { get; set; }
         [Required]
         public string? Nombre { get; set; }
         [Required]

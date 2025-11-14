@@ -66,7 +66,7 @@ namespace SIGEP_API.Controllers
                 var parametros = new DynamicParameters();
                 parametros.Add("@Cedula", usuario.Cedula);
                 parametros.Add("@Contrasenna", usuario.Contrasenna);
-                parametros.Add("@Correo", usuario.CorreoPersonal);
+                parametros.Add("@Correo", usuario.Correo);
                 parametros.Add("@Nombre", usuario.Nombre);
                 parametros.Add("@IdEspecialidad", usuario.IdEspecialidad);
                 parametros.Add("@IdSeccion", usuario.IdSeccion);
