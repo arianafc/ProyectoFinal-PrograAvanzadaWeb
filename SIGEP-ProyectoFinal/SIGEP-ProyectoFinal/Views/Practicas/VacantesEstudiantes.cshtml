@@ -1,0 +1,105 @@
+﻿@using SIGEP_ProyectoFinal.Models
+@model VacantesViewModel
+
+@{
+    Layout = "_LayoutMain";
+    ViewBag.Title = "Vacantes - Prácticas";
+    var idRol = Model.IdRol;
+}
+
+<h2 class="vacantes-titulo titulo-principal d-flex justify-content-center align-items-center">
+    Vacantes @DateTime.Now.Year
+</h2>
+
+<div class="vacantes-titulo titulo-principal d-flex justify-content-between mb-0 align-items-center">
+    @if (idRol == 2)
+    {
+        <button type="button" class="btn-cta btn-nuevo mb-0" data-bs-toggle="modal" data-bs-target="#modalCrearVacante">
+            + Registrar
+        </button>
+    }
+
+    <div class="dropdown">
+        <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="filtroDropdown"
+                data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-filter"></i>
+        </button>
+        <div class="dropdown-menu p-3" style="min-width: 300px;">
+            <div class="mb-2">
+                <label asp-for="@Model.Estados">Estado de vacante</label>
+                <select id="filtroPractica" class="form-control">
+                    <option value="">Todos</option>
+                    @foreach (var s in Model.Estados)
+                    {
+                        <option value="@s.Value">@s.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="mb-2">
+                <label asp-for="@Model.Modalidades">Modalidad</label>
+                <select id="filtroModalidad" class="form-control">
+                    <option value="">Todas</option>
+                    @foreach (var m in Model.Modalidades)
+                    {
+                        <option value="@m.Value">@m.Text</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label asp-for="@Model.Especialidades">Especialidad</label>
+                <select id="filtroEspecialidad" class="form-control">
+                    <option value="">Todas</option>
+                    @foreach (var e in Model.Especialidades)
+                    {
+                        <option value="@e.Value">@e.Text</option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card rounded-5 p-3">
+    <table id="miTabla" class="display responsive nowrap w-100">
+        <thead>
+            <tr>
+                <th>Empresa</th>
+                <th>Especialidad</th>
+                <th>Requisitos</th>
+                <th>Cupos Disponibles</th>
+                <th>Estudiantes Postulados</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<!-- Aquí siguen tus modales igual (no los cambio) -->
+@section Scripts {
+    <script>
+        window.VacantesCfg = {
+            urls: {
+                getVacantes: '@Url.Action("GetVacantes", "Practicas")',
+                login: '@Url.Action("Login", "Home")',
+                detalle: '@Url.Action("Detalle", "Practicas")',
+                getUbicacionEmpresa: '@Url.Action("GetUbicacionEmpresa", "Practicas")',
+                crear: '@Url.Action("Crear", "Practicas")',
+                editar: '@Url.Action("Editar", "Practicas")',
+                eliminar: '@Url.Action("Eliminar", "Practicas")',
+                obtenerPostulaciones: '@Url.Action("ObtenerPostulaciones", "Practicas")',
+                asignarEstudiante: '@Url.Action("AsignarEstudiante", "Practicas")',
+                retirarEstudiante: '@Url.Action("RetirarEstudiante", "Practicas")',
+                desasignarPractica: '@Url.Action("DesasignarPractica", "Practicas")',
+                obtenerEstudiantesAsignar: '@Url.Action("ObtenerEstudiantesAsignar", "Practicas")',
+                visualizacionPostulacion: '@Url.Action("VisualizacionPostulacion", "Practicas")',
+                actualizarEstado: '@Url.Action("ActualizarEstado", "Estudiante")'
+            },
+            rol: @Model.IdRol,
+            idUsuarioSesion: @(Context.Session.GetInt32("IdUsuario") ?? 0)
+        };
+    </script>
+
+    <script src="~/Scripts/Practicas/VacantesEstudiantes.js" asp-append-version="true"></script>
+}

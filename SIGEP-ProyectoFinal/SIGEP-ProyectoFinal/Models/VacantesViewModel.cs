@@ -1,0 +1,14 @@
+﻿using Microsoft.AspNetCore.Mvc.Rendering;
+
+namespace SIGEP_ProyectoFinal.Models
+{
+    public class VacantesViewModel
+    {
+        public int IdRol { get; set; }
+
+        public IEnumerable<SelectListItem> Estados { get; set; } = [];
+        public IEnumerable<SelectListItem> Modalidades { get; set; } = [];
+        public IEnumerable<SelectListItem> Especialidades { get; set; } = [];
+        public IEnumerable<SelectListItem> Empresas { get; set; } = [];
+    }
+}

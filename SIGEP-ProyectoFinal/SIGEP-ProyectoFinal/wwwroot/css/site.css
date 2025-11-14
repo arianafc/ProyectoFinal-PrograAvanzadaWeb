@@ -220,3 +220,301 @@
 .password-input::-webkit-password-toggle-button {
     display: none !important;
 }
+
+.ui-datepicker-header {
+    background-color: #2D594D !important;
+    color: #2D594D !important;
+    border-radius: 6px 6px 0 0;
+    padding: 0.4em 0;
+}
+
+
+.ui-datepicker-prev, .ui-datepicker-next {
+    cursor: pointer;
+    color: white;
+}
+
+    .ui-datepicker-prev:hover, .ui-datepicker-next:hover {
+        color: #a6d8b0;
+    }
+
+
+.ui-datepicker-today a {
+    background-color: #2D594D !important;
+    color: #2D594D !important;
+    font-weight: bold;
+    border-radius: 50%;
+}
+
+
+.ui-datepicker-calendar td a {
+    color: #2D594D !important;
+    padding: 0.4em;
+    border-radius: 4px;
+    text-decoration: none;
+}
+
+    .ui-datepicker-calendar td a:hover {
+        background-color: #d4f0d5;
+        color: #145214;
+    }
+
+
+.ui-datepicker-close {
+    background: #2D594D !important;
+    color: white;
+    border: none;
+    padding: 0.4em 0.8em;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+    .ui-datepicker-close:hover {
+        background: #245238;
+    }
+
+.password-input::-ms-reveal,
+.password-input::-ms-clear,
+.password-input::-webkit-credentials-auto-fill-button,
+.password-input::-webkit-password-toggle-button {
+    display: none !important;
+}
+
+/* Aprobado */
+.badge-aprobado {
+    background-color: #768C46;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Activo */
+.badge-activo {
+    background-color: #EAF2D8;
+    color: #2d594d;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Inactivo */
+.badge-inactivo {
+    background-color: #f2f2f2;
+    color: #2d594d;
+    font-size: 14px;
+    font-weight: bold;
+    border: 1px solid #ccc; 
+}
+
+/* Rezagado */
+.badge-rezagado {
+    background-color: #E57373;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.badge-en-progreso {
+    background-color: #F5B97A; 
+    color: #2D594D; 
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Archivado (10) */
+.badge-archivado {
+    background-color: #e2e3e5; 
+    color: #383d41;
+    font-size: 14px;
+    font-weight: bold;
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    border-radius: 0.25rem;
+    min-width: 90px;
+}
+
+
+/* En curso */
+.badge-en-curso {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Rechazada */
+.badge-rechazada {
+    background-color: #f8d7da; 
+    color: #721c24;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Finalizada */
+.badge-finalizada {
+    background-color: #e2e3e5; 
+    color: #383d41;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Retirada */
+.badge-retirada {
+    background-color: #f5c6cb; 
+    color: #721c24;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+
+.badge-aprobada,
+.badge-aprobado {
+    background-color: #d4edda;
+    color: #155724;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.badge-en-proceso {
+    background-color: #F5B97A; 
+    color: #2D594D;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+
+.badge-aprobado,
+.badge-activo,
+.badge-inactivo,
+.badge-rezagado,
+.badge-en-progreso,
+.badge-en-proceso,
+.badge-en-curso,
+.badge-finalizada,
+.badge-retirada,
+.badge-rechazada,
+.badge-aprobada,
+.badge-asignada,
+.badge-no-asignada,
+.badge-archivado {
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    border-radius: 0.25rem;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    min-width: 90px; 
+}
+
+.vacantes-egresado,
+.vacantes-egresado .vacante-card,
+.vacantes-egresado .vacante-card * {
+    color: #000 !important;
+}
+
+    .vacantes-egresado .modal-content,
+    .vacantes-egresado .modal-body,
+    .vacantes-egresado .modal-body * {
+        color: #000 !important;
+    }
+
+/* === PRÁCTICAS COORDINADOR === */
+
+.btn-verde-claro {
+    background-color: #768C46 !important;
+    color: #fff !important;
+    border: none !important;
+    padding: 8px 16px;
+    font-weight: 600;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+    .btn-verde-claro:hover {
+        background-color: #8CA653 !important;
+    }
+
+.vacantes-titulo {
+    color: #2D594D;
+    font-weight: 600;
+}
+
+#filtroEstadoAcademico,
+#filtroPractica,
+#filtroEspecialidad {
+    min-width: 160px;
+    border-radius: 6px;
+}
+
+@media (max-width: 768px) {
+    .row.align-items-end {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .col-md-4.text-end {
+        text-align: left !important;
+        margin-top: 10px;
+    }
+}
+
+.badge-procesos-activos {
+    background-color: #F2C94C; 
+    color: #2D594D; 
+    font-size: 14px;
+    font-weight: bold;
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    border-radius: 0.25rem;
+    text-align: center;
+    min-width: 90px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.btn-accion {
+    border: none;
+    background: transparent;
+    padding: 6px;
+    border-radius: 6px;
+    transition: all 0.2s ease-in-out;
+}
+
+
+
+    .btn-accion.editar {
+        color: #2D594D;
+    }
+
+    .btn-accion.toggle {
+        color: #842029;
+    }
+
+    .btn-accion:hover {
+        transform: scale(1.15);
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .btn-accion.toggle:hover {
+        color: #842029;
+    }
+
+    .btn-accion.editar:hover {
+        color: #2D594D;
+    }
+
+.btn-asignar-estudiante:hover i {
+    color: #146c43 !important;
+    transform: scale(1.1);
+    transition: all 0.15s ease;
+}
+
+.btn-retirar-estudiante:hover i {
+    color: #b02a37 !important;
+    transform: scale(1.1);
+    transition: all 0.15s ease;
+}
+
+.btn-bloqueado:hover i {
+    transform: scale(1.05);
+    transition: all 0.15s ease;
+}
