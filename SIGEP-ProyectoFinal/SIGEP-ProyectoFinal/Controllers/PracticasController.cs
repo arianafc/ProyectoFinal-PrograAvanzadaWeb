@@ -1,232 +1,255 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Data.SqlClient;
 using SIGEP_ProyectoFinal.Models;
 
 namespace SIGEP_ProyectoFinal.Controllers
 {
+    [Seguridad]
+    [FiltroUsuarioAdmin]
     public class PracticasController : Controller
     {
-        private readonly IConfiguration _config;
-        public PracticasController(IConfiguration config) => _config = config;
-        private SqlConnection Conn() => new SqlConnection(_config.GetConnectionString("BDConnection"));
+        private readonly IHttpClientFactory _http;
+        private readonly IConfiguration _configuration;
 
-        // GET: /Practicas/Vacantes
-        public async Task<IActionResult> Vacantes()
+        public PracticasController(IHttpClientFactory http, IConfiguration configuration)
         {
-            var rol = HttpContext.Session.GetInt32("IdRol") ?? 0;
+            _http = http;
+            _configuration = configuration;
+        }
 
-            using var cn = Conn();
-            var model = new VacantesViewModel
+        private string UrlApi(string ruta)
+        {
+            return _configuration["Valores:UrlAPI"] + ruta;
+        }
+
+        // ======================================================
+        // VISTA PRINCIPAL
+        // ======================================================
+        [HttpGet]
+        public IActionResult Vacantes()
+        {
+            using (var client = _http.CreateClient())
             {
-                IdRol = rol,
-                Estados = await cn.QueryAsync<SelectListItem>(
-                    "SELECT CAST(IdEstado AS nvarchar(10)) AS [Value], Descripcion AS [Text] FROM EstadoTB ORDER BY Descripcion"),
-                Modalidades = await cn.QueryAsync<SelectListItem>(
-                    "SELECT CAST(IdModalidad AS nvarchar(10)) AS [Value], Descripcion AS [Text] FROM ModalidadTB ORDER BY Descripcion"),
-                Especialidades = await cn.QueryAsync<SelectListItem>(
-                    "SELECT CAST(IdEspecialidad AS nvarchar(10)) AS [Value], Descripcion AS [Text] FROM EspecialidadTB ORDER BY Descripcion"),
-                Empresas = await cn.QueryAsync<SelectListItem>(
-                    "SELECT CAST(IdEmpresa AS nvarchar(10)) AS [Value], Nombre AS [Text] FROM EmpresaTB ORDER BY Nombre")
-            };
+                var estados = client.GetAsync(UrlApi("Auxiliar/Estados")).Result
+                    .Content.ReadFromJsonAsync<List<SelectListItem>>().Result ?? new();
 
-            return View(model);
+                var modalidades = client.GetAsync(UrlApi("Auxiliar/Modalidades")).Result
+                    .Content.ReadFromJsonAsync<List<SelectListItem>>().Result ?? new();
+
+                var especialidades = client.GetAsync(UrlApi("Auxiliar/Especialidades")).Result
+                    .Content.ReadFromJsonAsync<List<SelectListItem>>().Result ?? new();
+
+                var empresas = client.GetAsync(UrlApi("Auxiliar/Empresas")).Result
+                    .Content.ReadFromJsonAsync<List<SelectListItem>>().Result ?? new();
+
+                var model = new VacantesViewModel
+                {
+                    IdRol = HttpContext.Session.GetInt32("IdRol") ?? 0,
+                    Estados = estados,
+                    Modalidades = modalidades,
+                    Especialidades = especialidades,
+                    Empresas = empresas
+                };
+
+                return View(model);
+            }
         }
 
-        // ============== JSON endpoints usados por tu JS =================
-
-        // GET: /Practicas/GetVacantes
+        // ======================================================
+        // LISTADO
+        // ======================================================
         [HttpGet]
-        public async Task<IActionResult> GetVacantes(int idEstado = 0, int idEspecialidad = 0, int idModalidad = 0)
+        public IActionResult GetVacantes(int idEstado = 0, int idEspecialidad = 0, int idModalidad = 0)
         {
-            using var cn = Conn();
-            var p = new DynamicParameters();
-            p.Add("@IdEstado", idEstado);
-            p.Add("@IdEspecialidad", idEspecialidad);
-            p.Add("@IdModalidad", idModalidad);
+            using (var client = _http.CreateClient())
+            {
+                var resp = client.GetAsync(
+                    UrlApi($"Practicas/Listar?idEstado={idEstado}&idEspecialidad={idEspecialidad}&idModalidad={idModalidad}")
+                ).Result;
 
-            var data = await cn.QueryAsync<VacanteListDto>(
-                "GetVacantesSP", p, commandType: System.Data.CommandType.StoredProcedure);
+                if (!resp.IsSuccessStatusCode)
+                    return Json(new { ok = false, data = Array.Empty<object>() });
 
-            return Json(new { ok = true, data });
+                return Json(resp.Content.ReadFromJsonAsync<object>().Result);
+            }
         }
 
-        // GET: /Practicas/Detalle
+        // ======================================================
+        // DETALLE
+        // ======================================================
         [HttpGet]
-        public async Task<IActionResult> Detalle(int id)
+        public IActionResult Detalle(int id)
         {
-            using var cn = Conn();
-            var p = new DynamicParameters();
-            p.Add("@IdVacante", id);
-
-            var d = await cn.QueryFirstOrDefaultAsync<VacanteDetalleDto>(
-                "DetalleVacanteSP", p, commandType: System.Data.CommandType.StoredProcedure);
-
-            if (d == null) return Json(new { ok = false, message = "Vacante no encontrada." });
-            return Json(new { ok = true, data = d });
+            using (var client = _http.CreateClient())
+            {
+                var resp = client.GetAsync(UrlApi($"Practicas/Detalle/{id}")).Result;
+                return Json(resp.Content.ReadFromJsonAsync<object>().Result);
+            }
         }
 
-        // GET: /Practicas/GetUbicacionEmpresa
+        // ======================================================
+        // UBICACIÓN EMPRESA
+        // ======================================================
         [HttpGet]
-        public async Task<IActionResult> GetUbicacionEmpresa(int idEmpresa)
+        public IActionResult GetUbicacionEmpresa(int idEmpresa)
         {
-            using var cn = Conn();
-            var p = new DynamicParameters();
-            p.Add("@IdEmpresa", idEmpresa);
+            using (var client = _http.CreateClient())
+            {
+                var resp = client.GetAsync(
+                    UrlApi($"Practicas/Ubicacion-Empresa?idEmpresa={idEmpresa}")
+                ).Result;
 
-            var ubi = await cn.QueryFirstOrDefaultAsync<string>(
-                "ObtenerUbicacionEmpresaSP", p, commandType: System.Data.CommandType.StoredProcedure) ?? "No registrada";
-
-            return Json(new { ok = true, ubicacion = ubi });
+                return Json(resp.Content.ReadFromJsonAsync<object>().Result);
+            }
         }
 
-        // POST: /Practicas/Crear
+        // ======================================================
+        // CREAR
+        // ======================================================
         [HttpPost]
-        public async Task<IActionResult> Crear(VacanteCrearEditarDto dto)
+        public IActionResult Crear(VacanteCrearEditarDto dto)
         {
-            using var cn = Conn();
-            var p = new DynamicParameters();
-            p.Add("@Nombre", dto.Nombre);
-            p.Add("@IdEmpresa", dto.IdEmpresa);
-            p.Add("@IdEspecialidad", dto.IdEspecialidad);
-            p.Add("@NumCupos", dto.NumCupos);
-            p.Add("@IdModalidad", dto.IdModalidad);
-            p.Add("@Requerimientos", dto.Requerimientos);
-            p.Add("@Descripcion", dto.Descripcion);
-            p.Add("@FechaMaxAplicacion", dto.FechaMaxAplicacion);
-            p.Add("@FechaCierre", dto.FechaCierre);
+            using (var client = _http.CreateClient())
+            {
+                var resp = client.PostAsJsonAsync(
+                    UrlApi("Practicas/Crear"), dto
+                ).Result;
 
-            var rows = await cn.ExecuteAsync("CrearVacanteSP", p, commandType: System.Data.CommandType.StoredProcedure);
-            return Json(new { ok = rows > 0, message = rows > 0 ? "Vacante creada correctamente." : "No se pudo crear la vacante." });
+                return Json(resp.Content.ReadFromJsonAsync<object>().Result);
+            }
         }
 
-        // POST: /Practicas/Editar
+        // ======================================================
+        // EDITAR
+        // ======================================================
         [HttpPost]
-        public async Task<IActionResult> Editar(VacanteCrearEditarDto dto)
+        public IActionResult Editar(VacanteCrearEditarDto dto)
         {
-            using var cn = Conn();
-            var p = new DynamicParameters();
-            p.Add("@IdVacante", dto.IdVacante);
-            p.Add("@Nombre", dto.Nombre);
-            p.Add("@IdEmpresa", dto.IdEmpresa);
-            p.Add("@IdEspecialidad", dto.IdEspecialidad);
-            p.Add("@NumCupos", dto.NumCupos);
-            p.Add("@IdModalidad", dto.IdModalidad);
-            p.Add("@Requerimientos", dto.Requerimientos);
-            p.Add("@Descripcion", dto.Descripcion);
-            p.Add("@FechaMaxAplicacion", dto.FechaMaxAplicacion);
-            p.Add("@FechaCierre", dto.FechaCierre);
+            using (var client = _http.CreateClient())
+            {
+                var resp = client.PostAsJsonAsync(
+                    UrlApi("Practicas/Editar"), dto
+                ).Result;
 
-            var rows = await cn.ExecuteAsync("EditarVacanteSP", p, commandType: System.Data.CommandType.StoredProcedure);
-            return Json(new { ok = rows > 0, message = rows > 0 ? "Vacante actualizada." : "No se pudo actualizar." });
+                return Json(resp.Content.ReadFromJsonAsync<object>().Result);
+            }
         }
 
-        // POST: /Practicas/Eliminar
+        // ======================================================
+        // ELIMINAR
+        // ======================================================
         [HttpPost]
-        public async Task<IActionResult> Eliminar(int id)
+        public IActionResult Eliminar(int id)
         {
-            using var cn = Conn();
-            var p = new DynamicParameters();
-            p.Add("@IdVacante", id);
+            using (var client = _http.CreateClient())
+            {
+                var resp = client.PostAsJsonAsync(
+                    UrlApi("Practicas/Eliminar"), new { id }
+                ).Result;
 
-            // El SP devuelve SELECT 1 ok, 'mensaje' message
-            var res = await cn.QueryFirstOrDefaultAsync<(int ok, string message)>(
-                "EliminarVacanteSP", p, commandType: System.Data.CommandType.StoredProcedure);
-
-            return Json(new { ok = res.ok == 1, message = res.message });
+                return Json(resp.Content.ReadFromJsonAsync<object>().Result);
+            }
         }
 
-        // GET: /Practicas/ObtenerPostulaciones
+        // ======================================================
+        // POSTULACIONES
+        // ======================================================
         [HttpGet]
-        public async Task<IActionResult> ObtenerPostulaciones(int idVacante)
+        public IActionResult ObtenerPostulaciones(int idVacante)
         {
-            using var cn = Conn();
-            var p = new DynamicParameters();
-            p.Add("@IdVacante", idVacante);
+            using (var client = _http.CreateClient())
+            {
+                var resp = client.GetAsync(
+                    UrlApi($"Practicas/Postulaciones?idVacante={idVacante}")
+                ).Result;
 
-            var data = await cn.QueryAsync<PostulacionDto>(
-                "ObtenerPostulacionesSP", p, commandType: System.Data.CommandType.StoredProcedure);
-
-            return Json(new { ok = true, data });
+                return Json(resp.Content.ReadFromJsonAsync<object>().Result);
+            }
         }
 
-        // GET: /Practicas/ObtenerEstudiantesAsignar
+        // ======================================================
+        // ESTUDIANTES-ASIGNAR
+        // ======================================================
         [HttpGet]
-        public async Task<IActionResult> ObtenerEstudiantesAsignar(int idVacante)
+        public IActionResult ObtenerEstudiantesAsignar(int idVacante)
         {
-            var idUsuarioSesion = HttpContext.Session.GetInt32("IdUsuario") ?? 0;
+            var idUsuario = HttpContext.Session.GetInt32("IdUsuario") ?? 0;
 
-            using var cn = Conn();
-            var p = new DynamicParameters();
-            p.Add("@IdVacante", idVacante);
-            p.Add("@IdUsuarioSesion", idUsuarioSesion);
+            using (var client = _http.CreateClient())
+            {
+                var resp = client.GetAsync(
+                    UrlApi($"Practicas/Estudiantes-Asignar?idVacante={idVacante}&idUsuarioSesion={idUsuario}")
+                ).Result;
 
-            var data = await cn.QueryAsync<EstAsignarDto>(
-                "ObtenerEstudiantesAsignarSP", p, commandType: System.Data.CommandType.StoredProcedure);
-
-            return Json(new { ok = true, data });
+                return Json(resp.Content.ReadFromJsonAsync<object>().Result);
+            }
         }
 
-        // POST: /Practicas/AsignarEstudiante
+        // ======================================================
+        // ASIGNAR
+        // ======================================================
         [HttpPost]
-        public async Task<IActionResult> AsignarEstudiante(int idVacante, int idUsuario)
+        public IActionResult AsignarEstudiante(int idVacante, int idUsuario)
         {
-            using var cn = Conn();
-            var p = new DynamicParameters();
-            p.Add("@IdVacante", idVacante);
-            p.Add("@IdUsuario", idUsuario);
+            using (var client = _http.CreateClient())
+            {
+                var resp = client.PostAsJsonAsync(
+                    UrlApi("Practicas/Asignar-Estudiante"),
+                    new { idVacante, idUsuario }
+                ).Result;
 
-            var res = await cn.QueryFirstAsync<(int ok, string message)>(
-                "AsignarEstudianteSP", p, commandType: System.Data.CommandType.StoredProcedure);
-
-            return Json(new { ok = res.ok == 1, message = res.message });
+                return Json(resp.Content.ReadFromJsonAsync<object>().Result);
+            }
         }
 
-        // POST: /Practicas/RetirarEstudiante
+        // ======================================================
+        // RETIRAR
+        // ======================================================
         [HttpPost]
-        public async Task<IActionResult> RetirarEstudiante(int idVacante, int idUsuario, string comentario)
+        public IActionResult RetirarEstudiante(int idVacante, int idUsuario, string comentario)
         {
-            using var cn = Conn();
-            var p = new DynamicParameters();
-            p.Add("@IdVacante", idVacante);
-            p.Add("@IdUsuario", idUsuario);
-            p.Add("@Comentario", comentario);
+            using (var client = _http.CreateClient())
+            {
+                var resp = client.PostAsJsonAsync(
+                    UrlApi("Practicas/Retirar-Estudiante"),
+                    new { idVacante, idUsuario, comentario }
+                ).Result;
 
-            var res = await cn.QueryFirstAsync<(int ok, string message)>(
-                "RetirarEstudianteSP", p, commandType: System.Data.CommandType.StoredProcedure);
-
-            return Json(new { ok = res.ok == 1, message = res.message });
+                return Json(resp.Content.ReadFromJsonAsync<object>().Result);
+            }
         }
 
-        // POST: /Practicas/DesasignarPractica
+        // ======================================================
+        // DESASIGNAR PRACTICA
+        // ======================================================
         [HttpPost]
-        public async Task<IActionResult> DesasignarPractica(int idPractica, string comentario)
+        public IActionResult DesasignarPractica(int idPractica, string comentario)
         {
-            using var cn = Conn();
-            var p = new DynamicParameters();
-            p.Add("@IdPractica", idPractica);
-            p.Add("@Comentario", comentario);
+            using (var client = _http.CreateClient())
+            {
+                var resp = client.PostAsJsonAsync(
+                    UrlApi("Practicas/Desasignar-Practica"),
+                    new { idPractica, comentario }
+                ).Result;
 
-            var res = await cn.QueryFirstAsync<(int ok, string message)>(
-                "DesasignarPracticaSP", p, commandType: System.Data.CommandType.StoredProcedure);
-
-            return Json(new { ok = res.ok == 1, message = res.message });
+                return Json(resp.Content.ReadFromJsonAsync<object>().Result);
+            }
         }
 
-        // GET: /Practicas/VisualizacionPostulacion
+        // ======================================================
+        // VISUALIZACIÓN POSTULACIÓN
+        // ======================================================
         [HttpGet]
-        public async Task<IActionResult> VisualizacionPostulacion(int idVacante, int idUsuario)
+        public IActionResult VisualizacionPostulacion(int idVacante, int idUsuario)
         {
-            using var cn = Conn();
-            var p = new DynamicParameters();
-            p.Add("@IdVacante", idVacante);
-            p.Add("@IdUsuario", idUsuario);
+            using (var client = _http.CreateClient())
+            {
+                var resp = client.GetAsync(
+                    UrlApi($"Practicas/Visualizacion-Postulacion?idVacante={idVacante}&idUsuario={idUsuario}")
+                ).Result;
 
-            var data = await cn.QueryFirstOrDefaultAsync<PostulacionDto>(
-                "VisualizacionPostulacionSP", p, commandType: System.Data.CommandType.StoredProcedure);
-
-            if (data == null) return Json(new { ok = false, message = "No encontrada." });
-            return Json(new { ok = true, data });
+                return Json(resp.Content.ReadFromJsonAsync<object>().Result);
+            }
         }
     }
 }
