@@ -1065,10 +1065,6 @@
   max-height: 100% !important;
 }
 
-.vh-100 {
-  height: 100vh !important;
-}
-
 .min-vh-100 {
   min-height: 100vh !important;
 }

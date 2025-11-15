@@ -63,6 +63,18 @@
                     
                 </div>
 
+            
+                    <div class="col-md-6 form-group">
+                        <label>Fecha de Nacimiento <span class="text-danger">*</span></label>
+                    <input asp-for="FechaNacimiento"
+                           type="date"
+                           class="form-control"
+                           id="FechaNacimientoPerfil"
+                           required />
+                        <small class="form-text text-muted">Debes ser mayor de 17 años</small>
+                        <span asp-validation-for="FechaNacimiento" class="text-danger"></span>
+                    </div>
+           
                 <div class="col-md-6 form-group">
                     <label>Teléfono</label>
                     <input asp-for="Telefono" class="form-control" id="TelefonoPerfil" />
@@ -131,7 +143,7 @@
 
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Dirección Exacta <span class="text-danger">*</span></label>
-                    @Html.TextBoxFor(m => m.DireccionExacta, new { @class = "form-control", @id = "DireccionPerfil" })
+                    <input asp-for="DireccionExacta" class="form-control" id="DireccionPerfil" />
                 </div>
             </div>
 
@@ -560,6 +572,7 @@
 
 
 @section scripts {
+    <script src="~/js/perfil/direcciones.js"></script>
     <script src="~/Scripts/Practicas/Autogestion.js"></script>
     <script src="~/Scripts/Perfil/Perfil.js"></script>
 
