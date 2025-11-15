@@ -47,6 +47,10 @@ namespace SIGEP_ProyectoFinal.Controllers
                     HttpContext.Session.SetString("Cedula", usuarioRespuesta.Cedula ?? "");
                     HttpContext.Session.SetInt32("IdUsuario", usuarioRespuesta.IdUsuario);
                     HttpContext.Session.SetInt32("Rol", usuarioRespuesta.IdRol);
+
+                    //HttpContext.Session.SetString("Rol", usuarioRespuesta.IdRol.ToString());
+                    //HttpContext.Session.SetString("IdRol", usuarioRespuesta.IdRol.ToString());
+
                     TempData["SwalSuccess"] = "Bienvenido a SIGEP," + usuarioRespuesta.Nombre;
                     return RedirectToAction("Index");
                 }

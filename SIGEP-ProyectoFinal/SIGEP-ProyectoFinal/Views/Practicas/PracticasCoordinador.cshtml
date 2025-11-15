@@ -1,0 +1,156 @@
+﻿@using SIGEP_ProyectoFinal.Models
+@model VacantesViewModel
+
+@{
+    Layout = "_LayoutMain";
+    ViewBag.Title = "Gestión de Prácticas";
+
+    var idRol = Model.IdRol;
+    var especialidades = Model.Especialidades ?? new List<SelectListItem>();
+}
+
+<h2 class="vacantes-titulo titulo-principal text-center">
+    Proceso de Prácticas @DateTime.Now.Year
+</h2>
+
+<div class="vacantes-titulo titulo-principal d-flex justify-content-between mb-0 align-items-center">
+
+    <!-- BOTONES SOLO PARA COORDINADOR -->
+    @if (idRol == 2)
+    {
+        <div>
+            <button id="btnIniciarPracticas" class="btn-verde-personalizado me-2">
+                <i class="fas fa-play"></i> Iniciar Prácticas
+            </button>
+
+            <button id="btnFinalizarPracticas" class="btn-verde-claro">
+                <i class="fas fa-stop"></i> Finalizar Prácticas
+            </button>
+        </div>
+    }
+
+    <!-- FILTROS -->
+    <div class="dropdown">
+        <button class="btn btn-outline-secondary dropdown-toggle"
+                type="button" id="filtroDropdown"
+                data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-filter"></i>
+        </button>
+
+        <div class="dropdown-menu p-3" style="min-width:300px;">
+
+            <div class="mb-2">
+                <label>Estado académico</label>
+                <select id="filtroEstadoAcademico" class="form-control">
+                    <option value="">Todos</option>
+                    <option value="Aprobado">Aprobado</option>
+                    <option value="Rezagado">Rezagado</option>
+                </select>
+            </div>
+
+            <div class="mb-2">
+                <label>Estado de práctica (global)</label>
+                <select id="filtroPractica" class="form-control">
+                    <option value="">Todos</option>
+                    <option value="Asignada">Asignada</option>
+                    <option value="Con Procesos Activos">Con Procesos Activos</option>
+                    <option value="Sin Procesos Activos">Sin Procesos Activos</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Especialidad</label>
+                <select id="filtroEspecialidad" class="form-control">
+                    <option value="">Todas</option>
+
+                    @foreach (var esp in especialidades)
+                    {
+                        <option value="@esp.Text">@esp.Text</option>
+                    }
+                </select>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- TABLA PRINCIPAL -->
+<div class="card rounded-5 p-3">
+    <table id="miTabla" class="display responsive nowrap w-100">
+        <thead>
+            <tr>
+                <th>Cédula</th>
+                <th>Nombre</th>
+                <th>Especialidad</th>
+                <th>Teléfono</th>
+                <th>Estado de Postulación</th>
+                <th>Empresa</th>
+                <th>Tipo</th>
+                <th style="width:140px;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<!-- MODAL ASIGNACIÓN -->
+<div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius:12px; background-color:#F2F2F2; color:#2D594D;">
+
+            <div class="modal-header" style="background-color:#2D594D; color:white;">
+                <h5 class="modal-title">Asignar Estudiante a Vacante</h5>
+                <button type="button" class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body px-4">
+                <div class="card rounded-5 p-3">
+                    <h5 class="section-title mb-3">Vacantes disponibles</h5>
+
+                    <table id="miTablaAsignar" class="display nowrap w-100">
+                        <thead class="table-light">
+                            <tr class="text-center">
+                                <th>Vacante</th>
+                                <th>Empresa</th>
+                                <th>Especialidad</th>
+                                <th>Cupos</th>
+                                <th>Ocupados</th>
+                                <th>Estado práctica</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer px-4">
+                <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Cerrar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+
+    <script src="~/Scripts/Practicas/PracticasCoordinador.js"></script>
+
+    <script>
+        window.PracticasCfg = {
+            urls: {
+                obtenerEstudiantesPracticas: '@Url.Action("ObtenerEstudiantesPracticas", "Practicas")',
+                obtenerVacantesAsignar: '@Url.Action("ObtenerVacantesAsignar", "Practicas")',
+                asignarEstudiante: '@Url.Action("AsignarEstudiante", "Practicas")',
+                desasignarPractica: '@Url.Action("DesasignarPractica", "Practicas")',
+                retirarEstudiante: '@Url.Action("RetirarEstudiante", "Practicas")'
+            },
+            rol: @Model.IdRol,
+            idUsuarioSesion: @(Context.Session.GetInt32("IdUsuario") ?? 0)
+        };
+    </script>
+}
