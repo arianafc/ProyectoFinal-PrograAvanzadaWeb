@@ -635,6 +635,207 @@ function validarEdad(fechaNacimiento) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+
+
+    const formContrasenna = document.getElementById("ActualizarContrasenna");
+
+    formContrasenna.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+
+        let pass = document.getElementById("ContrasennaNueva").value.trim();
+        let passConf = document.getElementById("ContrasennaNuevaPerfil").value.trim();
+
+        if (pass.length < 8) {
+            Swal.fire("Atención", "La contraseña debe tener al menos 8 caracteres.", "warning");
+            return;
+        }
+        if (pass !== passConf) {
+            Swal.fire("Error", "Las contraseñas no coinciden.", "error");
+            return;
+        }
+
+
+        Swal.fire({
+            title: "¿Deseas actualizar la contraseña?",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Sí, actualizar",
+            cancelButtonText: "Cancelar"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                formContrasenna.submit();
+            }
+        });
+
+    });
+
+    const formPerfil = document.getElementById('ActualizarPerfil');
+
+    formPerfil.addEventListener('submit', function (e) {
+       
+        limpiarErrores();
+
+        let esValido = true;
+        let mensajesErrores = [];
+
+      
+        const nombre = document.getElementById('NombrePerfil');
+        const apellido1 = document.getElementById('Apellido1Perfil');
+        const apellido2 = document.getElementById('Apellido2Perfil');
+        const cedula = document.getElementById('CedulaPerfil');
+        const fechaNac = document.getElementById('FechaNacimientoPerfil');
+        const telefono = document.getElementById('TelefonoPerfil');
+        const correo = document.getElementById('CorreoPersonalPerfil');
+        const sexo = document.getElementById('SexoPerfil'); 
+        const nacionalidad = document.getElementById('NacionalidadPerfil');
+        const provincia = document.getElementById('Provincia');
+        const canton = document.getElementById('Canton');
+        const distrito = document.getElementById('Distrito');
+        const direccion = document.getElementById('DireccionPerfil');
+
+       
+        function marcarError(campo, mensaje) {
+            esValido = false;
+            mensajesErrores.push(mensaje);
+            campo.classList.add('is-invalid');
+
+            const spanError = document.createElement('div');
+            spanError.classList.add('invalid-feedback');
+            spanError.textContent = mensaje;
+
+            const existente = campo.parentElement.querySelector('.invalid-feedback');
+            if (existente) {
+                existente.remove();
+            }
+
+            campo.parentElement.appendChild(spanError);
+        }
+
+        if (!nombre.value.trim()) {
+            marcarError(nombre, 'El nombre es obligatorio.');
+        }
+
+        if (!apellido1.value.trim()) {
+            marcarError(apellido1, 'El primer apellido es obligatorio.');
+        }
+
+        if (!apellido2.value.trim()) {
+            marcarError(apellido2, 'El segundo apellido es obligatorio.');
+        }
+
+        if (!cedula.value.trim()) {
+            marcarError(cedula, 'La cédula es obligatoria.');
+        }
+
+       
+        if (!fechaNac.value) {
+            marcarError(fechaNac, 'La fecha de nacimiento es obligatoria.');
+        } else {
+            const hoy = new Date();
+            const fechaNacimiento = new Date(fechaNac.value);
+
+            let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
+            const mes = hoy.getMonth() - fechaNacimiento.getMonth();
+            if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
+                edad--;
+            }
+
+            if (isNaN(edad)) {
+                marcarError(fechaNac, 'La fecha de nacimiento no es válida.');
+            } else if (edad < 17) {
+                marcarError(fechaNac, 'Debes ser mayor de 17 años.');
+            }
+        }
+
+        
+        if (!telefono.value.trim()) {
+            marcarError(telefono, 'El teléfono es obligatorio.');
+        } else {
+            const soloDigitos = telefono.value.replace(/\D/g, '');
+            if (soloDigitos.length < 8) {
+                marcarError(telefono, 'El teléfono debe tener al menos 8 dígitos.');
+            }
+        }
+
+      
+        if (!correo.value.trim()) {
+            marcarError(correo, 'El correo electrónico es obligatorio.');
+        } else {
+            const regexCorreo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!regexCorreo.test(correo.value.trim())) {
+                marcarError(correo, 'El correo electrónico no tiene un formato válido.');
+            }
+        }
+
+        
+        if (!provincia.value || provincia.value === 'Seleccione una provincia') {
+            marcarError(provincia, 'La provincia es obligatoria.');
+        }
+
+        if (!canton.value || canton.value === 'Seleccione un cantón') {
+            marcarError(canton, 'El cantón es obligatorio.');
+        }
+
+        if (!distrito.value || distrito.value === 'Seleccione un distrito') {
+            marcarError(distrito, 'El distrito es obligatorio.');
+        }
+
+      
+        if (!direccion.value.trim()) {
+            marcarError(direccion, 'La dirección exacta es obligatoria.');
+        }
+
+      
+        if (!sexo.value) {
+            marcarError(sexo, 'El sexo/género es obligatorio.');
+        }
+
+        if (!nacionalidad.value.trim()) {
+            marcarError(nacionalidad, 'La nacionalidad es obligatoria.');
+        }
+        
+
+        if (!esValido) {
+            e.preventDefault();
+
+          
+            Swal.fire({
+                icon: 'error',
+                title: 'Revisa la información',
+                html: '<ul style="text-align:left;">' +
+                    mensajesErrores.map(m => `<li>${m}</li>`).join('') +
+                    '</ul>',
+                confirmButtonText: 'Aceptar'
+            });
+        } else {
+          
+            e.preventDefault(); 
+
+            Swal.fire({
+                icon: 'question',
+                title: 'Confirmar actualización',
+                text: '¿Deseas guardar los cambios en tu información personal?',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, guardar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit(); 
+                }
+            });
+        }
+    });
+
+    function limpiarErrores() {
+        const camposInvalidos = document.querySelectorAll('#ActualizarPerfil .is-invalid');
+        camposInvalidos.forEach(c => c.classList.remove('is-invalid'));
+
+        const mensajes = document.querySelectorAll('#ActualizarPerfil .invalid-feedback');
+        mensajes.forEach(m => m.remove());
+    }
+
+
     const inputFecha = document.getElementById('FechaNacimientoPerfil');
 
     if (!inputFecha) return;
