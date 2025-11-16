@@ -2,11 +2,12 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using SIGEP_ProyectoFinal.Models;
 using System.Net.Http.Headers;
+using System.Text.Json;
 
 namespace SIGEP_ProyectoFinal.Controllers
 {
     [Seguridad]
-    [FiltroUsuarioAdmin]
+    //[FiltroUsuarioAdmin]
     public class PracticasController : Controller
     {
         private readonly IHttpClientFactory _http;
@@ -46,21 +47,35 @@ namespace SIGEP_ProyectoFinal.Controllers
         // ======================================================
         // MÉTODO REUTILIZABLE PARA DROPDOWNS
         // ======================================================
+
+        private List<SelectListItem> SafeLoad(HttpResponseMessage resp)
+        {
+            if (!resp.IsSuccessStatusCode)
+                return new List<SelectListItem>();
+
+            var raw = resp.Content.ReadAsStringAsync().Result;
+
+            if (string.IsNullOrWhiteSpace(raw) || !raw.TrimStart().StartsWith("["))
+                return new List<SelectListItem>();
+
+            try
+            {
+                return JsonSerializer.Deserialize<List<SelectListItem>>(raw) ?? new();
+            }
+            catch
+            {
+                return new List<SelectListItem>();
+            }
+        }
+
         private VacantesViewModel CargarFiltros()
         {
             using var client = _http.CreateClient();
 
-            var estados = client.GetAsync(UrlApi("Auxiliar/Estados")).Result
-                .Content.ReadFromJsonAsync<List<SelectListItem>>().Result ?? new();
-
-            var modalidades = client.GetAsync(UrlApi("Auxiliar/Modalidades")).Result
-                .Content.ReadFromJsonAsync<List<SelectListItem>>().Result ?? new();
-
-            var especialidades = client.GetAsync(UrlApi("Auxiliar/Especialidades")).Result
-                .Content.ReadFromJsonAsync<List<SelectListItem>>().Result ?? new();
-
-            var empresas = client.GetAsync(UrlApi("Auxiliar/Empresas")).Result
-                .Content.ReadFromJsonAsync<List<SelectListItem>>().Result ?? new();
+            var estados = SafeLoad(client.GetAsync(UrlApi("Auxiliar/Estados")).Result);
+            var modalidades = SafeLoad(client.GetAsync(UrlApi("Auxiliar/Modalidades")).Result);
+            var especialidades = SafeLoad(client.GetAsync(UrlApi("Auxiliar/Especialidades")).Result);
+            var empresas = SafeLoad(client.GetAsync(UrlApi("Auxiliar/Empresas")).Result);
 
             return new VacantesViewModel
             {
