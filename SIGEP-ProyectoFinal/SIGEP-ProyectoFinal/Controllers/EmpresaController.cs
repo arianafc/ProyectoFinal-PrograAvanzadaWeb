@@ -51,7 +51,7 @@ namespace SIGEP_ProyectoFinal.Controllers
             var data = lista.Select(e => new {
                 IdEmpresa = e.IdEmpresa,
                 NombreEmpresa = e.NombreEmpresa,   
-                AreasAfines = e.AreasAfines,
+                AreasAfinidad = e.AreasAfinidad,
                 Ubicacion = e.Ubicacion,
                 HistorialVacantes = e.HistorialVacantes
             });

@@ -64,6 +64,7 @@ namespace SIGEP_API.Controllers
 
         // ============================================================
         // AGREGAR EMPRESA (POST)
+        // ============================================================
         [HttpPost]
         [Route("AgregarEmpresa")]
         public IActionResult AgregarEmpresa(EmpresaGuardarRequestModel m)
@@ -93,7 +94,7 @@ namespace SIGEP_API.Controllers
         }
 
         // ============================================================
-        // ACTUALIZAR EMPRESA (PUT)
+        // ACTUALIZAR EMPRESA
         // ============================================================
         [HttpPost]
         [Route("ActualizarEmpresa")]
@@ -102,6 +103,7 @@ namespace SIGEP_API.Controllers
             using (var db = Conn())
             {
                 var p = new DynamicParameters();
+
                 p.Add("@IdEmpresa", m.IdEmpresa);
                 p.Add("@NombreEmpresa", m.NombreEmpresa);
                 p.Add("@NombreContacto", m.NombreContacto);
@@ -113,13 +115,13 @@ namespace SIGEP_API.Controllers
                 p.Add("@DireccionExacta", m.DireccionExacta);
                 p.Add("@AreasAfinidad", m.AreasAfinidad);
 
-                p.Add("@IdEmpresaOut", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
                 db.Execute("ActualizarEmpresaSP", p, commandType: CommandType.StoredProcedure);
 
                 return Ok(new { ok = true });
             }
         }
+
         // ============================================================
         // ELIMINAR EMPRESA (POST)
         // ============================================================

@@ -131,7 +131,7 @@
             },
             columns: [
                 { data: 'nombreEmpresa' },
-                { data: 'areasAfines' },
+                { data: 'areasAfinidad' },
                 { data: 'ubicacion' },
                 {
                     data: 'historialVacantes',
@@ -143,7 +143,7 @@
                         `<button class="btn btn-editar-empresa" data-id="${id}">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-eliminar-empresa" data-id="${id}" data-nombre="${row.NombreEmpresa}">
+                        <button class="btn btn-eliminar-empresa" data-id="${id}" data-nombre="${row.nombreEmpresa}">
                             <i class="fas fa-trash"></i>
                         </button>`
                 }
@@ -189,26 +189,36 @@
 
         $.get(window.EMPRESA_URLS.getById, { id })
             .done(r => {
-                if (!r.ok) return Swal.fire("Error", "Empresa no encontrada", "error");
+                console.log("🔍 Respuesta GetEmpresa:", r);
 
-                const e = r.data;  // JSON camelCase
+                if (!r || !r.ok || !r.data) {
+                    return Swal.fire("Error", r && r.msg ? r.msg : "Empresa no encontrada", "error");
+                }
 
-                $("#empresaIdEditar").val(e.IdEmpresa);
-                $("#nombreEmpresaEditar").val(e.NombreEmpresa);
-                $("#contactoEmpresaEditar").val(e.NombreContacto);
-                $("#emailEmpresaEditar").val(e.Email);
-                $("#telefonoEmpresaEditar").val(e.Telefono);
+                const e = r.data;  
 
-                $("#provinciaEmpresaEditar").attr("data-selected", e.Provincia);
-                $("#cantonEmpresaEditar").attr("data-selected", e.Canton);
-                $("#distritoEmpresaEditar").attr("data-selected", e.Distrito);
+                
+                $("#empresaIdEditar").val(e.idEmpresa);
+                $("#nombreEmpresaEditar").val(e.nombreEmpresa);
+                $("#contactoEmpresaEditar").val(e.nombreContacto);
+                $("#emailEmpresaEditar").val(e.email);
+                $("#telefonoEmpresaEditar").val(e.telefono);
 
-                $("#direccionEmpresaEditar").val(e.DireccionExacta);
-                $("#areasEmpresaEditar").val(e.AreasAfinidad);
+                $("#provinciaEmpresaEditar").attr("data-selected", e.provincia || "");
+                $("#cantonEmpresaEditar").attr("data-selected", e.canton || "");
+                $("#distritoEmpresaEditar").attr("data-selected", e.distrito || "");
 
+                $("#direccionEmpresaEditar").val(e.direccionExacta || "");
+                $("#areasEmpresaEditar").val(e.areasAfinidad || "");
+
+                
                 $("#ModalEditarEmpresa").modal("show");
+            })
+            .fail(() => {
+                Swal.fire("Error", "No se pudo consultar la empresa", "error");
             });
     });
+
 
     // ======================================================
     // 10. GUARDAR CAMBIOS

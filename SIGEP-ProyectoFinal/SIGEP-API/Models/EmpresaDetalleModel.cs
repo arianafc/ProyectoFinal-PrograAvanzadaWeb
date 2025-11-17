@@ -14,6 +14,6 @@
         public string Distrito { get; set; } = "";
         public string DireccionExacta { get; set; } = "";
 
-        public string AreasAfines { get; set; } = "";
+        public string AreasAfinidad { get; set; } = "";
     }
 }

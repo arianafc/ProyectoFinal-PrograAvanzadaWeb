@@ -806,7 +806,7 @@ BEGIN
     SELECT 
         e.IdEmpresa,
         e.NombreEmpresa,
-        e.AreasAfinidad AS AreasAfines,
+        e.AreasAfinidad AS AreasAfinidad,
         ISNULL(p.Nombre,'') +
         CASE WHEN c.Nombre IS NOT NULL THEN ', ' + c.Nombre ELSE '' END +
         CASE WHEN d.Nombre IS NOT NULL THEN ', ' + d.Nombre ELSE '' END AS Ubicacion,
