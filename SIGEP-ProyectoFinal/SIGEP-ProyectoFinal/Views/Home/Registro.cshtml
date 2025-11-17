@@ -76,12 +76,16 @@
                                         </div>
                                     </div>
 
-                               
-                                    <div class="col-md-6">
-                                        <div class="input-icon-container mb-3">
-                                            <i class="fas fa-calendar-alt"></i>
-                                            <input type="text" id="FechaNacimientoRegistro" asp-for="FechaNacimiento" placeholder="Fecha de Nacimiento" class="input-field" autocomplete="off" />
-                                        </div>
+
+                                    <div class="col-md-6 form-group">
+                                        <label>Fecha de Nacimiento <span class="text-danger">*</span></label>
+                                        <input asp-for="FechaNacimiento"
+                                               type="date"
+                                               class="form-control"
+                                               id="FechaNacimientoPerfil"
+                                               required />
+                                        <small class="form-text text-muted">Debes ser mayor de 17 años</small>
+                                        <span asp-validation-for="FechaNacimiento" class="text-danger"></span>
                                     </div>
                                     <div class="col-md-12">
                                         <div class="input-icon-container mb-3">
@@ -126,6 +130,6 @@
 @section Scripts {
 
     <script src="~/js/script.js"></script>
-    <script src="~/js/registro/registro.js"></script>
+    <script src="~/js/perfil/perfil.js"></script>
 
 }

@@ -1,19 +1,15 @@
-﻿
-let direccionesData = null;
+﻿let direccionesData = null;
 
 async function cargarJSONDirecciones() {
     try {
-        const response = await fetch('/json/costarica.json'); 
+        const response = await fetch('/json/costarica.json');
 
         if (!response.ok) {
             throw new Error('No se pudo cargar el archivo JSON');
         }
 
         direccionesData = await response.json();
-
-       
         inicializarDirecciones();
-
     } catch (error) {
         console.error('Error cargando direcciones:', error);
         alert('Error al cargar las direcciones. Por favor, recarga la página.');
@@ -21,7 +17,6 @@ async function cargarJSONDirecciones() {
 }
 
 function cargarCantones() {
-
     if (!direccionesData) {
         console.error('JSON de direcciones no está cargado');
         return;
@@ -33,7 +28,6 @@ function cargarCantones() {
 
     const provinciaNombre = provinciaSelect.value;
 
-   
     cantonSelect.innerHTML = '<option value="">Seleccione un cantón</option>';
     distritoSelect.innerHTML = '<option value="">Seleccione un distrito</option>';
 
@@ -66,7 +60,6 @@ function cargarCantones() {
 }
 
 function cargarDistritos() {
- 
     if (!direccionesData) {
         console.error('JSON de direcciones no está cargado');
         return;
@@ -125,21 +118,17 @@ function inicializarDirecciones() {
     const cantonSelect = document.querySelector('select[name="Canton"]');
     const distritoSelect = document.querySelector('select[name="Distrito"]');
 
-
     if (!provinciaSelect || !cantonSelect || !distritoSelect) {
         return;
     }
 
-  
     const provinciaSeleccionada = provinciaSelect.value;
     const cantonSeleccionado = cantonSelect.getAttribute('data-selected') || '';
     const distritoSeleccionado = distritoSelect.getAttribute('data-selected') || '';
 
-   
     if (provinciaSeleccionada && provinciaSeleccionada !== '') {
         cargarCantones();
 
-    
         if (cantonSeleccionado && cantonSeleccionado !== '') {
             setTimeout(() => {
                 cantonSelect.value = cantonSeleccionado;
@@ -147,7 +136,6 @@ function inicializarDirecciones() {
                 if (cantonSelect.value) {
                     cargarDistritos();
 
-                  
                     if (distritoSeleccionado && distritoSeleccionado !== '') {
                         setTimeout(() => {
                             distritoSelect.value = distritoSeleccionado;
@@ -158,7 +146,6 @@ function inicializarDirecciones() {
         }
     }
 }
-
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', cargarJSONDirecciones);

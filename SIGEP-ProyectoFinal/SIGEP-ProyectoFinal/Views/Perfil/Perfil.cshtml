@@ -14,6 +14,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+
+<input type="hidden" class="TempError" value="@TempData["SwalError"]" />
+<input type="hidden" class="TempSuccess" value="@TempData["SwalSuccess"]" />
+
+
 <div class="perfil-wrapper">
     @if (rol == 1)
     {
@@ -71,7 +76,7 @@
                            class="form-control"
                            id="FechaNacimientoPerfil"
                            required />
-                        <small class="form-text text-muted">Debes ser mayor de 17 años</small>
+                       
                         <span asp-validation-for="FechaNacimiento" class="text-danger"></span>
                     </div>
            
@@ -128,7 +133,7 @@
                     @Html.DropDownListFor(m => m.Canton,
                                         new SelectList(Enumerable.Empty<string>(), Model.Canton),
                                         "Seleccione un cantón",
-                                        new { @class = "form-control", onchange = "cargarDistritos()", required = "required" }
+                                        new { @class = "form-control", onchange = "cargarDistritos()", required = "required", data_selected = Model.Canton }
                                         )
                 </div>
 
@@ -137,11 +142,11 @@
                     @Html.DropDownListFor(m => m.Distrito,
                                         new SelectList(Enumerable.Empty<string>(), Model.Distrito),
                                         "Seleccione un distrito",
-                                        new { @class = "form-control", required = "required" }
+                                        new { @class = "form-control", required = "required", data_selected = Model.Distrito }
                                         )
                 </div>
 
-                <div class="col-md-6 mb-3">
+                <div class="col-md-12 mb-3">
                     <label class="form-label">Dirección Exacta <span class="text-danger">*</span></label>
                     <input asp-for="DireccionExacta" class="form-control" id="DireccionPerfil" />
                 </div>
@@ -156,7 +161,7 @@
         
 
         <h5 class="section-title">ACTUALIZAR CONTRASEÑA</h5>
-        <form class="row" id="CambiarContrasenna" method="post" asp-action="CambiarContrasenna" asp-controller="Perfil">
+        <form class="row" id="ActualizarContrasenna" method="post" asp-action="CambiarContrasenna" asp-controller="Perfil">
 
             <div class="col-md-12 form-group">
                 <label>Contraseña</label>
@@ -185,7 +190,7 @@
 
             if (rol == 1)
             {
-                <form class="row" asp-action="ActualizarEspecialidadSeccion" asp-controller="Perfil" method="post" id="ActualizarEspecialidadSecccionForm">
+                <form class="row" asp-action="ActualizarInfoAcademica" asp-controller="Perfil" method="post" id="ActualizarEspecialidadSecccionForm">
                     <div class=" form-group">
                         @Html.DropDownListFor(
                         model => model.IdEspecialidad,
@@ -278,7 +283,7 @@
             @if (rol == 1)
         {
             <h5 class="section-title">INFORMACIÓN MÉDICA</h5>
-            <form asp-action="ActualizarInformacionMedica" asp-controller="Perfil" method="post" id="ActualizarInformacionMedicaForm" class="row">
+            <form asp-action="ActualizarInfoMedica" asp-controller="Perfil" method="post" id="ActualizarInformacionMedicaForm" class="row">
                 <div class="row">
                     <div class="col-md-6 form-group">
                         <label>Padecimientos</label>
@@ -286,7 +291,7 @@
                     </div>
                     <div class="col-md-6 form-group">
                         <label>Medicamentos</label>
-                        <input asp-for="Medicamento" class="form-control" />
+                        <input asp-for="Tratamiento" class="form-control" />
                     </div>
                     <div class="col-md-12 form-group">
                         <label>Alergias</label>
@@ -572,9 +577,10 @@
 
 
 @section scripts {
+    <script src="~/js/alertas/alertas.js"></script>
     <script src="~/js/perfil/direcciones.js"></script>
-    <script src="~/Scripts/Practicas/Autogestion.js"></script>
-    <script src="~/Scripts/Perfil/Perfil.js"></script>
+    <script src="~/js/perfil/perfil.js"></script>
+ 
 
 }
 
