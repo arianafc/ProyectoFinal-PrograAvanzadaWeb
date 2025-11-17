@@ -1,0 +1,179 @@
+﻿@{
+    Layout = "~/Views/Shared/_LayoutMain.cshtml";
+    ViewBag.Title = "Listado de Empresas";
+}
+
+<h2 class="vacantes-titulo titulo-principal">Empresas Registradas</h2>
+
+<button data-bs-toggle="modal" data-bs-target="#ModalAgregarEmpresa"
+        class="btn-cta btn-nuevo"
+        style="margin-bottom: 25px;">
+    + Nueva Empresa
+</button>
+
+<div class="card rounded-5 p-3">
+    <table id="tablaEmpresas" class="display responsive nowrap w-100">
+        <thead>
+            <tr>
+                <th>Nombre de Empresa</th>
+                <th>Especialidades que Reciben</th>
+                <th>Ubicación</th>
+                <th>Historial de Vacantes</th>
+                <th style="width:120px;">Acciones</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+<!-- ===================== Modal: Agregar Empresa ===================== -->
+<div class="modal fade" id="ModalAgregarEmpresa" tabindex="-1" aria-labelledby="ModalAgregarEmpresaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius: 12px; background-color: #F2F2F2; color: #2D594D;">
+            <form id="formAgregarEmpresa" autocomplete="off">
+                <div class="modal-header" style="background-color: #2D594D; color: white;">
+                    <h5 class="modal-title" id="ModalAgregarEmpresaLabel">Registro de Empresa</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body px-4">
+                    <div class="mb-4">
+                        <h5 class="section-title">Información General</h5>
+                        <div class="row">
+                            <div class="col-md-6 form-group mb-3">
+                                <label>Nombre de la Empresa <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="nombreEmpresa" placeholder="Ejemplo: TechSolutions">
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label>Nombre del contacto <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="nombreContacto" placeholder="Nombre completo">
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label>Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="emailContacto" placeholder="correo@empresa.com">
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label>Teléfono <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="telefonoContacto" placeholder="8888-8888">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label>Provincia <span class="text-danger">*</span></label>
+                                <select id="provinciaEmpresa" name="Provincia" class="form-select">
+                                    <option value="">Seleccione una provincia</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label>Cantón <span class="text-danger">*</span></label>
+                                <select id="cantonEmpresa" name="Canton" class="form-select">
+                                    <option value="">Seleccione un cantón</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label>Distrito <span class="text-danger">*</span></label>
+                                <select id="distritoEmpresa" name="Distrito" class="form-select">
+                                    <option value="">Seleccione un distrito</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-12 mb-3">
+                                <label>Dirección exacta</label>
+                                <input type="text" class="form-control" id="direccion" placeholder="Calle, puntos de referencia...">
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label>Áreas Afines</label>
+                                <input type="text" class="form-control" id="areas" placeholder="Informática, Electrónica...">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer px-4">
+                    <button id="BtnGuardarEmpresa" type="button" class="btn CerrarModal">Guardar Empresa</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== Modal: Editar Empresa ===================== -->
+<div class="modal fade" id="ModalEditarEmpresa" tabindex="-1" aria-labelledby="ModalEditarEmpresaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius: 12px; background-color: #F2F2F2; color: #2D594D;">
+            <div class="modal-header" style="background-color: #2D594D; color: white;">
+                <h5 class="modal-title" id="ModalEditarEmpresaLabel">Editar Empresa</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body px-4">
+                <input type="hidden" id="empresaIdEditar" />
+                <div class="mb-4">
+                    <h5 class="section-title">Información General</h5>
+                    <div class="row">
+                        <div class="col-md-6 form-group mb-3">
+                            <label>Nombre de la Empresa <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="nombreEmpresaEditar" placeholder="Ejemplo: TechSolutions">
+                        </div>
+                        <div class="col-md-6 form-group mb-3">
+                            <label>Nombre del Contacto <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="contactoEmpresaEditar" placeholder="Nombre completo">
+                        </div>
+                        <div class="col-md-6 form-group mb-3">
+                            <label>Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="emailEmpresaEditar" placeholder="correo@ejemplo.com">
+                        </div>
+                        <div class="col-md-6 form-group mb-3">
+                            <label>Teléfono <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="telefonoEmpresaEditar" placeholder="8888-8888">
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label>Provincia</label>
+                            <select id="provinciaEmpresaEditar" name="Provincia" class="form-select">
+                                <option value="">Seleccione una provincia</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label>Cantón</label>
+                            <select id="cantonEmpresaEditar" name="Canton" class="form-select">
+                                <option value="">Seleccione un cantón</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label>Distrito</label>
+                            <select id="distritoEmpresaEditar" name="Distrito" class="form-select">
+                                <option value="">Seleccione un distrito</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <label>Dirección Exacta</label>
+                            <input type="text" class="form-control" id="direccionEmpresaEditar" />
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label>Áreas Afines</label>
+                            <input type="text" class="form-control" id="areasEmpresaEditar" placeholder="Informática, Administración..." />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer px-4">
+                <button type="button" class="btn CerrarModal" id="btnGuardarCambiosEmpresa">Guardar Cambios</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/perfil/direcciones.js"></script>
+
+    <script>
+        window.EMPRESA_URLS = {
+            listar: '@Url.Action("GetEmpresas", "Empresa")',
+            crear: '@Url.Action("CrearEmpresa", "Empresa")',
+            getById: '@Url.Action("GetEmpresa", "Empresa")',
+            editar: '@Url.Action("EditarEmpresa", "Empresa")',
+            eliminar: '@Url.Action("EliminarEmpresa", "Empresa")'
+        };
+    </script>
+
+    <script src="~/js/empresa/listarempresas.js"></script>
+}

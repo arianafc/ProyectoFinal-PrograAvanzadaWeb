@@ -12,12 +12,12 @@
 </h2>
 
 <div class="vacantes-titulo titulo-principal d-flex justify-content-between mb-0 align-items-center">
-    @if (idRol == 2)
-    {
+    @* @if (idRol == 2) *@
+    @* { *@
         <button type="button" class="btn-cta btn-nuevo mb-0" data-bs-toggle="modal" data-bs-target="#modalCrearVacante">
             + Registrar
         </button>
-    }
+    @* } *@
 
     <div class="dropdown">
         <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="filtroDropdown"
@@ -96,9 +96,10 @@
                 visualizacionPostulacion: '@Url.Action("VisualizacionPostulacion", "Practicas")',
                 actualizarEstado: '@Url.Action("ActualizarEstado", "Estudiante")'
             },
-            rol: @Model.IdRol,
-            idUsuarioSesion: @(Context.Session.GetInt32("IdUsuario") ?? 0)
+            //rol: @Model.IdRol,
+            //idUsuarioSesion: @(Context.Session.GetInt32("IdUsuario") ?? 0)
         };
+
     </script>
 
     <script src="~/Scripts/Practicas/VacantesEstudiantes.js" asp-append-version="true"></script>

@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace SIGEP_ProyectoFinal.Controllers
 {
     [Seguridad]
-    [FiltroUsuarioAdmin]
+    //[FiltroUsuarioAdmin]
     public class PracticasController : Controller
     {
         private readonly IHttpClientFactory _http;
@@ -30,8 +30,13 @@ namespace SIGEP_ProyectoFinal.Controllers
         [HttpGet]
         public IActionResult PracticasCoordinador()
         {
+            
+            ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
+            ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
+            ViewBag.Usuario = HttpContext.Session.GetInt32("IdUsuario");
+
             var model = CargarFiltros();
-            return View(model);    
+            return View(model);
         }
 
         // ======================================================
@@ -40,8 +45,13 @@ namespace SIGEP_ProyectoFinal.Controllers
         [HttpGet]
         public IActionResult VacantesEstudiantes()
         {
+           
+            ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
+            ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
+            ViewBag.Usuario = HttpContext.Session.GetInt32("IdUsuario");
+
             var model = CargarFiltros();
-            return View(model);   
+            return View(model);
         }
 
         // ======================================================
