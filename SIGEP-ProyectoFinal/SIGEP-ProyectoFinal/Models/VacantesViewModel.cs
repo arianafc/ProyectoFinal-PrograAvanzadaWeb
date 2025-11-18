@@ -4,7 +4,7 @@ namespace SIGEP_ProyectoFinal.Models
 {
     public class VacantesViewModel
     {
-        public int IdRol { get; set; }
+        public VacanteModel Vacante { get; set; } = new();
 
         public IEnumerable<SelectListItem> Estados { get; set; } = [];
         public IEnumerable<SelectListItem> Modalidades { get; set; } = [];

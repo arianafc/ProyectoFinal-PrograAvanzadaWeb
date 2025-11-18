@@ -5,7 +5,7 @@
     Layout = "_LayoutMain";
     ViewBag.Title = "Gestión de Prácticas";
 
-    var idRol = Model.IdRol;
+    //var idRol = Model.IdRol;
     var especialidades = Model.Especialidades ?? new List<SelectListItem>();
 }
 
@@ -16,7 +16,7 @@
 <div class="vacantes-titulo titulo-principal d-flex justify-content-between mb-0 align-items-center">
 
     <!-- BOTONES SOLO PARA COORDINADOR -->
-    @if (idRol == 2)
+    @* @if (idRol == 2) *@
     {
         <div>
             <button id="btnIniciarPracticas" class="btn-verde-personalizado me-2">
@@ -149,8 +149,6 @@
                 desasignarPractica: '@Url.Action("DesasignarPractica", "Practicas")',
                 retirarEstudiante: '@Url.Action("RetirarEstudiante", "Practicas")'
             },
-            rol: @Model.IdRol,
-            idUsuarioSesion: @(Context.Session.GetInt32("IdUsuario") ?? 0)
-        };
+           };
     </script>
 }

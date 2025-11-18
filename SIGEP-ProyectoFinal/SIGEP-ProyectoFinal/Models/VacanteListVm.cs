@@ -1,6 +1,6 @@
 ﻿namespace SIGEP_ProyectoFinal.Models
 {
-    public class VacanteListDto
+    public class VacanteListVm
     {
         public int IdVacante { get; set; }
         public string EmpresaNombre { get; set; } = "";

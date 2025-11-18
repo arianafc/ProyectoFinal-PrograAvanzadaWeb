@@ -69,7 +69,7 @@ namespace SIGEP_API.Controllers
 
         // CREAR
         [HttpPost("Crear")]
-        public IActionResult Crear([FromForm] VacanteCrearEditarDto dto)
+        public IActionResult Crear([FromBody] VacanteCrearEditarDto dto)
         {
             using var cn = Conn();
             var p = new DynamicParameters();
@@ -100,7 +100,7 @@ namespace SIGEP_API.Controllers
 
         // EDITAR
         [HttpPost("Editar")]
-        public IActionResult Editar([FromForm] VacanteCrearEditarDto dto)
+        public IActionResult Editar([FromBody] VacanteCrearEditarDto dto)
         {
             using var cn = Conn();
             var p = new DynamicParameters();
