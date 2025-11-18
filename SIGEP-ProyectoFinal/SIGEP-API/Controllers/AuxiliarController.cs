@@ -14,49 +14,44 @@ namespace SIGEP_API.Controllers
         private SqlConnection Conn() =>
             new SqlConnection(_config.GetConnectionString("BDConnection"));
 
-        // ===================== ESTADOS =====================
         [HttpGet("Estados")]
         public IActionResult Estados()
         {
             using var cn = Conn();
             var data = cn.Query<dynamic>(
-                "SELECT IdEstado AS Value, Descripcion AS Text FROM Estados"
+                "SELECT CAST(IdEstado AS VARCHAR(10)) AS value, Descripcion AS text FROM Estados WHERE IdEstado > 0"
             );
             return Ok(data);
         }
 
-        // ===================== ESPECIALIDADES =====================
         [HttpGet("Especialidades")]
         public IActionResult Especialidades()
         {
             using var cn = Conn();
             var data = cn.Query<dynamic>(
-                "SELECT IdEspecialidad AS Value, Nombre AS Text FROM Especialidades"
+                "SELECT CAST(IdEspecialidad AS VARCHAR(10)) AS value, Nombre AS text FROM Especialidades"
             );
             return Ok(data);
         }
 
-        // ===================== EMPRESAS =====================
         [HttpGet("Empresas")]
         public IActionResult Empresas()
         {
             using var cn = Conn();
             var data = cn.Query<dynamic>(
-                "SELECT IdEmpresa AS Value, NombreEmpresa AS Text FROM Empresas"
+                "SELECT CAST(IdEmpresa AS VARCHAR(10)) AS value, NombreEmpresa AS text FROM Empresas WHERE IdEstado = 1"
             );
             return Ok(data);
         }
 
-        // ===================== MODALIDADES =====================
         [HttpGet("Modalidades")]
         public IActionResult Modalidades()
         {
             using var cn = Conn();
             var data = cn.Query<dynamic>(
-                "SELECT IdModalidad AS Value, Descripcion AS Text FROM Modalidades"
+                "SELECT CAST(IdModalidad AS VARCHAR(10)) AS value, Descripcion AS text FROM Modalidades"
             );
             return Ok(data);
         }
     }
 }
-

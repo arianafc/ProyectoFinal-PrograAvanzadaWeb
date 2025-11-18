@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using SIGEP_API.Models;
@@ -16,7 +15,10 @@ namespace SIGEP_API.Controllers
         private SqlConnection Conn() =>
             new SqlConnection(_config.GetConnectionString("BDConnection"));
 
-        // LISTAR
+        // ======================================================
+        // LISTAR VACANTES
+        // GET: api/Practicas/Listar?idEstado=&idEspecialidad=&idModalidad=
+        // ======================================================
         [HttpGet("Listar")]
         public IActionResult Listar(int idEstado = 0, int idEspecialidad = 0, int idModalidad = 0)
         {
@@ -29,11 +31,18 @@ namespace SIGEP_API.Controllers
             var data = cn.Query<VacanteListDto>(
                 "GetVacantesSP", p, commandType: System.Data.CommandType.StoredProcedure);
 
-            return Ok(ApiResponse<IEnumerable<VacanteListDto>>.Success(data));
+            return Ok(new
+            {
+                ok = true,
+                data = data
+            });
         }
 
-        // DETALLE
-        [HttpGet("Detalle/{id}")]
+        // ======================================================
+        // DETALLE VACANTE
+        // GET: api/Practicas/Detalle?id=1
+        // ======================================================
+        [HttpGet("Detalle")]
         public IActionResult Detalle(int id)
         {
             using var cn = Conn();
@@ -50,8 +59,11 @@ namespace SIGEP_API.Controllers
             return Ok(ApiResponse<VacanteDetalleDto>.Success(d));
         }
 
-        // UBICACION EMPRESA
-        [HttpGet("Ubicacion-Empresa")]
+        // ======================================================
+        // UBICACIÓN EMPRESA
+        // GET: api/Practicas/UbicacionEmpresa?idEmpresa=1
+        // ======================================================
+        [HttpGet("UbicacionEmpresa")]
         public IActionResult UbicacionEmpresa(int idEmpresa)
         {
             using var cn = Conn();
@@ -67,7 +79,11 @@ namespace SIGEP_API.Controllers
             return Ok(new { ok = true, ubicacion = data });
         }
 
-        // CREAR
+        // ======================================================
+        // CREAR VACANTE
+        // POST: api/Practicas/Crear
+        // Body: VacanteCrearEditarDto (JSON)
+        // ======================================================
         [HttpPost("Crear")]
         public IActionResult Crear([FromBody] VacanteCrearEditarDto dto)
         {
@@ -84,7 +100,7 @@ namespace SIGEP_API.Controllers
             p.Add("@FechaMaxAplicacion", dto.FechaMaxAplicacion);
             p.Add("@FechaCierre", dto.FechaCierre);
 
-            var rows = cn.Execute(
+            var resp = cn.QueryFirst<(int ok, string message, int? IdVacante)>(
                 "CrearVacanteSP",
                 p,
                 commandType: System.Data.CommandType.StoredProcedure
@@ -92,19 +108,32 @@ namespace SIGEP_API.Controllers
 
             return Ok(new
             {
-                ok = rows > 0,
-                message = rows > 0 ? "Vacante creada correctamente." : "Error al crear vacante."
+                ok = resp.ok == 1,
+                message = resp.message,
+                idVacante = resp.IdVacante
             });
         }
 
-
-        // EDITAR
+        // ======================================================
+        // EDITAR VACANTE
+        // POST: api/Practicas/Editar
+        // Body: VacanteCrearEditarDto (JSON)
+        // ======================================================
         [HttpPost("Editar")]
         public IActionResult Editar([FromBody] VacanteCrearEditarDto dto)
         {
             using var cn = Conn();
             var p = new DynamicParameters();
-            p.AddDynamicParams(dto);
+            p.Add("@IdVacante", dto.IdVacante);
+            p.Add("@Nombre", dto.Nombre);
+            p.Add("@IdEmpresa", dto.IdEmpresa);
+            p.Add("@IdEspecialidad", dto.IdEspecialidad);
+            p.Add("@NumCupos", dto.NumCupos);
+            p.Add("@IdModalidad", dto.IdModalidad);
+            p.Add("@Requerimientos", dto.Requerimientos);
+            p.Add("@Descripcion", dto.Descripcion);
+            p.Add("@FechaMaxAplicacion", dto.FechaMaxAplicacion);
+            p.Add("@FechaCierre", dto.FechaCierre);
 
             var rows = cn.Execute("EditarVacanteSP", p, commandType: System.Data.CommandType.StoredProcedure);
 
@@ -115,7 +144,10 @@ namespace SIGEP_API.Controllers
             });
         }
 
-        // ELIMINAR
+        // ======================================================
+        // ELIMINAR / ARCHIVAR VACANTE
+        // POST: api/Practicas/Eliminar
+        // ======================================================
         [HttpPost("Eliminar")]
         public IActionResult Eliminar([FromForm] int id)
         {
@@ -129,7 +161,10 @@ namespace SIGEP_API.Controllers
             return Ok(new { ok = res.ok == 1, message = res.message });
         }
 
-        // POSTULACIONES
+        // ======================================================
+        // POSTULACIONES POR VACANTE
+        // GET: api/Practicas/Postulaciones?idVacante=
+        // ======================================================
         [HttpGet("Postulaciones")]
         public IActionResult Postulaciones(int idVacante)
         {
@@ -143,8 +178,11 @@ namespace SIGEP_API.Controllers
             return Ok(new { ok = true, data });
         }
 
-        // ESTUDIANTES-ASIGNAR
-        [HttpGet("Estudiantes-Asignar")]
+        // ======================================================
+        // ESTUDIANTES PARA ASIGNAR
+        // GET: api/Practicas/EstudiantesAsignar?idVacante=&idUsuarioSesion=
+        // ======================================================
+        [HttpGet("EstudiantesAsignar")]
         public IActionResult EstudiantesAsignar(int idVacante, int idUsuarioSesion)
         {
             using var cn = Conn();
@@ -158,8 +196,11 @@ namespace SIGEP_API.Controllers
             return Ok(new { ok = true, data });
         }
 
-        // ASIGNAR
-        [HttpPost("Asignar-Estudiante")]
+        // ======================================================
+        // ASIGNAR ESTUDIANTE
+        // POST: api/Practicas/AsignarEstudiante
+        // ======================================================
+        [HttpPost("AsignarEstudiante")]
         public IActionResult AsignarEstudiante(int idVacante, int idUsuario)
         {
             using var cn = Conn();
@@ -173,8 +214,11 @@ namespace SIGEP_API.Controllers
             return Ok(new { ok = r.ok == 1, message = r.message });
         }
 
-        // RETIRAR
-        [HttpPost("Retirar-Estudiante")]
+        // ======================================================
+        // RETIRAR ESTUDIANTE (por vacante + usuario)
+        // POST: api/Practicas/RetirarEstudiante
+        // ======================================================
+        [HttpPost("RetirarEstudiante")]
         public IActionResult Retirar(int idVacante, int idUsuario, string comentario)
         {
             using var cn = Conn();
@@ -189,8 +233,11 @@ namespace SIGEP_API.Controllers
             return Ok(new { ok = r.ok == 1, message = r.message });
         }
 
-        // DESASIGNAR PRACTICA
-        [HttpPost("Desasignar-Practica")]
+        // ======================================================
+        // DESASIGNAR PRÁCTICA (por IdPractica)
+        // POST: api/Practicas/DesasignarPractica
+        // ======================================================
+        [HttpPost("DesasignarPractica")]
         public IActionResult Desasignar(int idPractica, string comentario)
         {
             using var cn = Conn();
@@ -204,8 +251,11 @@ namespace SIGEP_API.Controllers
             return Ok(new { ok = r.ok == 1, message = r.message });
         }
 
+        // ======================================================
         // VISUALIZACIÓN DE POSTULACIÓN
-        [HttpGet("Visualizacion-Postulacion")]
+        // GET: api/Practicas/VisualizacionPostulacion?idVacante=&idUsuario=
+        // ======================================================
+        [HttpGet("VisualizacionPostulacion")]
         public IActionResult VisualizarPostulacion(int idVacante, int idUsuario)
         {
             using var cn = Conn();

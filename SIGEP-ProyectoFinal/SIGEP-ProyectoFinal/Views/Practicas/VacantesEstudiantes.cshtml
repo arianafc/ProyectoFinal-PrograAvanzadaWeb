@@ -4,8 +4,6 @@
 @{
     Layout = "_LayoutMain";
     ViewBag.Title = "Vacantes - Prácticas";
-
-    var idRol = Context.Session.GetInt32("Rol") ?? 0;
 }
 
 <h2 class="vacantes-titulo titulo-principal d-flex justify-content-center align-items-center">
@@ -14,14 +12,11 @@
 
 <div class="vacantes-titulo titulo-principal d-flex justify-content-between mb-0 align-items-center">
 
-    @* SOLO COORDINADOR *@
-   @*  @if (idRol == 2) *@
-    {
-        <button type="button" class="btn-cta btn-nuevo mb-0"
-                data-bs-toggle="modal" data-bs-target="#modalCrearVacante">
-            + Registrar
-        </button>
-    }
+    <!-- SIEMPRE VISIBLE: esta vista solo la usa el coordinador -->
+    <button type="button" class="btn-cta btn-nuevo mb-0"
+            data-bs-toggle="modal" data-bs-target="#modalCrearVacante">
+        + Registrar
+    </button>
 
     <div class="dropdown">
         <button class="btn btn-outline-secondary dropdown-toggle" type="button"
@@ -68,6 +63,8 @@
     </div>
 </div>
 
+
+<!-- TABLA -->
 <div class="card rounded-5 p-3">
     <table id="miTabla" class="display responsive nowrap w-100">
         <thead>
@@ -85,10 +82,11 @@
     </table>
 </div>
 
-@* ===========================================================
-   ======================= MODAL CREAR ========================
-   =========================================================== *@
 
+
+<!-- ===========================================================
+     ======================= MODAL CREAR ========================
+     =========================================================== -->
 <div class="modal fade" id="modalCrearVacante" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content"
@@ -111,7 +109,7 @@
 
                         <div class="col-md-6 mb-3">
                             <label>Empresa <span class="text-danger">*</span></label>
-                            <select asp-for="Vacante.IdEmpresa" class="form-control">
+                            <select id="IdEmpresa" asp-for="Vacante.IdEmpresa" class="form-control">
                                 <option value="">-- Seleccione Empresa --</option>
                                 @foreach (var e in Model.Empresas)
                                 {
@@ -122,12 +120,15 @@
 
                         <div class="col-md-6 mb-3">
                             <label>Ubicación</label>
-                            <input id="ubicacionEmpresa" class="form-control" readonly />
+                            <input id="ubicacionEmpresa"
+                                   name="Vacante.Ubicacion"
+                                   class="form-control"
+                                   readonly />
                         </div>
 
                         <div class="col-md-6 mb-3">
                             <label>Especialidad <span class="text-danger">*</span></label>
-                            <select asp-for="Vacante.IdEspecialidad" class="form-select">
+                            <select id="IdEspecialidad" asp-for="Vacante.IdEspecialidad" class="form-select">
                                 <option value="">-- Seleccione especialidad --</option>
                                 @foreach (var e in Model.Especialidades)
                                 {
@@ -138,13 +139,13 @@
 
                         <div class="col-md-6 mb-3">
                             <label>Cantidad de Cupos <span class="text-danger">*</span></label>
-                            <input asp-for="Vacante.NumCupos" type="number"
+                            <input id="NumCupos" asp-for="Vacante.NumCupos" type="number"
                                    min="1" class="form-control" />
                         </div>
 
                         <div class="col-md-6 mb-3">
                             <label>Modalidad <span class="text-danger">*</span></label>
-                            <select asp-for="Vacante.IdModalidad" class="form-select">
+                            <select id="IdModalidad" asp-for="Vacante.IdModalidad" class="form-select">
                                 <option value="">-- Seleccione modalidad --</option>
                                 @foreach (var m in Model.Modalidades)
                                 {
@@ -167,13 +168,13 @@
 
                         <div class="col-12 mb-3">
                             <label>Requisitos <span class="text-danger">*</span></label>
-                            <textarea asp-for="Vacante.Requerimientos" rows="3"
+                            <textarea id="Requerimientos" asp-for="Vacante.Requerimientos" rows="3"
                                       class="form-control"></textarea>
                         </div>
 
                         <div class="col-12 mb-3">
                             <label>Descripción <span class="text-danger">*</span></label>
-                            <textarea asp-for="Vacante.Descripcion" rows="3"
+                            <textarea id="Descripcion" asp-for="Vacante.Descripcion" rows="3"
                                       class="form-control"></textarea>
                         </div>
 
@@ -192,14 +193,17 @@
                     Cancelar
                 </button>
             </div>
+
         </div>
     </div>
 </div>
 
-@* ===========================================================
-   ======================= MODAL EDITAR =======================
-   =========================================================== *@
 
+
+
+<!-- ===========================================================
+     ======================= MODAL EDITAR =======================
+     =========================================================== -->
 <div class="modal fade" id="modalEditarVacante" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content"
@@ -214,7 +218,6 @@
             <div class="modal-body px-4">
                 <form id="formEditarVacante">
                     <div class="row">
-
                         <input type="hidden" id="edit-IdVacante" />
 
                         <div class="col-md-6 mb-3">
@@ -284,7 +287,6 @@
                             <label>Descripción</label>
                             <textarea id="edit-Descripcion" rows="3" class="form-control"></textarea>
                         </div>
-
                     </div>
                 </form>
             </div>
@@ -299,15 +301,16 @@
                     Cancelar
                 </button>
             </div>
-
         </div>
     </div>
 </div>
 
-@* ===========================================================
-   ===================== MODAL VISUALIZAR =====================
-   =========================================================== *@
 
+
+
+<!-- ===========================================================
+     ===================== MODAL VISUALIZAR =====================
+     =========================================================== -->
 <div class="modal fade" id="modalVisualizarVacante" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content"
@@ -392,7 +395,6 @@
 
                 <div class="mt-4">
                     <h5 class="section-title mb-3">Postulaciones</h5>
-                    <ul id="listaPosts"></ul>
                     <ul id="listaPostulaciones" class="list-group"></ul>
                     <p id="mensajeSinPostulaciones" class="text-muted">No hay postulaciones registradas.</p>
                 </div>
@@ -402,10 +404,12 @@
     </div>
 </div>
 
-@* ===========================================================
-   ====================== MODAL ASIGNAR =======================
-   =========================================================== *@
 
+
+
+<!-- ===========================================================
+     ====================== MODAL ASIGNAR =======================
+     =========================================================== -->
 <div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content"
@@ -440,9 +444,14 @@
     </div>
 </div>
 
+
+
+
+
+
 @section Scripts {
     <script>
-                window.VacantesCfg = {
+        window.VacantesCfg = {
             urls: {
                 getVacantes: '@Url.Action("GetVacantes", "Practicas")',
                 login: '@Url.Action("Login", "Home")',
@@ -460,7 +469,7 @@
                 actualizarEstado: '@Url.Action("ActualizarEstado", "Estudiante")'
             },
 
-            rol: @(Context.Session.GetInt32("Rol") ?? 0),
+            rol: 2,
             idUsuarioSesion: @(Context.Session.GetInt32("IdUsuario") ?? 0)
         };
     </script>

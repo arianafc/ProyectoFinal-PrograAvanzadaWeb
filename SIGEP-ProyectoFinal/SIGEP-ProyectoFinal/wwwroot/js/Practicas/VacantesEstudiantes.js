@@ -10,7 +10,6 @@
         // 🔹 Helpers
         // =====================================================
 
-        // Redirige al login si el servidor devolvió HTML (vista de login / error)
         function redirSiLogin(res, xhr) {
             try {
                 const ct = (xhr && xhr.getResponseHeader && xhr.getResponseHeader('content-type')) || '';
@@ -21,17 +20,14 @@
                     return true;
                 }
             } catch (e) { }
-
             return false;
         }
 
-        // Escapar HTML para evitar XSS
         function escapeHtml(text) {
             if (!text && text !== 0) return '';
             return $('<div>').text(text).html();
         }
 
-        // Normaliza texto de estado
         function normalizarEstado(str) {
             return (str || '')
                 .toString()
@@ -41,7 +37,6 @@
                 .trim();
         }
 
-        // Badge visual según estado
         function badgeEstado(estadoOriginal) {
             const est = normalizarEstado(estadoOriginal);
 
@@ -64,7 +59,6 @@
             return `<span class="badge ${info.cls}">${info.txt}</span>`;
         }
 
-        // Valida que la fecha de aplicación no sea mayor que la de cierre
         function validarFechas(fechaAplic, fechaCierre) {
             if (!fechaAplic || !fechaCierre) return false;
 
@@ -94,8 +88,6 @@
                     };
                 },
                 dataSrc: function (json) {
-
-                    // Si el servidor devolvió HTML, avisamos
                     if (typeof json === 'string') {
                         if (json.indexOf('<!DOCTYPE html') >= 0 || json.indexOf('<html') >= 0) {
                             Swal.fire('Error', 'La sesión puede haber expirado o el servidor devolvió HTML.', 'error');
@@ -150,7 +142,6 @@
                     orderable: false,
                     title: 'Acciones',
                     render: function (data, type, row) {
-
                         const estado = normalizarEstado(row.EstadoNombre);
                         const inactivo = (estado === 'inactivo' || estado === 'archivado');
                         const dis = inactivo ? 'disabled aria-disabled="true"' : '';
@@ -196,7 +187,6 @@
             language: { url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" }
         });
 
-        // Filtros de búsqueda
         $('#filtroPractica, #filtroEspecialidad, #filtroModalidad')
             .on('change', function () {
                 tabla.ajax.reload();
@@ -219,8 +209,11 @@
 
             $.getJSON(CFG.urls.getUbicacionEmpresa, { idEmpresa: idEmpresa })
                 .done(function (res) {
-                    if (res && res.ok) {
-                        $inputUbicacion.val(res.ubicacion);
+                    const ok = res.ok ?? true;
+                    const ubic = res.ubicacion || res.Ubicacion || '';
+
+                    if (ok && ubic) {
+                        $inputUbicacion.val(ubic);
                     } else {
                         $inputUbicacion.val('No registrada');
                     }
@@ -228,7 +221,7 @@
                 .fail(function () {
                     $inputUbicacion.val('Error al obtener ubicación');
                 });
-        });
+        }); // 👈👈👈 ESTE CIERRE FALTABA
 
         // =====================================================
         // 🔹 Crear Vacante
@@ -237,14 +230,14 @@
         $('#formCrearVacante').on('submit', function (e) {
             e.preventDefault();
 
-            const nombre = $('[name="Nombre"]').val().trim();
-            const idEmpresa = $('[name="IdEmpresa"]').val();
-            const requerimientos = $('[name="Requerimientos"]').val().trim();
-            const numCupos = parseInt($('[name="NumCupos"]').val()) || 0;
-            const idEspecialidad = $('[name="IdEspecialidad"]').val();
-            const idModalidad = $('[name="IdModalidad"]').val();
-            const fechaAplic = $('[name="FechaMaxAplicacion"]').val();
-            const fechaCierre = $('[name="FechaCierre"]').val();
+            const nombre = $('[name="Vacante.Nombre"]').val().trim();
+            const idEmpresa = $('[name="Vacante.IdEmpresa"]').val();
+            const requerimientos = $('[name="Vacante.Requerimientos"]').val().trim();
+            const numCupos = parseInt($('[name="Vacante.NumCupos"]').val()) || 0;
+            const idEspecialidad = $('[name="Vacante.IdEspecialidad"]').val();
+            const idModalidad = $('[name="Vacante.IdModalidad"]').val();
+            const fechaAplic = $('[name="Vacante.FechaMaxAplicacion"]').val();
+            const fechaCierre = $('[name="Vacante.FechaCierre"]').val();
 
             if (!nombre || !idEmpresa || !requerimientos || numCupos < 1 || !idEspecialidad || !idModalidad) {
                 Swal.fire({
@@ -264,12 +257,24 @@
                 return false;
             }
 
-            const formData = $(this).serialize();
+            const payload = {
+                IdVacante: 0,
+                Nombre: nombre,
+                IdEmpresa: parseInt(idEmpresa),
+                IdEspecialidad: parseInt(idEspecialidad),
+                NumCupos: numCupos,
+                IdModalidad: parseInt(idModalidad),
+                Requerimientos: requerimientos,
+                Descripcion: $('[name="Vacante.Descripcion"]').val().trim(),
+                FechaMaxAplicacion: fechaAplic,
+                FechaCierre: fechaCierre
+            };
 
             $.ajax({
                 url: CFG.urls.crear,
-                type: 'POST',
-                data: formData,
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(payload),
                 success: function (res, status, xhr) {
                     if (redirSiLogin(res, xhr)) return;
 
@@ -321,7 +326,6 @@
                 $('#modalVisualizarVacante').data('idVacante', id);
                 $('#modalVisualizarVacante').modal('show');
 
-                // Postulaciones
                 $.getJSON(CFG.urls.obtenerPostulaciones, { idVacante: id }, function (r2) {
                     const $lista = $('#listaPostulaciones').empty();
                     $('#mensajeSinPostulaciones').toggle(!r2.ok || !r2.data || !r2.data.length);
@@ -354,7 +358,6 @@
         // =====================================================
 
         function cargarEstudiantesAsignar(idVacante) {
-
             $.getJSON(CFG.urls.obtenerEstudiantesAsignar, {
                 idVacante: idVacante,
                 idUsuarioSesion: CFG.idUsuarioSesion || 0
@@ -383,7 +386,6 @@
                     const estadoAcademico = parseInt(e.EstadoAcademico || 0);
                     let btn = '';
 
-                    // Estado académico 9: ignorar
                     if (estadoAcademico === 9) {
                         return;
                     }
@@ -629,29 +631,60 @@
         $('#formEditarVacante').on('submit', function (e) {
             e.preventDefault();
 
+            const idVacante = parseInt($('#edit-IdVacante').val()) || 0;
+            const nombre = $('#edit-Nombre').val().trim();
+            const idEmpresa = $('#edit-IdEmpresa').val();
+            const idEspecialidad = $('#edit-IdEspecialidad').val();
+            const numCupos = parseInt($('#edit-NumCupos').val()) || 0;
+            const idModalidad = $('#edit-IdModalidad').val();
             const fAplic = $('#edit-FechaMaxAplicacion').val();
             const fCierre = $('#edit-FechaCierre').val();
+            const req = $('#edit-Requerimientos').val().trim();
+            const desc = $('#edit-Descripcion').val().trim();
+
+            if (!nombre || !idEmpresa || !req || numCupos < 1 || !idEspecialidad || !idModalidad) {
+                Swal.fire('Campos obligatorios', 'Debe completar todos los campos requeridos.', 'warning');
+                return false;
+            }
 
             if (validarFechas(fAplic, fCierre)) {
                 Swal.fire('Fechas inválidas', 'La fecha de aplicación no puede ser mayor que la de cierre.', 'warning');
                 return false;
             }
 
-            $.post(CFG.urls.editar, $(this).serialize())
-                .done(function (res, _, xhr) {
+            const payload = {
+                IdVacante: idVacante,
+                Nombre: nombre,
+                IdEmpresa: parseInt(idEmpresa),
+                IdEspecialidad: parseInt(idEspecialidad),
+                NumCupos: numCupos,
+                IdModalidad: parseInt(idModalidad),
+                Requerimientos: req,
+                Descripcion: desc,
+                FechaMaxAplicacion: fAplic,
+                FechaCierre: fCierre
+            };
+
+            $.ajax({
+                url: CFG.urls.editar,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (res, _, xhr) {
                     if (redirSiLogin(res, xhr)) return;
 
                     if (res.ok) {
-                        Swal.fire('Éxito', res.message, 'success');
+                        Swal.fire('Éxito', res.message || 'Vacante actualizada.', 'success');
                         $('#modalEditarVacante').modal('hide');
                         tabla.ajax.reload(null, false);
                     } else {
-                        Swal.fire('Error', res.message, 'error');
+                        Swal.fire('Error', res.message || 'Ocurrió un problema al actualizar.', 'error');
                     }
-                })
-                .fail(function () {
+                },
+                error: function () {
                     Swal.fire('Error', 'Ocurrió un problema al actualizar.', 'error');
-                });
+                }
+            });
         });
 
         // =====================================================
@@ -762,7 +795,6 @@
                                 showConfirmButton: false
                             }).then(function () {
 
-                                // Refrescar lista de postulaciones
                                 $.getJSON(CFG.urls.obtenerPostulaciones, { idVacante: idVacante }, function (r2) {
                                     const $lista = $('#listaPostulaciones').empty();
                                     $('#mensajeSinPostulaciones').toggle(!r2.ok || !r2.data || !r2.data.length);
