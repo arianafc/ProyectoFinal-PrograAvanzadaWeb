@@ -46,6 +46,10 @@ namespace SIGEP_API.Controllers
                 var parametros = new DynamicParameters();
                 parametros.Add("@IdUsuario", IdUsuario);
                 var resultado = context.QueryFirstOrDefault<EncargadoResponseModel>("ObtenerEncargadosSP", parametros);
+                if (resultado == null)
+                {
+                    resultado = new EncargadoResponseModel();
+                }
                 return Ok(resultado);
             }
 
