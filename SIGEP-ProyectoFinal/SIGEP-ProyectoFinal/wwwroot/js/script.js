@@ -1,4 +1,6 @@
 ﻿$(document).ready(function () {
+
+
     function capitalizeWords(str) {
         return str
             ? str.toLowerCase().split(' ').map(word =>
@@ -37,37 +39,37 @@
     }
     $("#CedulaRegistro").on("keyup", ConsultarPersonaApi);
 
-           document.querySelectorAll('.btn-desasignar').forEach(btn => {
-                btn.addEventListener('click', function (e) {
-                    e.preventDefault();
+    document.querySelectorAll('.btn-desasignar').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
 
-                    const nombre = this.getAttribute('data-nombre');
-                    const contenedor = this.closest('a');
+            const nombre = this.getAttribute('data-nombre');
+            const contenedor = this.closest('a');
+
+            Swal.fire({
+                title: '¿Está seguro?',
+                text: `¿Desea desasignar al estudiante ${nombre}?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#2D594D',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, desasignar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+
+                    contenedor.remove();
 
                     Swal.fire({
-                        title: '¿Está seguro?',
-                        text: `¿Desea desasignar al estudiante ${nombre}?`,
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#2D594D', 
-                        cancelButtonColor: '#d33',
-                        confirmButtonText: 'Sí, desasignar',
-                        cancelButtonText: 'Cancelar'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                          
-                            contenedor.remove();
-
-                            Swal.fire({
-                                title: 'Desasignado',
-                                text: `El estudiante ${nombre} ha sido desasignado.`,
-                                icon: 'success',
-                                confirmButtonColor: '#2D594D'
-                            });
-                        }
+                        title: 'Desasignado',
+                        text: `El estudiante ${nombre} ha sido desasignado.`,
+                        icon: 'success',
+                        confirmButtonColor: '#2D594D'
                     });
-                });
-           });
+                }
+            });
+        });
+    });
 
     $(".btn-desasignar-practica").on("click", function (e) {
         e.preventDefault();
@@ -100,11 +102,11 @@
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
-               
+
                 badgeEstado.text("Desasignada");
                 badgeEstado.removeClass().addClass("badge-desasignada");
 
-         
+
                 btn.hide();
 
                 Swal.fire({

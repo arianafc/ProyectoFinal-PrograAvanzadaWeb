@@ -18,15 +18,24 @@
         });
     }
 
+    const iconoFecha = document.getElementById('IconoFechaNacimiento');
+    const inputFecha = document.getElementById('FechaNacimientoRegistro');
 
-    $("#FechaNacimientoRegistro").datepicker({
-        dateFormat: "yy-mm-dd",
-        changeMonth: true,
-        changeYear: true,
-        yearRange: "1950:" + new Date().getFullYear(),
-        maxDate: new Date(new Date().getFullYear() - 17, 11, 31), 
-        defaultDate: new Date(new Date().getFullYear() - 17, 0, 1) 
-    });
+    if (iconoFecha && inputFecha) {
+        iconoFecha.style.cursor = 'pointer';
+
+        iconoFecha.addEventListener('click', function () {
+
+            if (typeof inputFecha.showPicker === 'function') {
+                inputFecha.showPicker();
+            } else {
+
+                inputFecha.focus();
+                inputFecha.click();
+            }
+        });
+    }
+
 
     const form = document.getElementById("RegistroForm");
 
@@ -40,7 +49,7 @@
         let especialidad = document.getElementById("EspecialidadRegistro").value;
         let seccion = document.getElementById("SeccionRegistro").value;
         let correo = document.getElementById("CorreoRegistro").value.trim();
-        let fechaNac = document.getElementById("FechaNacimientoRegistro").value.trim();
+        let fechaNac = document.getElementById("FechaNacimientoRegistro").value;
         let pass = document.getElementById("ContrasennaRegistro").value.trim();
         let passConf = document.getElementById("ContrasennaConfirmar").value.trim();
 
