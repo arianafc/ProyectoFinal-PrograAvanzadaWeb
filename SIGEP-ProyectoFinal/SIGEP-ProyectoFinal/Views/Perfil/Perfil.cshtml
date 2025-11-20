@@ -3,7 +3,6 @@
     Layout = "~/Views/Shared/_LayoutMain.cshtml";
     var rol = ViewBag.Rol;
     var nombre = ViewBag.Nombre as string;
-    var encargado = Model.ListaEncargado.FirstOrDefault();
     var usuario = ViewBag.IdUsuario;
 
 }
@@ -117,7 +116,7 @@
                     @Html.TextBoxFor(m => m.Nacionalidad, new { @class = "form-control", @id = "NacionalidadPerfil" })
                 </div>
                 <div class="col-md-6 mb-3">
-                    <label class="form-label">Provincia <span class="text-danger">*</span></label>
+                    <label class="form-label">Provincia <span class="text-danger">*</span></label> 
                     @Html.DropDownListFor(m => m.Provincia,
                                         new SelectList(new[]
                                         {
@@ -129,6 +128,7 @@
                 </div>
 
                 <div class="col-md-6 mb-3">
+                    
                     <label class="form-label">Cantón <span class="text-danger">*</span></label>
                     @Html.DropDownListFor(m => m.Canton,
                                         new SelectList(Enumerable.Empty<string>(), Model.Canton),
@@ -224,60 +224,85 @@
         @if (rol == 1)
         {
             <!-- CONTACTO EMERGENCIA -->
-            <h5 class="section-title">ENCARGADOS</h5>
-            if (encargado != null)
-            {
-                <div class="row mb-3 p-3 rounded">
-                    <div class="col-md-6 form-group">
-                        <label>Cédula</label>
-                        <input type="text" class="form-control" value="@encargado.Cedula" readonly />
+            <h5 class="section-title">ENCARGADO</h5>
+         
+
+                <form asp-action="GuardarEncargado"
+                      asp-controller="Perfil"
+                      method="post"
+                      id="FormEncargado">
+
+                    <div class="row mb-3 p-3 rounded">
+                        <input type="hidden" asp-for="EstudianteEncargado.IdEncargado" />
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Cédula</label>
+                            <input type="text"
+                                   class="form-control"
+                                   asp-for="EstudianteEncargado.Cedula" />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text"
+                                   class="form-control"
+                                   asp-for="EstudianteEncargado.Nombre" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Primer Apellido</label>
+                            <input type="text"
+                                   class="form-control"
+                                   asp-for="EstudianteEncargado.Apellido1" />
+                        </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Segundo Apellido</label>
+                        <input type="text"
+                               class="form-control"
+                               asp-for="EstudianteEncargado.Apellido2" />
                     </div>
 
-                    <div class="col-md-6 form-group">
-                        <label>Nombre y Apellidos</label>
-                        <input type="text" class="form-control" value="@encargado.Nombre" readonly />
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Teléfono</label>
+                            <input type="text"
+                                   class="form-control"
+                                   asp-for="EstudianteEncargado.Telefono" />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Parentesco</label>
+                            <input type="text"
+                                   class="form-control"
+                                   asp-for="EstudianteEncargado.Parentesco" />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Residencia o Trabajo</label>
+                            <input type="text"
+                                   class="form-control"
+                                   asp-for="EstudianteEncargado.LugarTrabajo" />
+
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Ocupación</label>
+                            <input type="text"
+                                   class="form-control"
+                                   asp-for="EstudianteEncargado.Ocupacion" />
+                        </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Correo</label>
+                        <input type="email"
+                               class="form-control"
+                               asp-for="EstudianteEncargado.Correo" />
                     </div>
-
-                    <div class="col-md-6 form-group">
-                        <label>Teléfono</label>
-                        <input type="text" class="form-control" value="@encargado.Telefono" readonly />
+                    <div class="action-buttons mt-3 mb-4">
+                        <button type="submit"  id="BtnVerEncargadosModal">
+                                <i class="fas fa-save me-2"></i> Guardar Encargado
+                            </button>
+                        </div>
                     </div>
-
-                    <div class="col-md-6 form-group">
-                        <label>Parentesco</label>
-                        <input type="text" class="form-control" value="@encargado.Parentesco" readonly />
-                    </div>
-
-                    <div class="col-md-6 form-group">
-                        <label>Residencia o Trabajo</label>
-                        <input type="text" class="form-control" value="@encargado.LugarTrabajo" readonly />
-                    </div>
-
-                    <div class="col-md-6 form-group">
-                        <label>Ocupación</label>
-                        <input type="text" class="form-control" value="@encargado.Ocupacion" readonly />
-                    </div>
-
-
-                </div>
-            }
-            else
-            {
-                <p class="text-muted">No hay encargado registrado.</p>
-            } 
-
-            <div class="row">
-                <div class="action-buttons mt-3 col-md-6 form-group">
-                    <button type="button" class="btn btn-primary" id="BtnVerEncargadosModal" data-bs-toggle="modal" data-bs-target="#modalAgregarEncargado">
-                        <i class="fas fa-plus me-2"></i> Agregar Encargado
-                    </button>
-                </div>
-                <div class="action-buttons mt-3 col-md-6 form-group">
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalVerEncargados">
-                        <i class="fas fa-eye me-2"></i> Ver Encargados
-                    </button>
-                </div>
-            </div>
+                </form>
 
         }
             @if (rol == 1)
@@ -310,217 +335,6 @@
     </div>
 </div>
 
-
-<!--Modal para ver encargados-->
-
-
-<div class="modal fade" id="modalVerEncargados" tabindex="-1" aria-labelledby="modalVerEncargadosLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content" style="border-radius: 10px; background-color: #F2F2F2;">
-
-            <!-- Header -->
-            <div class="modal-header" style="background-color: #2D594D; border-top-left-radius: 10px; border-top-right-radius: 10px;">
-                <h5 class="modal-title text-white" id="modalVerEncargadosLabel">Lista de Encargados</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-
-            <!-- Body -->
-            <div class="modal-body">
-                @if (Model.ListaEncargado != null && Model.ListaEncargado.Any())
-                {
-                    <table class="table table-hover align-middle">
-                        <thead class=" text-center" style="background-color: #dddddd">
-                            <tr>
-                                <th>Cédula</th>
-                                <th>Nombre</th>
-                                <th>Teléfono</th>
-                                <th>Parentesco</th>
-                                <th>Ocupación</th>
-                                <th>Lugar de Trabajo</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-center">
-                            @foreach (var encargados in Model.ListaEncargado)
-                            {
-                                <tr>
-                                    <td>@encargados.Cedula</td>
-                                    <td>@encargados.Nombre</td>
-                                    <td>@encargados.Telefono</td>
-                                    <td>@encargados.Parentesco</td>
-                                    <td>@encargados.Ocupacion</td>
-                                    <td>@encargados.LugarTrabajo</td>
-
-                                    <td>
-                                        @if (encargados.IdEstado == 1)
-                                        {
-                                            <!-- Encargado activo: mostrar Editar y Eliminar -->
-                                            <button class="btn btn-sm btn-primary btn-editar btnEditarEncargado" style="background-color: #8CA653; color: white; border: none; border-radius: 2px " data-id="@encargados.IdEncargado">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-danger btn-sm" style="background-color: brown; color: white; border: none; border-radius: 2px " onclick="eliminarEncargado(@encargados.IdEncargado)">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        }
-                                        else
-                                        {
-                                            <!-- Encargado inactivo: mostrar solo Activar -->
-                                            <button type="button" class="btn btn-success btn-sm" style="background-color: #2D594D; color: white; border: none; border-radius: 2px " onclick="activarEncargado(@encargados.IdEncargado)">
-                                                <i class="fas fa-check"></i> Activar
-                                            </button>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
-                else
-                {
-                    <p class="text-muted text-center">No hay encargados registrados.</p>
-                }
-            </div>
-
-            <!-- Footer -->
-            <div class="modal-footer" style="background-color: #F2F2F2; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
-                <button type="button" class="btn btn-secondary" style="background-color: #A0A0A0; border: none;" data-bs-dismiss="modal">Cerrar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<!-- Modal para Agregar Encargado -->
-<div class="modal fade" id="modalAgregarEncargado" tabindex="-1" aria-labelledby="modalAgregarEncargadoLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content" style="border-radius: 10px; background-color: #F2F2F2;">
-
-            <!-- Header -->
-            <div class="modal-header" style="background-color: #2D594D; border-top-left-radius: 10px; border-top-right-radius: 10px;">
-                <h5 class="modal-title text-white" id="modalAgregarEncargadoLabel">Agregar Nuevo Encargado</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-
-            <!-- Body -->
-            <div class="modal-body">
-                <form>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold" style="color: #2D594D;">Cédula</label>
-                            <input type="text" class="form-control" id="CedulaNuevoEncargado" name="Cedula" placeholder="Ej. 1-1035-0212">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold" style="color: #2D594D;">Nombre</label>
-                            <input type="text" class="form-control" id="NombreNuevoEncargado" name="Nombre" placeholder="Ej. Juan Pérez">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold" style="color: #2D594D;">Primer Apellido</label>
-                            <input type="text" class="form-control" id="Apellido1NuevoEncargado" name="Apellido1" placeholder="Ej. Juan Pérez">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold" style="color: #2D594D;">Segundo Apellido</label>
-                            <input type="text" class="form-control" id="Apellido2NuevoEncargado" name="SegundoApellido" placeholder="Ej. Juan Pérez">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold" style="color: #2D594D;">Teléfono</label>
-                            <input type="text" class="form-control" id="TelefonoNuevoEncargado" name="Telefono" placeholder="Ej. 8888-9999">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold" style="color: #2D594D;">Parentesco</label>
-                            <input type="text" class="form-control" id="ParentescoNuevoEncargado" name="Parentesco" placeholder="Ej. Madre, Tío, etc.">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold" style="color: #2D594D;">Residencia o Trabajo</label>
-                            <input type="text" class="form-control" id="ResidenciaNuevoEncargado" name="LugarTrabajo" placeholder="Ej. Cartago, CR">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold" style="color: #2D594D;">Ocupación</label>
-                            <input type="text" class="form-control" id="OcupacionNuevoEncargado" name="Ocupacion" placeholder="Ej. Ingeniero Civil">
-                        </div>
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label fw-bold" style="color: #2D594D;">Correo</label>
-                            <input type="email" class="form-control" id="CorreoNuevoEncargado" name="Correo" placeholder="Ej. correo@gmail.com">
-                        </div>
-                    </div>
-                </form>
-
-            </div>
-
-            <!-- Footer -->
-            <div class="modal-footer" style="background-color: #F2F2F2; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
-                <button type="button" class="btn btn-secondary" style="background-color: #A0A0A0; border: none;" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" id="btnGuardarEncargado" class="btn" style="background-color: #2D594D; color: white; border: none;">Guardar Encargado</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<!-- Modal para Editar Encargado -->
-<div class="modal fade" id="modalEditarEncargado" tabindex="-1" aria-labelledby="modalEditarEncargadoLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content" style="border-radius: 10px; background-color: #F2F2F2;">
-
-            <!-- Header -->
-            <div class="modal-header" style="background-color: #2D594D; border-top-left-radius: 10px; border-top-right-radius: 10px;">
-                <h5 class="modal-title text-white" id="modalEditarEncargadoLabel">Editar Encargado</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-
-            <!-- Body -->
-            <div class="modal-body">
-                <form id="formEditarEncargado">
-                    <input type="hidden" id="IdEncargado" name="IdEncargado" />
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold" style="color: #2D594D;">Cédula</label>
-                            <input type="text" class="form-control" id="CedulaEditar" name="Cedula" placeholder="Ej. 1-1035-0212">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold" style="color: #2D594D;">Nombre</label>
-                            <input type="text" class="form-control" id="NombreEditar" name="Nombre" placeholder="Ej. Juan Pérez">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold" style="color: #2D594D;">Primer Apellido</label>
-                            <input type="text" class="form-control" id="Apellido1Editar" name="Apellido1" placeholder="Ej. Juan Pérez">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold" style="color: #2D594D;">Segundo Apellido</label>
-                            <input type="text" class="form-control" id="Apellido2Editar" name="SegundoApellido" placeholder="Ej. Juan Pérez">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold" style="color: #2D594D;">Teléfono</label>
-                            <input type="text" class="form-control" id="TelefonoEditar" name="Telefono" placeholder="Ej. 8888-9999">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold" style="color: #2D594D;">Parentesco</label>
-                            <input type="text" class="form-control" id="ParentescoEditar" name="Parentesco" placeholder="Ej. Madre, Tío, etc.">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold" style="color: #2D594D;">Residencia o Trabajo</label>
-                            <input type="text" class="form-control" id="LugarTrabajoEditar" name="LugarTrabajo" placeholder="Ej. Cartago, CR">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold" style="color: #2D594D;">Ocupación</label>
-                            <input type="text" class="form-control" id="OcupacionEditar" name="Ocupacion" placeholder="Ej. Ingeniero Civil">
-                        </div>
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label fw-bold" style="color: #2D594D;">Correo</label>
-                            <input type="email" class="form-control" id="CorreoEditar" name="Correo" placeholder="Ej. correo@gmail.com">
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Footer -->
-            <div class="modal-footer" style="background-color: #F2F2F2; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
-                <button type="button" class="btn btn-secondary" style="background-color: #A0A0A0; border: none;" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" id="btnActualizarEncargado" class="btn" style="background-color: #2D594D; color: white; border: none;">Guardar Cambios</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Modal para Subir Documento -->
 <div class="modal fade" id="modalSubirDoc" tabindex="-1" aria-labelledby="modalSubirDocLabel" aria-hidden="true">

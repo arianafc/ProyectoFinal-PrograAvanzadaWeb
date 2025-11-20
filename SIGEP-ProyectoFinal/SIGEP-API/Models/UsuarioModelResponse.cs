@@ -42,7 +42,7 @@
 
         public string? Padecimiento { get; set; }
 
-        public string? Medicamento { get; set; }
+        public string? Tratamiento { get; set; }
 
         public string? Alergia { get; set; }
 

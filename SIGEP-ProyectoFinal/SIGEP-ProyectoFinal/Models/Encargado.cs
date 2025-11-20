@@ -8,6 +8,7 @@
 
         public string? Apellido1 { get; set; }
 
+        public int IdUsuario { get; set; }
         public string? Apellido2 { get; set; }
         public string? Telefono { get; set; }
         public string? Parentesco { get; set; }

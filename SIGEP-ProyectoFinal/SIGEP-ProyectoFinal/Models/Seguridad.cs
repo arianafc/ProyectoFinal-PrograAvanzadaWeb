@@ -49,11 +49,9 @@ namespace SIGEP_ProyectoFinal.Models
             var httpContext = context.HttpContext;
             var session = httpContext.Session;
 
-            var idUsuario = session.GetInt32("IdUsuario");
-            var idRol = session.GetString("IdRol");
+            var rol = session.GetString("Rol");
 
-         
-            if (idUsuario == null || idRol != "2")
+            if (string.IsNullOrEmpty(rol) || rol != "2")
             {
                 if (context.Controller is Controller controller)
                 {

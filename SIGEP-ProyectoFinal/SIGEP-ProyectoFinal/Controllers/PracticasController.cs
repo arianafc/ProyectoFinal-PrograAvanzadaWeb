@@ -6,8 +6,8 @@ using System.Text.Json;
 
 namespace SIGEP_ProyectoFinal.Controllers
 {
-    //[Seguridad]
-    //[FiltroUsuarioAdmin]
+    [Seguridad]
+    [FiltroUsuarioAdmin]
     public class PracticasController : Controller
     {
         private readonly IHttpClientFactory _http;

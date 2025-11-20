@@ -53,8 +53,11 @@
         public string? Alergia { get; set; }
 
         public List<Encargado>? ListaEncargado { get; set; }
-
+        
         public List<Encargado>? EncargadoMostrar { get; set; }
+
+        public Encargado EstudianteEncargado { get; set; } = new Encargado();
+
 
     }
 }

@@ -226,12 +226,14 @@ CREATE OR ALTER PROCEDURE ObtenerEncargadosSP (
 AS
 BEGIN
     SELECT E.Cedula, E.Nombre, E.Apellido1, E.Apellido2, E.FechaRegistro, E.Ocupacion, E.LugarTrabajo, E.IdEncargado, EE.IdEstado,
-    EE.Parentesco, C.Email as Correo
+    EE.Parentesco, C.Email as Correo, T.Telefono
     FROM Encargados E
     INNER JOIN EstudianteEncargado EE
     ON E.IdEncargado = EE.IdEncargado
     LEFT JOIN Emails C
     ON C.IdEncargado = E.IdEncargado
+    LEFT JOIN Telefonos T
+    ON T.IdEncargado = E.IdEncargado
     WHERE EE.IdUsuario = @IdUsuario
     AND EE.IdEstado = 1;
 END;
@@ -506,16 +508,170 @@ BEGIN
     END
 END;
 
+CREATE OR ALTER PROCEDURE AccionesEncargadoSP
+(
+    @IdUsuario    INT,
+    @Nombre       VARCHAR(255),
+    @Parentesco   VARCHAR(255),
+    @Apellido1    VARCHAR(255),
+    @Apellido2    VARCHAR(255),
+    @Ocupacion    VARCHAR(255),
+    @Correo       VARCHAR(255),
+    @LugarTrabajo VARCHAR(255),
+    @Telefono     VARCHAR(30),
+    @Cedula       VARCHAR(30),
+    @Encargado    INT    -- IdEncargado cuando es actualización
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @IdEncargado INT;
+
+    /* ============================
+       ACCIÓN 1: INSERTAR ENCARGADO
+       ============================ */
+    IF (@Encargado = 0)
+   
+    BEGIN
+        INSERT INTO Encargados
+        (
+            Cedula,
+            Nombre,
+            Apellido1,
+            Apellido2,
+            FechaRegistro,
+            Ocupacion,
+            LugarTrabajo,
+            IdEstado
+        )
+        VALUES
+        (
+            @Cedula,
+            @Nombre,
+            @Apellido1,
+            @Apellido2,
+            GETDATE(),
+            @Ocupacion,
+            @LugarTrabajo,
+            1
+        );
+
+        -- Obtenemos el ID del encargado recién insertado
+        SET @IdEncargado = SCOPE_IDENTITY();
+
+        -- Relacionamos el estudiante con el encargado
+        INSERT INTO EstudianteEncargado (IdUsuario, IdEncargado, IdEstado, Parentesco)
+        VALUES (@IdUsuario, @IdEncargado, 1, @Parentesco);
+
+        -- Insertamos el correo
+        INSERT INTO Emails (IdEncargado, Email)
+        VALUES (@IdEncargado, @Correo);
+
+        -- Insertamos el teléfono
+        INSERT INTO Telefonos (IdEncargado, Telefono)
+        VALUES (@IdEncargado, @Telefono);
+    END
+
+    /* =============================
+       ACCIÓN 2: ACTUALIZAR ENCARGADO
+       ============================= */
+ 
+        IF (@Encargado <> 0)
+        BEGIN
+            -- Actualizar datos del encargado
+            UPDATE Encargados
+            SET Cedula       = @Cedula,
+                Nombre       = @Nombre,
+                Apellido1    = @Apellido1,
+                Apellido2    = @Apellido2,
+                Ocupacion    = @Ocupacion,
+                LugarTrabajo = @LugarTrabajo
+            WHERE IdEncargado = @Encargado;
+
+            /* ========== CORREO ========== */
+            IF EXISTS (SELECT 1 FROM Emails WHERE IdEncargado = @Encargado)
+            BEGIN
+                UPDATE Emails
+                SET Email = @Correo
+                WHERE IdEncargado = @Encargado;
+            END
+            ELSE
+            BEGIN
+                INSERT INTO Emails (IdEncargado, Email)
+                VALUES (@Encargado, @Correo);
+            END
+
+             IF EXISTS (SELECT 1 FROM EstudianteEncargado WHERE IdEncargado = @Encargado AND IdUsuario = @IdUsuario)
+            BEGIN
+                UPDATE EstudianteEncargado
+                SET Parentesco = @Parentesco
+                WHERE IdEncargado = @Encargado AND IdUsuario = @IdUsuario;
+            END
+            ELSE
+            BEGIN
+                INSERT INTO Emails (IdEncargado, Email)
+                VALUES (@Encargado, @Correo);
+            END
+
+            /* ========= TELÉFONO ========= */
+            IF EXISTS (SELECT 1 FROM Telefonos WHERE IdEncargado = @Encargado)
+            BEGIN
+                UPDATE Telefonos
+                SET Telefono = @Telefono
+                WHERE IdEncargado = @Encargado;
+            END
+            ELSE
+            BEGIN
+                INSERT INTO Telefonos (IdEncargado, Telefono)
+                VALUES (@Encargado, @Telefono);
+            END
+        END
+    
+END;
+
+CREATE OR ALTER PROCEDURE ValidarEncargadoSP
+(@Cedula VARCHAR(30), @IdUsuario INT)
+AS
+BEGIN
+
+    SELECT E.Cedula, E.Nombre, E.Apellido1, E.Apellido2, E.Ocupacion,
+    E.LugarTrabajo, C.Email, E.IdEncargado, T.Telefono
+    FROM Encargados E
+    INNER JOIN Emails C
+    ON E.IdEncargado = C.IdEncargado
+    INNER JOIN Telefonos T
+    ON E.IdEncargado = T.IdEncargado
+    INNER JOIN EstudianteEncargado EE
+    ON EE.IdEncargado = E.IdEncargado
+    WHERE E.IdEstado = 1 AND E.Cedula = @Cedula AND EE.IdUsuario != @IdUsuario;
+
+END;
+
+--VALIDAMOS SI EL ENCARGADO ES UN ESTUDIANTE
+CREATE OR ALTER PROCEDURE ValidarUsuarioEncargadoSP
+(@Cedula VARCHAR(30)) 
+AS
+BEGIN
+    SELECT IdRol, Cedula, Nombre, Apellido1, Apellido2
+    FROM Usuarios
+    WHERE Cedula = @Cedula;
+END;
+
+CREATE OR ALTER PROCEDURE ObtenerEncargadoSP(@IdEncargado INT, @IdUsuario INT)
+AS
+BEGIN
+    SELECT E.Cedula, E.Nombre, E.Apellido1, E.Apellido2, E.Ocupacion,
+    E.LugarTrabajo, C.Email as Correo, E.IdEncargado, T.Telefono, EE.Parentesco
+    FROM Encargados E
+    INNER JOIN Emails C
+    ON E.IdEncargado = C.IdEncargado
+    INNER JOIN Telefonos T
+    ON E.IdEncargado = T.IdEncargado
+    INNER JOIN EstudianteEncargado EE
+    ON EE.IdEncargado = E.IdEncargado
+    WHERE E.IdEstado = 1 AND E.IdEncargado = @IdEncargado AND EE.IdUsuario = @IdUsuario;
 
 
 
-
-
-
-
-
-
-
-
-
-END
+END;

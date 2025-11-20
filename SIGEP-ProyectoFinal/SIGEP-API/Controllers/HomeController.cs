@@ -129,7 +129,7 @@ namespace SIGEP_API.Controllers
                     var correo = resultado.Correo;
                     
                     var parametrosActualizar = new DynamicParameters();
-                    parametrosActualizar.Add("@Cedula", Cedula);
+                    parametrosActualizar.Add("@IdUsuario", resultado.IdUsuario);
                     parametrosActualizar.Add("@Contrasenna", ContrasennaGenerada);
                     var ejecutar = context.Execute("ActualizarContrasennaSP", parametrosActualizar);
                     if (ejecutar > 0)

@@ -45,7 +45,7 @@ namespace SIGEP_API.Controllers
             {
                 var parametros = new DynamicParameters();
                 parametros.Add("@IdUsuario", IdUsuario);
-                var resultado = context.Query<EncargadoResponseModel>("ObtenerEncargadosSP", parametros).ToList();
+                var resultado = context.QueryFirstOrDefault<EncargadoResponseModel>("ObtenerEncargadosSP", parametros);
                 return Ok(resultado);
             }
 
@@ -184,5 +184,147 @@ namespace SIGEP_API.Controllers
             }
 
         }
+
+
+        [HttpPost]
+        [Route("ConsultarEncargadoPorCedula")]
+
+        public IActionResult ConsultarEncargadoPorCedula(string Cedula, int IdUsuario)
+        {
+            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            {
+                var parametros = new DynamicParameters();
+                parametros.Add("@Cedula", Cedula);
+                var resultado = context.QueryFirstOrDefault<EncargadoResponseModel>(
+                    "ValidarEncargadoSP",
+                    parametros,
+                    commandType: CommandType.StoredProcedure
+                );
+                if (resultado == null)
+                {
+                    return NotFound("No se encontró ningún encargado con la cédula proporcionada.");
+                }
+                return Ok(resultado);
+            }
+        }
+
+
+        [HttpPost]
+        [Route("AgregarEncargado")]
+
+        public IActionResult AgregarEncargado(EncargadoRequestModel model)
+        {
+            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            {
+                var validarSiEsEstudiante = new DynamicParameters();
+                validarSiEsEstudiante.Add("@Cedula", model.Cedula);
+                var existeEstudiante = context.QueryFirstOrDefault<UsuarioModelResponse>(
+                    "ValidarUsuarioEncargadoSP",
+                    validarSiEsEstudiante,
+                    commandType: CommandType.StoredProcedure
+                );
+
+                if (existeEstudiante != null)
+                {
+                    return BadRequest("Lo sentimos. La cédula ingresada corresponde a un estudiante registrado en el sistema y no puede ser asignado como encargado.");
+                }
+
+                var parametros = new DynamicParameters();
+               
+                parametros.Add("@IdUsuario", model.IdUsuario);
+                parametros.Add("@Nombre", model.Nombre);
+                parametros.Add("@Apellido1", model.Apellido1);
+                parametros.Add("@Apellido2", model.Apellido2);
+                parametros.Add("@Parentesco", model.Parentesco);
+                parametros.Add("@Telefono", model.Telefono);
+                parametros.Add("@Correo", model.Correo);
+                parametros.Add("@Cedula", model.Cedula);
+                parametros.Add("@Ocupacion", model.Ocupacion);
+                parametros.Add("@LugarTrabajo", model.LugarTrabajo);
+                parametros.Add("@Encargado", model.IdEncargado);
+
+                var filasAfectadas = context.Execute(
+                    "AccionesEncargadoSP",
+                    parametros,
+                    commandType: CommandType.StoredProcedure
+                );
+                return Ok();
+            }
+
+
+        }
+
+        [HttpPost]
+        [Route("ActualizarEncargado")]
+
+
+        public IActionResult ActualizarEncargado(EncargadoRequestModel model)
+        {
+            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            {
+                var validarSiEsEstudiante = new DynamicParameters();
+                validarSiEsEstudiante.Add("@Cedula", model.Cedula);
+                var existeEstudiante = context.QueryFirstOrDefault<UsuarioModelResponse>(
+                    "ValidarUsuarioEncargadoSP",
+                    validarSiEsEstudiante,
+                    commandType: CommandType.StoredProcedure
+                );
+
+                if (existeEstudiante != null)
+                {
+                    return BadRequest("Lo sentimos. La cédula ingresada corresponde a un estudiante registrado en el sistema y no puede ser asignado como encargado.");
+                }
+
+                var parametros = new DynamicParameters();
+                parametros.Add("@IdUsuario", model.IdUsuario);
+                parametros.Add("@Nombre", model.Nombre);
+                parametros.Add("@Apellido1", model.Apellido1);
+                parametros.Add("@Apellido2", model.Apellido2);
+                parametros.Add("@Parentesco", model.Parentesco);
+                parametros.Add("@Telefono", model.Telefono);
+                parametros.Add("@Correo", model.Correo);
+                parametros.Add("@Cedula", model.Cedula);
+                parametros.Add("@Ocupacion", model.Ocupacion);
+                parametros.Add("@LugarTrabajo", model.LugarTrabajo);
+                parametros.Add("@Accion", 2);
+                parametros.Add("@Encargado", model.IdEncargado);
+
+                var filasAfectadas = context.Execute(
+                    "AccionesEncargadoSP",
+                    parametros,
+                    commandType: CommandType.StoredProcedure
+                );
+                return Ok(new
+                {
+                    exito = true,
+                    filasAfectadas
+                });
+            }
+
+
+        }
+
+
+        [HttpGet]
+        [Route("ObtenerEncargado")]
+
+        public IActionResult ObtenerEncargado(int IdEncargado, int IdUsuario)
+        {
+            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            {
+                var parametros = new DynamicParameters();
+                parametros.Add("@IdEncargado", IdEncargado);
+                parametros.Add("@IdUsuario", IdUsuario);
+                var resultado = context.QueryFirstOrDefault<EncargadoResponseModel>(
+                    "ObtenerEncargadoSP",
+                    parametros,
+                    commandType: CommandType.StoredProcedure
+                );
+                return Ok(resultado);
+            }
+
+
+        }
     }
 }
+
