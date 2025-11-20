@@ -234,7 +234,7 @@ namespace SIGEP_API.Controllers
                 }
 
                 var parametros = new DynamicParameters();
-               
+
                 parametros.Add("@IdUsuario", model.IdUsuario);
                 parametros.Add("@Nombre", model.Nombre);
                 parametros.Add("@Apellido1", model.Apellido1);
@@ -329,6 +329,80 @@ namespace SIGEP_API.Controllers
 
 
         }
+
+
+        [HttpPost]
+        [Route("SubirDocumentos")]
+        public IActionResult SubirDocumentos(DocumentoRequest model)
+        {
+            using (var connection = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            {
+                var parametros = new DynamicParameters();
+                parametros.Add("@IdUsuario", model.IdUsuario);
+                parametros.Add("@Documento", model.Documento);
+
+                connection.Execute("SubirDocumentosPerfilSP",
+                                   parametros,
+                                   commandType: CommandType.StoredProcedure);
+            }
+
+            return Ok(new { exito = true });
+        }
+
+        [HttpGet]
+        [Route("ObtenerDocumentos")]
+        public IActionResult ObtenerDocumentos(int IdUsuario)
+
+        {
+            using (var connection = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            {
+                var parametros = new DynamicParameters();
+                parametros.Add("@IdUsuario", IdUsuario);
+
+                var documentos = connection.Query<DocumentoResponse>(
+                    "ObtenerDocumentosPerfilSP",
+                    parametros,
+                    commandType: CommandType.StoredProcedure
+                ).ToList();
+
+                return Ok(documentos);
+            }
+        }
+
+    
+
+
+    [HttpDelete]
+        [Route("EliminarDocumento")]
+        public IActionResult EliminarDocumento(int IdDocumento)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+                {
+                    var parametros = new DynamicParameters();
+                    parametros.Add("@IdDocumento", IdDocumento);
+
+                    connection.Execute(
+                        "EliminarDocumentoSP",
+                        parametros,
+                        commandType: CommandType.StoredProcedure
+                    );
+                }
+
+                return Ok(new { exito = true, mensaje = "Documento eliminado correctamente." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    exito = false,
+                    mensaje = "Ocurrió un error al eliminar el documento.",
+                    detalle = ex.Message
+                });
+            }
+        }
+
     }
 }
 

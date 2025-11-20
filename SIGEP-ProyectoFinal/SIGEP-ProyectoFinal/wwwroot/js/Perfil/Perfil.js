@@ -30,6 +30,137 @@ function validarEdad(fechaNacimiento) {
 
 document.addEventListener('DOMContentLoaded', function () {
 
+   
+    $('#modalVerDocs').on('show.bs.modal', function () {
+        cargarDocumentos();
+    });
+
+    function cargarDocumentos() {
+        const lista = document.getElementById("listaDocumentos");
+        lista.innerHTML = "";
+
+        $.ajax({
+            url: '/Perfil/ObtenerDocumentos',
+            type: 'GET',
+            success: function (response) {
+                if (!response || response.exito === false) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Atención',
+                        text: response?.mensaje || 'No se pudieron cargar los documentos.'
+                    });
+                    return;
+                }
+
+                const documentos = response.data;
+
+                if (!documentos || documentos.length === 0) {
+                    lista.innerHTML = '<p class="text-muted">No hay documentos registrados.</p>';
+                    return;
+                }
+
+                documentos.forEach(doc => {
+                    const rutaCompleta = doc.documento || "";
+                    const nombreArchivo = rutaCompleta.split('\\').pop().split('/').pop();
+                    const fecha = doc.fechaSubida
+                        ? new Date(doc.fechaSubida).toLocaleString()
+                        : '';
+
+                    const urlDescarga = `/Perfil/DescargarDocumento?ruta=${encodeURIComponent(rutaCompleta)}`;
+
+                    const item = document.createElement("div");
+                    item.className = "list-group-item d-flex justify-content-between align-items-center";
+
+                    item.innerHTML = `
+                        <div>
+                            <strong>${nombreArchivo}</strong><br/>
+                            <small>Tipo: ${doc.tipo || 'N/A'} - Subido: ${fecha}</small>
+                        </div>
+                        <div class="btn-group">
+                            <a href="${urlDescarga}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-download"></i>
+                            </a>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-danger btn-eliminar-doc"
+                                    data-id="${doc.idDocumento}"
+                                    data-ruta="${rutaCompleta}">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    `;
+
+                    lista.appendChild(item);
+                });
+
+                
+                $('.btn-eliminar-doc').off('click').on('click', function () {
+                    const idDoc = $(this).data('id');
+                    const ruta = $(this).data('ruta');
+                    confirmarEliminarDocumento(idDoc, ruta);
+                });
+            },
+            error: function () {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Ocurrió un error al obtener los documentos. Intente nuevamente.'
+                });
+            }
+        });
+    }
+
+    function confirmarEliminarDocumento(idDocumento, ruta) {
+        Swal.fire({
+            title: "¿Eliminar documento?",
+            text: "Esta acción no se puede deshacer.",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+            confirmButtonText: "Sí, eliminar",
+            cancelButtonText: "Cancelar"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                eliminarDocumento(idDocumento, ruta);
+            }
+        });
+    }
+
+    function eliminarDocumento(idDocumento, ruta) {
+        $.ajax({
+            url: '/Perfil/EliminarDocumento',
+            type: 'POST',
+            data: {
+                idDocumento: idDocumento,
+                ruta: ruta
+            },
+            success: function (response) {
+                if (response.exito) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Eliminado',
+                        text: response.mensaje || 'Documento eliminado correctamente.'
+                    }).then(() => {
+                        cargarDocumentos();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: response.mensaje || 'No se pudo eliminar el documento.'
+                    });
+                }
+            },
+            error: function () {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Ocurrió un error al eliminar el documento.'
+                });
+            }
+        });
+    }
+
     const encargado = document.getElementById('FormEncargado');
 
     encargado.addEventListener('submit', function (e) {

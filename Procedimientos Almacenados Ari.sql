@@ -675,3 +675,29 @@ BEGIN
 
 
 END;
+
+
+CREATE OR ALTER PROCEDURE SubirDocumentosPerfilSP
+(@IdUsuario INT, @Documento VARCHAR(255))
+AS
+BEGIN
+
+INSERT INTO Documentos (Documento, Tipo, IdUsuario, FechaSubida) VALUES
+(@Documento, 'Perfil', @IdUsuario, GETDATE());
+
+END
+
+CREATE OR ALTER PROCEDURE ObtenerDocumentosPerfilSP
+(@IdUsuario INT)
+AS
+BEGIN
+
+    SELECT [IdDocumento]
+      ,[Documento]
+      ,[Tipo]
+      ,[IdUsuario]
+      ,[FechaSubida]
+  FROM [dbo].[Documentos] WHERE IdUsuario = @IdUsuario;
+
+END
+

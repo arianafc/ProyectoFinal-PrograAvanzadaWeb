@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SIGEP_ProyectoFinal.Models;
+using System.Net.Http.Headers;
 using static System.Net.WebRequestMethods;
 
 namespace SIGEP_ProyectoFinal.Controllers
@@ -18,9 +19,9 @@ namespace SIGEP_ProyectoFinal.Controllers
         }
 
 
-       
+
         [HttpGet]
-        
+
         public IActionResult Perfil()
         {
             var usuario = new Usuario();
@@ -40,10 +41,10 @@ namespace SIGEP_ProyectoFinal.Controllers
                 {
                     var usuarioRespuesta = respuesta.Content.ReadFromJsonAsync<Usuario>().Result;
                     usuario = usuarioRespuesta;
-           
+
                 }
 
-                if(respuesta2.IsSuccessStatusCode)
+                if (respuesta2.IsSuccessStatusCode)
                 {
                     var encargadoApi = respuesta2.Content.ReadFromJsonAsync<Encargado>().Result;
 
@@ -222,28 +223,28 @@ namespace SIGEP_ProyectoFinal.Controllers
         {
             var IdUsuario = HttpContext.Session.GetInt32("IdUsuario");
 
-        
+
             var cedula = encargado.EstudianteEncargado.Cedula;
 
             using (var context = _http.CreateClient())
             {
-              
+
                 var consultaCedula = _configuration["Valores:UrlApi"] + "Perfil/ConsultarEncargadoPorCedula?Cedula=" + cedula;
                 var respuestaCedula = context.GetAsync(consultaCedula).Result;
 
                 if (respuestaCedula.IsSuccessStatusCode)
                 {
-                   
+
                     var encargadoApi = respuestaCedula.Content.ReadFromJsonAsync<Encargado>().Result;
 
                     encargado.EstudianteEncargado = encargadoApi;
 
-                   
+
                     TempData["SwalSuccess"] = "El encargado ya existía. Se cargó su información.";
                     return View("Perfil", encargado);
                 }
 
-              
+
                 var urlApi = _configuration["Valores:UrlApi"] + "Perfil/AgregarEncargado";
 
 
@@ -259,7 +260,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                     Ocupacion = encargado.EstudianteEncargado.Ocupacion,
                     LugarTrabajo = encargado.EstudianteEncargado.LugarTrabajo,
                     Parentesco = encargado.EstudianteEncargado.Parentesco,
-                    IdEncargado = encargado.EstudianteEncargado.IdEncargado 
+                    IdEncargado = encargado.EstudianteEncargado.IdEncargado
                 };
 
                 var respuesta = context.PostAsJsonAsync(urlApi, request).Result;
@@ -311,5 +312,190 @@ namespace SIGEP_ProyectoFinal.Controllers
             }
         }
 
+
+        [HttpPost]
+        public IActionResult SubirDocumentos(IFormFile Archivo, Usuario model)
+        {
+            var IdUsuario = HttpContext.Session.GetInt32("IdUsuario");
+
+            if (IdUsuario == null)
+            {
+                TempData["SwalError"] = "Sesión expirada. Vuelva a iniciar sesión.";
+                return RedirectToAction("Login", "Home");
+            }
+
+            if (Archivo == null || Archivo.Length == 0)
+            {
+                TempData["SwalError"] = "Debe seleccionar un archivo para subir.";
+                return RedirectToAction("Perfil", "Perfil");
+            }
+
+            if (string.IsNullOrWhiteSpace(model.Cedula))
+            {
+                TempData["SwalError"] = "No se encontró la cédula del usuario.";
+                return RedirectToAction("Perfil", "Perfil");
+            }
+
+            string carpetaBase = @"C:\SIGEP\Perfil";
+            string carpetaUsuario = Path.Combine(carpetaBase, model.Cedula);
+
+            try
+            {
+                if (!Directory.Exists(carpetaUsuario))
+                    Directory.CreateDirectory(carpetaUsuario);
+
+                string nombreArchivo = Path.GetFileName(Archivo.FileName);
+                string rutaCompleta = Path.Combine(carpetaUsuario, nombreArchivo);
+
+                using (var stream = new FileStream(rutaCompleta, FileMode.Create))
+                {
+                    Archivo.CopyTo(stream);
+                }
+
+
+                using (var client = _http.CreateClient())
+                {
+                    var urlApi = _configuration["Valores:UrlApi"] + "Perfil/SubirDocumentos";
+
+                    var request = new
+                    {
+                        IdUsuario = IdUsuario.Value,
+                        Documento = rutaCompleta
+                    };
+
+                    var respuesta = client.PostAsJsonAsync(urlApi, request).Result;
+
+                    if (respuesta.IsSuccessStatusCode)
+                    {
+                        TempData["SwalSuccess"] = "Documento subido y registrado correctamente.";
+                        return RedirectToAction("Perfil", "Perfil");
+                    }
+                    else
+                    {
+                        var mensajeError = respuesta.Content.ReadAsStringAsync().Result;
+                        TempData["SwalError"] = string.IsNullOrEmpty(mensajeError)
+                            ? "El archivo se guardó en el servidor, pero hubo un error al registrar la información en el sistema."
+                            : mensajeError;
+
+                        return RedirectToAction("Perfil", "Perfil");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["SwalError"] = "Error al guardar el documento: " + ex.Message;
+                return RedirectToAction("Perfil", "Perfil");
+            }
+        }
+
+        [HttpGet]
+        public JsonResult ObtenerDocumentos()
+        {
+            var IdUsuario = HttpContext.Session.GetInt32("IdUsuario");
+
+            using (var context = _http.CreateClient())
+            {
+                var urlApi = _configuration["Valores:UrlApi"] +
+                             "Perfil/ObtenerDocumentos?IdUsuario=" + IdUsuario;
+
+                var respuesta = context.GetAsync(urlApi).Result;
+
+                if (respuesta.IsSuccessStatusCode)
+                {
+                    var documentosRespuesta = respuesta
+                        .Content
+                        .ReadFromJsonAsync<List<DocumentoVM>>()
+                        .Result;
+
+                    return Json(new
+                    {
+                        exito = true,
+                        data = documentosRespuesta
+                    });
+                }
+                else
+                {
+                    var mensajeError = respuesta.Content.ReadAsStringAsync().Result;
+                    return Json(new
+                    {
+                        exito = false,
+                        mensaje = string.IsNullOrEmpty(mensajeError)
+                            ? "Error al obtener documentos. Intente nuevamente."
+                            : mensajeError
+                    });
+                }
+            }
+        }
+
+        [HttpGet]
+        public IActionResult DescargarDocumento(string ruta)
+        {
+            if (string.IsNullOrEmpty(ruta))
+            {
+                TempData["SwalError"] = "Ruta de documento inválida.";
+                return RedirectToAction("Perfil", "Perfil");
+            }
+
+            if (!System.IO.File.Exists(ruta))
+            {
+                TempData["SwalError"] = "El archivo no existe en el servidor.";
+                return RedirectToAction("Perfil", "Perfil");
+            }
+
+            var nombreArchivo = Path.GetFileName(ruta);
+            var mimeType = "application/octet-stream";
+            var fileBytes = System.IO.File.ReadAllBytes(ruta);
+            return File(fileBytes, mimeType, nombreArchivo);
+        }
+
+
+
+        [HttpPost]
+        public IActionResult EliminarDocumento(int idDocumento, string ruta)
+        {
+            var IdUsuario = HttpContext.Session.GetInt32("IdUsuario");
+
+            // 1. Borrar archivo físico si existe
+            try
+            {
+                if (!string.IsNullOrEmpty(ruta) && System.IO.File.Exists(ruta))
+                {
+                    System.IO.File.Delete(ruta);
+                }
+            }
+            catch
+            {
+
+            }
+
+
+            using (var client = _http.CreateClient())
+            {
+                var urlApi = _configuration["Valores:UrlApi"]
+                             + $"Perfil/EliminarDocumento?IdDocumento={idDocumento}";
+
+                var respuesta = client.DeleteAsync(urlApi).Result;
+
+                if (respuesta.IsSuccessStatusCode)
+                {
+                    return Json(new { exito = true, mensaje = "Documento eliminado correctamente." });
+                }
+                else
+                {
+                    var mensajeError = respuesta.Content.ReadAsStringAsync().Result;
+                    return Json(new
+                    {
+                        exito = false,
+                        mensaje = string.IsNullOrEmpty(mensajeError)
+                            ? "No se pudo eliminar el documento en el sistema."
+                            : mensajeError
+                    });
+                }
+            }
+        }
+
+
     }
+
+
 }

@@ -348,23 +348,24 @@
 
             <!-- Body -->
             <div class="modal-body">
-                <form id="formSubirDoc" enctype="multipart/form-data">
+                <form id="formSubirDoc" asp-action="SubirDocumentos" asp-controller="Perfil" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label class="form-label fw-bold" style="color: #2D594D;">Archivo</label>
-                        <input type="file" class="form-control" id="ArchivoDoc" name="archivo" />
+                        <input type="file" class="form-control" id="ArchivoDoc" name="Archivo" />
                         <div class="mt-2" style="color: #A0A0A0; font-size: 0.9rem;">
                             * Solo archivos .xls, .xlsx o .pdf
                         </div>
                     </div>
-                    <input type="hidden" id="IdUsuarioDoc" name="idUsuario" value="@Model.IdUsuario" />
+                    <input type="hidden" id="IdUsuarioDoc" asp-for="Cedula" />
+                    <div class="modal-footer" style="background-color: #F2F2F2; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
+                        <button type="button" class="btn btn-secondary" style="background-color: #A0A0A0; border: none;" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" id="btnSubirDoc" class="btn" style="background-color: #2D594D; color: white; border: none;">Subir Documento</button>
+                    </div>
                 </form>
             </div>
 
             <!-- Footer -->
-            <div class="modal-footer" style="background-color: #F2F2F2; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
-                <button type="button" class="btn btn-secondary" style="background-color: #A0A0A0; border: none;" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" id="btnSubirDoc" class="btn" style="background-color: #2D594D; color: white; border: none;">Subir Documento</button>
-            </div>
+            
         </div>
     </div>
 </div>
@@ -373,7 +374,6 @@
 <div class="modal fade" id="modalVerDocs" tabindex="-1" aria-labelledby="modalVerDocsLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content" style="border-radius: 10px; background-color: #F2F2F2;">
-            <input type="hidden" id="IdUsuarioDocumento" value="@usuario" />
             <!-- Header -->
             <div class="modal-header" style="background-color: #2D594D; border-top-left-radius: 10px; border-top-right-radius: 10px;">
                 <h5 class="modal-title text-white" id="modalVerDocsLabel">Mis Documentos</h5>
@@ -388,6 +388,7 @@
         </div>
     </div>
 </div>
+
 
 
 @section scripts {
