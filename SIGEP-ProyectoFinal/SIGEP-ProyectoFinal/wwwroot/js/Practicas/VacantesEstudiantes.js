@@ -221,7 +221,7 @@
                 .fail(function () {
                     $inputUbicacion.val('Error al obtener ubicación');
                 });
-        }); // 👈👈👈 ESTE CIERRE FALTABA
+        }); 
 
         // =====================================================
         // 🔹 Crear Vacante

@@ -165,6 +165,9 @@ GO
    POST: Crear Vacante
    Controller: POST api/vacantes/crear
    ========================================================= */
+   USE SIGEP_WEB;
+GO
+
 CREATE OR ALTER PROCEDURE dbo.CrearVacanteSP
     @Nombre NVARCHAR(255),
     @IdEmpresa INT,
@@ -182,7 +185,7 @@ BEGIN
     DECLARE @IdEstadoActivo INT = dbo.fn_IdEstado('Activo');
     IF @IdEstadoActivo IS NULL
     BEGIN
-        RAISERROR('No existe estado "Activo" en Estados.',16,1);
+        SELECT 0 AS ok, 'No existe estado "Activo" en Estados.' AS message, NULL AS IdVacante;
         RETURN;
     END
 
@@ -203,13 +206,18 @@ BEGIN
         END
 
         COMMIT TRAN;
+
+        SELECT 1 AS ok, 'Vacante creada correctamente.' AS message, @NewId AS IdVacante;
     END TRY
     BEGIN CATCH
         ROLLBACK TRAN;
-        THROW;
+
+        DECLARE @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE();
+        SELECT 0 AS ok, @ErrMsg AS message, NULL AS IdVacante;
     END CATCH
 END
 GO
+
 
 /* =========================================================
    POST: Editar Vacante

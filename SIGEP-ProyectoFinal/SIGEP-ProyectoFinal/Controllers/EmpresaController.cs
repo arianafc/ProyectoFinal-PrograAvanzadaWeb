@@ -2,9 +2,12 @@
 using SIGEP_ProyectoFinal.Models;
 using System.Text;
 using System.Text.Json;
+using System.Net.Http.Headers;
 
 namespace SIGEP_ProyectoFinal.Controllers
 {
+    [Seguridad]
+    //[FiltroUsuarioAdmin]
     public class EmpresaController : Controller
     {
         private readonly IHttpClientFactory _http;
@@ -25,6 +28,16 @@ namespace SIGEP_ProyectoFinal.Controllers
         [HttpGet]
         public IActionResult ListarEmpresas()
         {
+          
+            ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
+            ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
+            ViewBag.Usuario = HttpContext.Session.GetInt32("IdUsuario");
+
+            if (ViewBag.Usuario == null)
+            {
+                return RedirectToAction("IniciarSesion", "Home");
+            }
+
             return View();
         }
 
@@ -34,33 +47,35 @@ namespace SIGEP_ProyectoFinal.Controllers
         [HttpGet]
         public IActionResult GetEmpresas()
         {
-            var client = _http.CreateClient();
-            var url = Api("Empresa/ListarEmpresas");
+            using (var context = _http.CreateClient())
+            {
+                var url = Api("Empresa/ListarEmpresas");
 
-            var resp = client.GetStringAsync(url).Result;
+               
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
 
-            var lista = JsonSerializer.Deserialize<List<EmpresaListItemModel>>(
-                resp,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
-            );
+                var resp = context.GetStringAsync(url).Result;
 
-            if (lista == null)
-                return Json(new { data = new List<object>() });
+                var lista = JsonSerializer.Deserialize<List<EmpresaListItemModel>>(
+                    resp,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                );
 
-            
-            var data = lista.Select(e => new {
-                IdEmpresa = e.IdEmpresa,
-                NombreEmpresa = e.NombreEmpresa,   
-                AreasAfinidad = e.AreasAfinidad,
-                Ubicacion = e.Ubicacion,
-                HistorialVacantes = e.HistorialVacantes
-            });
+                if (lista == null)
+                    return Json(new { data = new List<object>() });
 
-            return Json(new { data });
+                var data = lista.Select(e => new {
+                    IdEmpresa = e.IdEmpresa,
+                    NombreEmpresa = e.NombreEmpresa,
+                    AreasAfinidad = e.AreasAfinidad,
+                    Ubicacion = e.Ubicacion,
+                    HistorialVacantes = e.HistorialVacantes
+                });
+
+                return Json(new { data });
+            }
         }
-
-
-
 
         // ======================================================
         // OBTENER EMPRESA POR ID
@@ -68,20 +83,25 @@ namespace SIGEP_ProyectoFinal.Controllers
         [HttpGet]
         public IActionResult GetEmpresa(int id)
         {
-            var context = _http.CreateClient();
-            var url = Api("Empresa/ConsultarEmpresas?IdEmpresa=" + id);
-
-            var resp = context.GetAsync(url).Result;
-
-            if (resp.IsSuccessStatusCode)
+            using (var context = _http.CreateClient())
             {
-                var lista = resp.Content.ReadFromJsonAsync<List<EmpresaDetalleModel>>().Result;
+                var url = Api("Empresa/ConsultarEmpresas?IdEmpresa=" + id);
 
-                if (lista != null && lista.Count > 0)
-                    return Json(new { ok = true, data = lista[0] });
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
+
+                var resp = context.GetAsync(url).Result;
+
+                if (resp.IsSuccessStatusCode)
+                {
+                    var lista = resp.Content.ReadFromJsonAsync<List<EmpresaDetalleModel>>().Result;
+
+                    if (lista != null && lista.Count > 0)
+                        return Json(new { ok = true, data = lista[0] });
+                }
+
+                return Json(new { ok = false, msg = "Empresa no encontrada." });
             }
-
-            return Json(new { ok = false, msg = "Empresa no encontrada." });
         }
 
         // ======================================================
@@ -90,28 +110,33 @@ namespace SIGEP_ProyectoFinal.Controllers
         [HttpPost]
         public IActionResult CrearEmpresa(EmpresaCreateVM vm)
         {
-            var context = _http.CreateClient();
-            var url = Api("Empresa/AgregarEmpresa");
-
-            var modelo = new
+            using (var context = _http.CreateClient())
             {
-                vm.NombreEmpresa,
-                vm.NombreContacto,
-                vm.Email,
-                vm.Telefono,
-                vm.Provincia,
-                vm.Canton,
-                vm.Distrito,
-                vm.DireccionExacta,
-                vm.AreasAfinidad
-            };
+                var url = Api("Empresa/AgregarEmpresa");
 
-            var resp = context.PostAsJsonAsync(url, modelo).Result;
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
 
-            if (resp.IsSuccessStatusCode)
-                return Json(new { ok = true, msg = "Empresa creada correctamente." });
+                var modelo = new
+                {
+                    vm.NombreEmpresa,
+                    vm.NombreContacto,
+                    vm.Email,
+                    vm.Telefono,
+                    vm.Provincia,
+                    vm.Canton,
+                    vm.Distrito,
+                    vm.DireccionExacta,
+                    vm.AreasAfinidad
+                };
 
-            return Json(new { ok = false, msg = "No se pudo crear la empresa." });
+                var resp = context.PostAsJsonAsync(url, modelo).Result;
+
+                if (resp.IsSuccessStatusCode)
+                    return Json(new { ok = true, msg = "Empresa creada correctamente." });
+
+                return Json(new { ok = false, msg = "No se pudo crear la empresa." });
+            }
         }
 
         // ======================================================
@@ -120,29 +145,34 @@ namespace SIGEP_ProyectoFinal.Controllers
         [HttpPost]
         public IActionResult EditarEmpresa(EmpresaEditVM vm)
         {
-            var context = _http.CreateClient();
-            var url = Api("Empresa/ActualizarEmpresa");
-
-            var modelo = new EmpresaGuardarRequestModel
+            using (var context = _http.CreateClient())
             {
-                IdEmpresa = vm.IdEmpresa,
-                NombreEmpresa = vm.NombreEmpresa,
-                NombreContacto = vm.NombreContacto,
-                Email = vm.Email,
-                Telefono = vm.Telefono,
-                Provincia = vm.Provincia,
-                Canton = vm.Canton,
-                Distrito = vm.Distrito,
-                DireccionExacta = vm.DireccionExacta,
-                AreasAfinidad = vm.AreasAfinidad
-            };
+                var url = Api("Empresa/ActualizarEmpresa");
 
-            var resp = context.PostAsJsonAsync(url, modelo).Result;
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
 
-            if (resp.IsSuccessStatusCode)
-                return Json(new { ok = true, msg = "Cambios guardados correctamente." });
+                var modelo = new EmpresaGuardarRequestModel
+                {
+                    IdEmpresa = vm.IdEmpresa,
+                    NombreEmpresa = vm.NombreEmpresa,
+                    NombreContacto = vm.NombreContacto,
+                    Email = vm.Email,
+                    Telefono = vm.Telefono,
+                    Provincia = vm.Provincia,
+                    Canton = vm.Canton,
+                    Distrito = vm.Distrito,
+                    DireccionExacta = vm.DireccionExacta,
+                    AreasAfinidad = vm.AreasAfinidad
+                };
 
-            return Json(new { ok = false, msg = "No se pudo actualizar la empresa." });
+                var resp = context.PostAsJsonAsync(url, modelo).Result;
+
+                if (resp.IsSuccessStatusCode)
+                    return Json(new { ok = true, msg = "Cambios guardados correctamente." });
+
+                return Json(new { ok = false, msg = "No se pudo actualizar la empresa." });
+            }
         }
 
         // ======================================================
@@ -151,19 +181,22 @@ namespace SIGEP_ProyectoFinal.Controllers
         [HttpPost]
         public IActionResult EliminarEmpresa(int id)
         {
-            var context = _http.CreateClient();
-            var url = Api("Empresa/EliminarEmpresa");
+            using (var context = _http.CreateClient())
+            {
+                var url = Api("Empresa/EliminarEmpresa");
 
-            var modelo = new { Id = id };
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
 
-            var resp = context.PostAsJsonAsync(url, modelo).Result;
+                var modelo = new { Id = id };
 
-            if (resp.IsSuccessStatusCode)
-                return Json(new { ok = true, msg = "Empresa eliminada." });
+                var resp = context.PostAsJsonAsync(url, modelo).Result;
 
-            return Json(new { ok = false, msg = "No se pudo eliminar." });
+                if (resp.IsSuccessStatusCode)
+                    return Json(new { ok = true, msg = "Empresa eliminada." });
+
+                return Json(new { ok = false, msg = "No se pudo eliminar." });
+            }
         }
     }
 }
-
-
