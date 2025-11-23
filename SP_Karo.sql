@@ -982,3 +982,242 @@ BEGIN
     WHERE IdEmpresa = @IdEmpresa;
 END
 GO
+
+--22-11-25
+
+USE SIGEP_WEB
+GO
+
+-- =============================================
+-- 1. SP PARA OBTENER ESPECIALIDADES
+-- =============================================
+CREATE OR ALTER PROCEDURE ObtenerEspecialidadesSP
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        IdEspecialidad,
+        Nombre
+    FROM Especialidades
+    WHERE IdEstado = (SELECT IdEstado FROM Estados WHERE Descripcion = 'Activo')
+    ORDER BY Nombre;
+END
+GO
+
+PRINT '✅ ObtenerEspecialidadesSP creado correctamente';
+GO
+
+-- =============================================
+-- 2. SP PARA ACTUALIZAR ESTADO ACADÉMICO
+-- =============================================
+CREATE OR ALTER PROCEDURE ActualizarEstadoAcademicoSP
+    @IdUsuario INT,
+    @NuevoEstado BIT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    BEGIN TRY
+        UPDATE Usuarios
+        SET EstadoAcademico = @NuevoEstado
+        WHERE IdUsuario = @IdUsuario AND IdRol = 1;
+
+        IF @@ROWCOUNT > 0
+            SELECT 1 AS Resultado, 'Estado académico actualizado correctamente' AS Mensaje;
+        ELSE
+            SELECT 0 AS Resultado, 'Estudiante no encontrado' AS Mensaje;
+    END TRY
+    BEGIN CATCH
+        SELECT 0 AS Resultado, ERROR_MESSAGE() AS Mensaje;
+    END CATCH
+END
+GO
+PRINT '✅ ActualizarEstadoAcademicoSP creado correctamente';
+GO
+
+-- =============================================
+-- 3. SP PARA ELIMINAR DOCUMENTO
+-- =============================================
+
+CREATE OR ALTER PROCEDURE EliminarDocumentoSP
+    @IdDocumento INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    BEGIN TRY
+        DELETE FROM Documentos WHERE IdDocumento = @IdDocumento;
+        SELECT 1 AS Resultado, 'Documento eliminado correctamente' AS Mensaje;
+    END TRY
+    BEGIN CATCH
+        SELECT 0 AS Resultado, ERROR_MESSAGE() AS Mensaje;
+    END CATCH
+END
+GO
+PRINT '✅ EliminarDocumentoSP creado correctamente';
+GO
+
+-- =============================================
+-- 4. SP PARA LISTAR ESTUDIANTES (VERSIÓN COMPLETA)
+-- =============================================
+USE SIGEP_WEB
+GO
+
+-- =============================================
+-- SP PARA LISTAR ESTUDIANTES (CORREGIDO PARA TU BD)
+-- =============================================
+CREATE OR ALTER PROCEDURE ListarEstudiantesSP
+    @IdCoordinador INT = NULL,
+    @Estado VARCHAR(50) = NULL,
+    @IdEspecialidad INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DECLARE @EstadoClean VARCHAR(50) = NULLIF(LTRIM(RTRIM(@Estado)), '');
+    DECLARE @IdEspecialidadClean INT = NULLIF(@IdEspecialidad, 0);
+
+    SELECT 
+        u.IdUsuario,
+        ISNULL(u.Cedula, '') AS Cedula,
+        u.Nombre + ' ' + u.Apellido1 + ' ' + ISNULL(u.Apellido2, '') AS NombreCompleto,
+        ISNULL((SELECT TOP 1 Telefono FROM Telefonos WHERE IdUsuario = u.IdUsuario ORDER BY IdTelefono DESC), '') AS Telefono,
+        ISNULL((SELECT TOP 1 e.Nombre 
+         FROM UsuarioEspecialidad ue 
+         INNER JOIN Especialidades e ON ue.IdEspecialidad = e.IdEspecialidad
+         WHERE ue.IdUsuario = u.IdUsuario 
+         ORDER BY ue.IdUsuarioEspecialidad DESC), 'Sin Especialidad') AS EspecialidadNombre,
+        ISNULL(u.EstadoAcademico, 0) AS EstadoAcademico,
+        ISNULL((SELECT TOP 1 est.Descripcion 
+         FROM PracticaEstudiante pe 
+         INNER JOIN Estados est ON pe.IdEstado = est.IdEstado
+         WHERE pe.IdUsuario = u.IdUsuario 
+         ORDER BY pe.IdPractica DESC), 'Sin Procesos Activos') AS EstadoPractica,
+        CASE 
+            WHEN ISNULL(u.EstadoAcademico, 0) = 1 THEN 1
+            ELSE 0
+        END AS IdEstado
+    FROM Usuarios u
+    WHERE u.IdRol = 1 -- Estudiantes
+        AND ISNULL(u.IdEstado, 0) != 0 -- Activos
+        AND (@EstadoClean IS NULL 
+             OR (@EstadoClean = 'Aprobada' AND u.EstadoAcademico = 1)
+             OR (@EstadoClean = 'Rezagado' AND u.EstadoAcademico = 0))
+        AND (@IdEspecialidadClean IS NULL OR @IdEspecialidadClean = 0 OR 
+             EXISTS (SELECT 1 FROM UsuarioEspecialidad ue 
+                     WHERE ue.IdUsuario = u.IdUsuario AND ue.IdEspecialidad = @IdEspecialidadClean))
+    ORDER BY u.Nombre, u.Apellido1;
+END
+GO
+
+-- =============================================
+-- 5. SP PARA CONSULTAR DETALLE DE ESTUDIANTE
+-- =============================================
+CREATE OR ALTER PROCEDURE ConsultarEstudianteSP
+    @IdUsuario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- RESULTSET 1: Información del estudiante
+    SELECT 
+        u.Cedula,
+        u.Nombre,
+        u.Apellido1,
+        u.Apellido2,
+        ISNULL((SELECT TOP 1 Email FROM Emails WHERE IdUsuario = u.IdUsuario ORDER BY IdEmail DESC), '') AS Correo,
+        ISNULL((SELECT TOP 1 Telefono FROM Telefonos WHERE IdUsuario = u.IdUsuario ORDER BY IdTelefono DESC), '') AS Telefono,
+        u.FechaNacimiento,
+        ISNULL(p.Nombre, '') AS Provincia,
+        ISNULL(c.Nombre, '') AS Canton,
+        ISNULL(dist.Nombre, '') AS Distrito,
+        ISNULL(dir.DireccionExacta, '') AS DireccionExacta,
+        ISNULL((SELECT TOP 1 e.Nombre 
+         FROM UsuarioEspecialidad ue 
+         INNER JOIN Especialidades e ON ue.IdEspecialidad = e.IdEspecialidad
+         WHERE ue.IdUsuario = u.IdUsuario 
+         ORDER BY ue.IdUsuarioEspecialidad DESC), '') AS Especialidad,
+        ISNULL(s.Seccion, '') AS Seccion
+    FROM Usuarios u
+    LEFT JOIN Direcciones dir ON u.IdDireccion = dir.IdDireccion
+    LEFT JOIN Distritos dist ON dir.IdDistrito = dist.IdDistrito
+    LEFT JOIN Cantones c ON dist.IdCanton = c.IdCanton
+    LEFT JOIN Provincias p ON c.IdProvincia = p.IdProvincia
+    LEFT JOIN Secciones s ON u.IdSeccion = s.IdSeccion
+    WHERE u.IdUsuario = @IdUsuario;
+
+    -- RESULTSET 2: Encargados
+    SELECT 
+        enc.Nombre + ' ' + enc.Apellido1 + ' ' + ISNULL(enc.Apellido2, '') AS Nombre,
+        ISNULL((SELECT TOP 1 Telefono FROM Telefonos WHERE IdEncargado = enc.IdEncargado ORDER BY IdTelefono DESC), '') AS Telefono,
+        ISNULL(enc.Ocupacion, '') AS Ocupacion
+    FROM EstudianteEncargado ee
+    INNER JOIN Encargados enc ON ee.IdEncargado = enc.IdEncargado
+    WHERE ee.IdUsuario = @IdUsuario;
+
+    -- RESULTSET 3: Documentos
+    SELECT 
+        IdDocumento,
+        Documento
+    FROM Documentos
+    WHERE IdUsuario = @IdUsuario
+    ORDER BY FechaSubida DESC;
+
+    -- RESULTSET 4: Prácticas
+    SELECT 
+        pe.IdPractica AS IdPostulacion,
+        pe.IdVacante,
+        pe.IdUsuario,
+        emp.NombreEmpresa AS Empresa,
+        ISNULL(est.Descripcion, '') AS Estado
+    FROM PracticaEstudiante pe
+    INNER JOIN VacantesPractica vp ON pe.IdVacante = vp.IdVacantePractica
+    LEFT JOIN Estados est ON pe.IdEstado = est.IdEstado
+    INNER JOIN Empresas emp ON vp.IdEmpresa = emp.IdEmpresa
+    WHERE pe.IdUsuario = @IdUsuario
+    ORDER BY pe.IdPractica DESC;
+END
+GO
+PRINT '✅ ConsultarEstudianteSP creado correctamente';
+GO
+
+-- =============================================
+-- VERIFICACIÓN DE CREACIÓN
+-- =============================================
+PRINT '';
+PRINT '========================================';
+PRINT 'RESUMEN DE STORED PROCEDURES CREADOS:';
+PRINT '========================================';
+PRINT '1. ObtenerEspecialidadesSP';
+PRINT '2. ActualizarEstadoAcademicoSP';
+PRINT '3. EliminarDocumentoSP';
+PRINT '4. ListarEstudiantesSP';
+PRINT '5. ConsultarEstudianteSP';
+PRINT '========================================';
+PRINT '';
+PRINT '✨ Todos los Stored Procedures han sido creados exitosamente!';
+PRINT '';
+
+-- =============================================
+-- PRUEBAS BÁSICAS (OPCIONAL)
+-- =============================================
+/*
+-- Descomentar para probar:
+
+-- Probar ObtenerEspecialidadesSP
+EXEC ObtenerEspecialidadesSP;
+
+-- Probar ListarEstudiantesSP
+EXEC ListarEstudiantesSP @IdCoordinador = NULL, @Estado = NULL, @IdEspecialidad = NULL;
+
+-- Probar ConsultarEstudianteSP (reemplaza 1 con un IdUsuario válido)
+EXEC ConsultarEstudianteSP @IdUsuario = 1;
+
+-- Probar ActualizarEstadoAcademicoSP (reemplaza 1 con un IdUsuario válido)
+EXEC ActualizarEstadoAcademicoSP @IdUsuario = 1, @NuevoEstado = 1;
+
+-- Probar EliminarDocumentoSP (reemplaza 1 con un IdDocumento válido)
+EXEC EliminarDocumentoSP @IdDocumento = 1;
+*/
+

@@ -1,0 +1,162 @@
+﻿@model SIGEP_ProyectoFinal.Models.EstudianteDetalleModel
+@{
+    var idRol = ViewBag.Rol ?? 0;
+
+    int edad = 0;
+    if (Model.FechaNacimiento != null && Model.FechaNacimiento.HasValue)
+    {
+        var nacimiento = Model.FechaNacimiento.Value;
+        var hoy = DateTime.Today;
+        edad = hoy.Year - nacimiento.Year;
+        if (nacimiento > hoy.AddYears(-edad)) edad--;
+    }
+}
+
+<div class="container-fluid">
+
+    <!-- Información Personal -->
+    <h5 class="section-title mb-3">Información Personal</h5>
+    <div class="row mb-2">
+        <div class="col-md-6"><strong>Nombre y Apellidos:</strong> @((Model.Nombre ?? "") + " " + (Model.Apellido1 ?? "") + " " + (Model.Apellido2 ?? ""))</div>
+        <div class="col-md-6"><strong>Correo Electrónico:</strong> @(Model.Correo ?? "—")</div>
+    </div>
+    <div class="row mb-2">
+        <div class="col-md-6"><strong>Teléfono:</strong> @(Model.Telefono ?? "—")</div>
+        <div class="col-md-6"><strong>Dirección:</strong> @(Model.Provincia + ", " + Model.Canton + ", " + Model.Distrito + ", " + Model.DireccionExacta)</div>
+    </div>
+    <div class="row mb-2">
+        <div class="col-md-6"><strong>Especialidad:</strong> @(Model.Especialidad ?? "Sin especialidad")</div>
+        <div class="col-md-6"><strong>Sección:</strong> @(Model.Seccion ?? "—")</div>
+    </div>
+    <div class="row mb-2">
+        <div class="col-md-6"><strong>Edad:</strong> @edad años</div>
+    </div>
+
+    <hr />
+
+    <!-- Encargado -->
+    <h5 class="section-title mb-3">Información del Encargado</h5>
+    @if (Model.Encargados != null && Model.Encargados.Any())
+    {
+        foreach (var enc in Model.Encargados)
+        {
+            <div class="row mb-2">
+                <div class="col-md-6"><strong>Nombre y Apellidos:</strong> @(enc.Nombre ?? "—")</div>
+                <div class="col-md-6"><strong>Teléfono:</strong> @(enc.Telefono ?? "—")</div>
+                <div class="col-md-6"><strong>Ocupación:</strong> @(enc.Ocupacion ?? "—")</div>
+            </div>
+            <hr />
+        }
+    }
+    else
+    {
+        <p class="text-muted">No hay encargado registrado.</p>
+    }
+
+    <!-- Prácticas -->
+    <h5 class="section-title mb-3">Prácticas / Postulaciones</h5>
+    @if (Model.Practicas != null && Model.Practicas.Any())
+    {
+        <ul class="list-group mb-3">
+            @foreach (var post in Model.Practicas)
+            {
+                var estadoRaw = (post.Estado ?? "").Trim();
+                var estadoNorm = estadoRaw.ToLowerInvariant()
+                .Normalize(System.Text.NormalizationForm.FormD)
+                .Replace("  ", " ")
+                .Trim();
+
+                var clase = "badge badge-no-asignada";
+
+                if (estadoNorm == "en proceso de aplicacion") { clase = "badge badge-en-progreso"; }
+                else if (estadoNorm == "rechazada") { clase = "badge badge-rechazada"; }
+                else if (estadoNorm == "asignada") { clase = "badge badge-asignada"; }
+                else if (estadoNorm == "aprobada" || estadoNorm == "aprobado") { clase = "badge badge-aprobada"; }
+                else if (estadoNorm == "retirada") { clase = "badge badge-retirada"; }
+                else if (estadoNorm == "finalizada") { clase = "badge badge-finalizada"; }
+                else if (estadoNorm == "rezagado") { clase = "badge badge-rezagado"; }
+                else if (estadoNorm == "archivado") { clase = "badge badge-archivado"; }
+                else if (estadoNorm == "en curso") { clase = "badge badge-en-curso"; }
+                else if (estadoNorm == "en progreso") { clase = "badge badge-en-progreso"; }
+
+                <li class="d-flex justify-content-between align-items-center p-2 border rounded mb-2">
+                    <div>
+                        <a asp-action="VisualizacionPostulacion"
+                           asp-controller="Practicas"
+                           asp-route-idVacante="@post.IdVacante"
+                           asp-route-idUsuario="@post.IdUsuario"
+                           class="text-decoration-none"
+                           style="color: #2D594D; font-weight:600;">
+                            @(post.Empresa ?? "—")
+                        </a>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="@clase">@(string.IsNullOrWhiteSpace(post.Estado) ? "No Asignada" : post.Estado)</span>
+
+                        @if ((idRol == 2 || idRol == 3)
+                                        && !string.IsNullOrEmpty(post.Estado)
+                                        && (post.Estado.Equals("Asignada", StringComparison.OrdinalIgnoreCase)
+                                        || post.Estado.Equals("En proceso de Aplicacion", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            <button class="btn bg-transparent BtnDesasignarPracticaEstudiante"
+                                    data-idpractica="@post.IdPostulacion"
+                                    data-idvacante="@post.IdVacante"
+                                    data-idusuario="@post.IdUsuario"
+                                    title="Desasignar práctica"
+                                    style="color:#2D594D;">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        }
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+    else
+    {
+        <p class="text-muted">No hay postulaciones registradas.</p>
+    }
+
+    <hr />
+
+    <!-- Documentos -->
+    <h5 class="section-title mb-3">Documentos</h5>
+    @if (Model.Documentos != null && Model.Documentos.Any())
+    {
+        foreach (var doc in Model.Documentos)
+        {
+            <div class="d-flex justify-content-between align-items-center p-2 border rounded mb-2">
+                <span style="color: #2D594D;">@(doc.Documento ?? "—")</span>
+                <div>
+                    <a asp-action="VisualizarDocumento"
+                       asp-controller="Estudiante"
+                       asp-route-id="@doc.IdDocumento"
+                       target="_blank"
+                       style="color:#2D594D; margin-right:10px;"
+                       title="Visualizar">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                    <a asp-action="DescargarDocumento"
+                       asp-controller="Estudiante"
+                       asp-route-id="@doc.IdDocumento"
+                       style="color:#2D594D; margin-right:10px;"
+                       title="Descargar">
+                        <i class="fas fa-download"></i>
+                    </a>
+                    <button class="btn bg-transparent btn-eliminar-doc"
+                            data-id="@doc.IdDocumento"
+                            title="Eliminar"
+                            style="color:#2D594D;">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <p class="text-muted">No hay documentos cargados.</p>
+    }
+
+</div>

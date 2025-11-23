@@ -320,3 +320,23 @@ GO
 
 ALTER TABLE [dbo].[Secciones] CHECK CONSTRAINT [FK_Seccion_Estado]
 GO
+
+
+USE SIGEP_WEB
+GO
+
+-- Agregar columna EstadoAcademico (BIT) a la tabla Usuarios
+ALTER TABLE Usuarios
+ADD EstadoAcademico BIT NULL;
+GO
+
+-- Establecer valores iniciales basados en el IdEstado actual
+-- Si quieres migrar los datos existentes:
+UPDATE Usuarios
+SET EstadoAcademico = CASE 
+    WHEN IdEstado IN (SELECT IdEstado FROM Estados WHERE LOWER(Descripcion) LIKE '%aprobad%') THEN 1
+    WHEN IdEstado IN (SELECT IdEstado FROM Estados WHERE LOWER(Descripcion) LIKE '%rezagad%') THEN 0
+    ELSE NULL
+END
+WHERE IdRol = 1;
+GO
