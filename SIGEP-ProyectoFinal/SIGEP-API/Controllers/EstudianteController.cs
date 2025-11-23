@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using SIGEP_API.Models;
 using System.Data;
-using System.Text.Json;
 
 namespace SIGEP_API.Controllers
 {
@@ -23,8 +22,7 @@ namespace SIGEP_API.Controllers
         private SqlConnection Conn() =>
             new SqlConnection(_config["ConnectionStrings:BDConnection"]);
 
-
-        #region Listar Estudiantes CON LOGGING COMPLETO
+        #region Listar Estudiantes
         [HttpGet]
         [Route("ListarEstudiantes")]
         public IActionResult ListarEstudiantes(string estado = null, int idEspecialidad = 0)
@@ -45,8 +43,7 @@ namespace SIGEP_API.Controllers
                         commandType: CommandType.StoredProcedure
                     ).ToList();
 
-                    // ⭐⭐⭐ AGREGAR ESTA CONFIGURACIÓN ⭐⭐⭐
-                    return Ok(data); // Esto serializa automáticamente
+                    return Ok(data);
                 }
             }
             catch (Exception ex)
@@ -63,58 +60,34 @@ namespace SIGEP_API.Controllers
         {
             try
             {
-                Console.WriteLine($"[API] Consultando estudiante con ID: {idUsuario}");
-
                 using (var db = Conn())
                 {
                     db.Open();
-                    Console.WriteLine("[API] Conexión a BD abierta");
-
                     var p = new DynamicParameters();
                     p.Add("@IdUsuario", idUsuario);
-
-                    Console.WriteLine("[API] Ejecutando SP ConsultarEstudianteSP");
 
                     using (var multi = db.QueryMultiple(
                         "ConsultarEstudianteSP",
                         p,
                         commandType: CommandType.StoredProcedure))
                     {
-                        Console.WriteLine("[API] SP ejecutado, leyendo resultados...");
-
-                        // Leer el estudiante
                         var estudiante = multi.Read<EstudianteDetalleModel>().FirstOrDefault();
-                        Console.WriteLine($"[API] Estudiante leído: {(estudiante != null ? "OK" : "NULL")}");
 
                         if (estudiante == null)
                         {
-                            Console.WriteLine($"[API] No se encontró estudiante con ID {idUsuario}");
                             return NotFound(new { message = $"Estudiante con ID {idUsuario} no encontrado" });
                         }
 
-                        // Leer encargados
-                        var encargados = multi.Read<EncargadoModel>().ToList();
-                        estudiante.Encargados = encargados;
-                        Console.WriteLine($"[API] Encargados leídos: {encargados.Count}");
+                        estudiante.Encargados = multi.Read<EncargadoModel>().ToList();
+                        estudiante.Documentos = multi.Read<DocumentoModel>().ToList();
+                        estudiante.Practicas = multi.Read<PracticaModel>().ToList();
 
-                        // Leer documentos
-                        var documentos = multi.Read<DocumentoModel>().ToList();
-                        estudiante.Documentos = documentos;
-                        Console.WriteLine($"[API] Documentos leídos: {documentos.Count}");
-
-                        // Leer prácticas
-                        var practicas = multi.Read<PracticaModel>().ToList();
-                        estudiante.Practicas = practicas;
-                        Console.WriteLine($"[API] Prácticas leídas: {practicas.Count}");
-
-                        Console.WriteLine("[API] Retornando estudiante completo");
                         return Ok(estudiante);
                     }
                 }
             }
             catch (SqlException sqlEx)
             {
-                Console.WriteLine($"[API ERROR SQL] Number: {sqlEx.Number}, Message: {sqlEx.Message}");
                 return StatusCode(500, new
                 {
                     type = "SQL Error",
@@ -122,23 +95,17 @@ namespace SIGEP_API.Controllers
                     error = sqlEx.Message,
                     number = sqlEx.Number,
                     procedure = sqlEx.Procedure,
-                    lineNumber = sqlEx.LineNumber,
-                    stackTrace = sqlEx.StackTrace
+                    lineNumber = sqlEx.LineNumber
                 });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[API ERROR] {ex.GetType().Name}: {ex.Message}");
-                Console.WriteLine($"[API ERROR] Stack: {ex.StackTrace}");
-
                 return StatusCode(500, new
                 {
                     type = ex.GetType().Name,
                     message = "Error al consultar el estudiante",
                     error = ex.Message,
-                    innerError = ex.InnerException?.Message,
-                    innerType = ex.InnerException?.GetType().Name,
-                    stackTrace = ex.StackTrace
+                    innerError = ex.InnerException?.Message
                 });
             }
         }
@@ -200,29 +167,19 @@ namespace SIGEP_API.Controllers
         {
             try
             {
-                Console.WriteLine("[API] Obteniendo especialidades...");
-
                 using (var db = Conn())
                 {
                     db.Open();
-                    Console.WriteLine("[API] Conexión abierta");
-
                     var data = db.Query<EspecialidadModel>(
                         "ObtenerEspecialidadesSP",
                         commandType: CommandType.StoredProcedure
                     ).ToList();
-
-                    Console.WriteLine($"[API] Especialidades encontradas: {data.Count}");
 
                     return Ok(data);
                 }
             }
             catch (SqlException sqlEx)
             {
-                Console.WriteLine($"[API ERROR SQL] Number: {sqlEx.Number}");
-                Console.WriteLine($"[API ERROR SQL] Message: {sqlEx.Message}");
-                Console.WriteLine($"[API ERROR SQL] Procedure: {sqlEx.Procedure}");
-
                 return StatusCode(500, new
                 {
                     type = "SQL Error",
@@ -234,10 +191,6 @@ namespace SIGEP_API.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[API ERROR] Type: {ex.GetType().Name}");
-                Console.WriteLine($"[API ERROR] Message: {ex.Message}");
-                Console.WriteLine($"[API ERROR] Stack: {ex.StackTrace}");
-
                 return StatusCode(500, new
                 {
                     type = ex.GetType().Name,

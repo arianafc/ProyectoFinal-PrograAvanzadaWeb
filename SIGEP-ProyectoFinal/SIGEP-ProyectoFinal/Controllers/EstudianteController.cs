@@ -79,84 +79,46 @@ namespace SIGEP_ProyectoFinal.Controllers
             return View();
         }
         #endregion
-
         #region Obtener Estudiantes (DataTable)
         [HttpGet]
         public IActionResult GetEstudiantes(string estado = "", int idEspecialidad = 0)
         {
-            System.Diagnostics.Debug.WriteLine("═══════════════════════════════════════════════");
-            System.Diagnostics.Debug.WriteLine($"[WEB] ➡️ GetEstudiantes llamado");
-            System.Diagnostics.Debug.WriteLine($"[WEB] Parámetros: estado='{estado}', idEspecialidad={idEspecialidad}");
-
             try
             {
                 using (var context = _http.CreateClient())
                 {
                     var token = HttpContext.Session.GetString("Token");
-                    System.Diagnostics.Debug.WriteLine($"[WEB] Token presente: {!string.IsNullOrEmpty(token)}");
 
                     context.DefaultRequestHeaders.Authorization =
                         new AuthenticationHeaderValue("Bearer", token);
 
                     var url = Api($"Estudiante/ListarEstudiantes?estado={estado}&idEspecialidad={idEspecialidad}");
-                    System.Diagnostics.Debug.WriteLine($"[WEB] URL del API: {url}");
 
-                    System.Diagnostics.Debug.WriteLine($"[WEB] 📤 Llamando al API...");
                     var resp = context.GetAsync(url).Result;
                     var content = resp.Content.ReadAsStringAsync().Result;
 
-                    System.Diagnostics.Debug.WriteLine($"[WEB] 📨 Respuesta del API:");
-                    System.Diagnostics.Debug.WriteLine($"   - Status: {resp.StatusCode}");
-                    System.Diagnostics.Debug.WriteLine($"   - Content Length: {content?.Length ?? 0}");
-                    System.Diagnostics.Debug.WriteLine($"   - Content (primeros 200 chars): {content?.Substring(0, Math.Min(200, content?.Length ?? 0))}");
-
                     if (resp.IsSuccessStatusCode)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[WEB] 🔄 Deserializando...");
-
                         var lista = JsonSerializer.Deserialize<List<EstudianteListItemModel>>(
                             content,
                             new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
                         );
 
-                        System.Diagnostics.Debug.WriteLine($"[WEB] Lista deserializada:");
-                        System.Diagnostics.Debug.WriteLine($"   - Es null: {lista == null}");
-                        System.Diagnostics.Debug.WriteLine($"   - Cantidad: {lista?.Count ?? 0}");
-
-                        if (lista != null && lista.Count > 0)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"[WEB] 🔎 PRIMER ESTUDIANTE:");
-                            System.Diagnostics.Debug.WriteLine($"   - IdUsuario: {lista[0].IdUsuario}");
-                            System.Diagnostics.Debug.WriteLine($"   - Cedula: {lista[0].Cedula}");
-                            System.Diagnostics.Debug.WriteLine($"   - NombreCompleto: {lista[0].NombreCompleto}");
-                        }
-
                         if (lista == null)
                         {
-                            System.Diagnostics.Debug.WriteLine($"[WEB] ⚠️ Lista es NULL, retornando array vacío");
-                            System.Diagnostics.Debug.WriteLine("═══════════════════════════════════════════════");
                             return Json(new { data = new List<object>() });
                         }
 
-                        System.Diagnostics.Debug.WriteLine($"[WEB] ✅ Retornando {lista.Count} estudiantes al JavaScript");
-                        System.Diagnostics.Debug.WriteLine("═══════════════════════════════════════════════");
                         return Json(new { data = lista });
                     }
                     else
                     {
-                        System.Diagnostics.Debug.WriteLine($"[WEB] ❌ ERROR del API: {content}");
-                        System.Diagnostics.Debug.WriteLine("═══════════════════════════════════════════════");
                         return Json(new { data = new List<object>(), error = content });
                     }
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[WEB] ❌❌❌ EXCEPCIÓN:");
-                System.Diagnostics.Debug.WriteLine($"   - Tipo: {ex.GetType().Name}");
-                System.Diagnostics.Debug.WriteLine($"   - Mensaje: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"   - Stack: {ex.StackTrace}");
-                System.Diagnostics.Debug.WriteLine("═══════════════════════════════════════════════");
                 return Json(new { data = new List<object>(), error = ex.Message });
             }
         }
@@ -174,16 +136,8 @@ namespace SIGEP_ProyectoFinal.Controllers
                         new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
 
                     var url = Api($"Estudiante/ConsultarEstudiante?idUsuario={id}");
-
-                    // Log de la URL
-                    System.Diagnostics.Debug.WriteLine($"URL de la API: {url}");
-
                     var resp = context.GetAsync(url).Result;
-
-                    // Leer el contenido siempre (éxito o error)
                     var content = resp.Content.ReadAsStringAsync().Result;
-                    System.Diagnostics.Debug.WriteLine($"Status Code: {resp.StatusCode}");
-                    System.Diagnostics.Debug.WriteLine($"Response Content: {content}");
 
                     if (resp.IsSuccessStatusCode)
                     {
@@ -202,7 +156,6 @@ namespace SIGEP_ProyectoFinal.Controllers
                     }
                     else
                     {
-                        // Retornar el error completo
                         return Content($@"
                     <div class='alert alert-danger'>
                         <h5>Error al cargar el perfil</h5>

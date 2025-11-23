@@ -57,12 +57,12 @@
                 dataSrc: 'data'
             },
             columns: [
-                { data: 'cedula' },  // ⭐ minúscula
-                { data: 'nombreCompleto' },  // ⭐ camelCase
-                { data: 'especialidadNombre' },  // ⭐ camelCase
-                { data: 'telefono' },  // ⭐ minúscula
+                { data: 'cedula' },  
+                { data: 'nombreCompleto' },  
+                { data: 'especialidadNombre' },  
+                { data: 'telefono' },  
                 {
-                    data: 'estadoAcademico',  // ⭐ camelCase
+                    data: 'estadoAcademico',  
                     render: function (data) {
                         if (data === true) {
                             return crearBadge('badge-aprobado', 'Aprobada');
@@ -74,7 +74,7 @@
                     }
                 },
                 {
-                    data: 'estadoPractica',  // ⭐ camelCase
+                    data: 'estadoPractica',  
                     render: function (data) {
                         var estado = (data || '').toString().trim().toLowerCase();
 
@@ -101,7 +101,7 @@
                     }
                 },
                 {
-                    data: 'idUsuario',  // ⭐ camelCase
+                    data: 'idUsuario',  
                     render: function (data, type, row) {
                         var html =
                             '<button class="btn bg-transparent btn-accion verPerfil" data-id="' + data + '" style="color:#2d594d" title="Ver perfil">' +

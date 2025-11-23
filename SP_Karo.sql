@@ -1005,9 +1005,6 @@ BEGIN
 END
 GO
 
-PRINT '✅ ObtenerEspecialidadesSP creado correctamente';
-GO
-
 -- =============================================
 -- 2. SP PARA ACTUALIZAR ESTADO ACADÉMICO
 -- =============================================
@@ -1033,8 +1030,6 @@ BEGIN
     END CATCH
 END
 GO
-PRINT '✅ ActualizarEstadoAcademicoSP creado correctamente';
-GO
 
 -- =============================================
 -- 3. SP PARA ELIMINAR DOCUMENTO
@@ -1055,18 +1050,20 @@ BEGIN
     END CATCH
 END
 GO
-PRINT '✅ EliminarDocumentoSP creado correctamente';
-GO
 
 -- =============================================
--- 4. SP PARA LISTAR ESTUDIANTES (VERSIÓN COMPLETA)
+-- 4. SP PARA LISTAR ESTUDIANTES
 -- =============================================
 USE SIGEP_WEB
 GO
 
 -- =============================================
--- SP PARA LISTAR ESTUDIANTES (CORREGIDO PARA TU BD)
+-- SP LISTAR ESTUDIANTES
 -- =============================================
+
+USE SIGEP_WEB
+GO
+
 CREATE OR ALTER PROCEDURE ListarEstudiantesSP
     @IdCoordinador INT = NULL,
     @Estado VARCHAR(50) = NULL,
@@ -1088,16 +1085,21 @@ BEGIN
          INNER JOIN Especialidades e ON ue.IdEspecialidad = e.IdEspecialidad
          WHERE ue.IdUsuario = u.IdUsuario 
          ORDER BY ue.IdUsuarioEspecialidad DESC), 'Sin Especialidad') AS EspecialidadNombre,
-        ISNULL(u.EstadoAcademico, 0) AS EstadoAcademico,
+        
+       
+        CAST(ISNULL(u.EstadoAcademico, 0) AS BIT) AS EstadoAcademico,
+        
         ISNULL((SELECT TOP 1 est.Descripcion 
          FROM PracticaEstudiante pe 
          INNER JOIN Estados est ON pe.IdEstado = est.IdEstado
          WHERE pe.IdUsuario = u.IdUsuario 
          ORDER BY pe.IdPractica DESC), 'Sin Procesos Activos') AS EstadoPractica,
+        
         CASE 
             WHEN ISNULL(u.EstadoAcademico, 0) = 1 THEN 1
             ELSE 0
         END AS IdEstado
+        
     FROM Usuarios u
     WHERE u.IdRol = 1 -- Estudiantes
         AND ISNULL(u.IdEstado, 0) != 0 -- Activos
@@ -1179,45 +1181,4 @@ BEGIN
     ORDER BY pe.IdPractica DESC;
 END
 GO
-PRINT '✅ ConsultarEstudianteSP creado correctamente';
-GO
-
--- =============================================
--- VERIFICACIÓN DE CREACIÓN
--- =============================================
-PRINT '';
-PRINT '========================================';
-PRINT 'RESUMEN DE STORED PROCEDURES CREADOS:';
-PRINT '========================================';
-PRINT '1. ObtenerEspecialidadesSP';
-PRINT '2. ActualizarEstadoAcademicoSP';
-PRINT '3. EliminarDocumentoSP';
-PRINT '4. ListarEstudiantesSP';
-PRINT '5. ConsultarEstudianteSP';
-PRINT '========================================';
-PRINT '';
-PRINT '✨ Todos los Stored Procedures han sido creados exitosamente!';
-PRINT '';
-
--- =============================================
--- PRUEBAS BÁSICAS (OPCIONAL)
--- =============================================
-/*
--- Descomentar para probar:
-
--- Probar ObtenerEspecialidadesSP
-EXEC ObtenerEspecialidadesSP;
-
--- Probar ListarEstudiantesSP
-EXEC ListarEstudiantesSP @IdCoordinador = NULL, @Estado = NULL, @IdEspecialidad = NULL;
-
--- Probar ConsultarEstudianteSP (reemplaza 1 con un IdUsuario válido)
-EXEC ConsultarEstudianteSP @IdUsuario = 1;
-
--- Probar ActualizarEstadoAcademicoSP (reemplaza 1 con un IdUsuario válido)
-EXEC ActualizarEstadoAcademicoSP @IdUsuario = 1, @NuevoEstado = 1;
-
--- Probar EliminarDocumentoSP (reemplaza 1 con un IdDocumento válido)
-EXEC EliminarDocumentoSP @IdDocumento = 1;
-*/
 
