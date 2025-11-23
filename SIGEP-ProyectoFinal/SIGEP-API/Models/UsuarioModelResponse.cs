@@ -45,6 +45,7 @@
         public string? Tratamiento { get; set; }
 
         public string? Alergia { get; set; }
+        public string Token { get; set; } = "";
 
     }
 }

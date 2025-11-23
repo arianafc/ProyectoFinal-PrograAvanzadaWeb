@@ -43,6 +43,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                 if (respuesta.IsSuccessStatusCode)
                 {
                     var usuarioRespuesta = respuesta.Content.ReadFromJsonAsync<Usuario>().Result;
+                    HttpContext.Session.SetString("Token", usuarioRespuesta.Token);
                     HttpContext.Session.SetString("Nombre", usuarioRespuesta.Nombre ?? "");
                     HttpContext.Session.SetString("Cedula", usuarioRespuesta.Cedula ?? "");
                     HttpContext.Session.SetInt32("IdUsuario", usuarioRespuesta.IdUsuario);

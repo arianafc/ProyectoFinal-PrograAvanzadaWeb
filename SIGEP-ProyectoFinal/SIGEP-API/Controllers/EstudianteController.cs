@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using SIGEP_API.Models;
 using System.Data;
+using System.Text.Json;
 
 namespace SIGEP_API.Controllers
 {
@@ -22,70 +23,38 @@ namespace SIGEP_API.Controllers
         private SqlConnection Conn() =>
             new SqlConnection(_config["ConnectionStrings:BDConnection"]);
 
-        
-        #region Listar Estudiantes
-[HttpGet]
-[Route("ListarEstudiantes")]
-public IActionResult ListarEstudiantes(string estado = null, int idEspecialidad = 0)
-{
-    try
-    {
-        Console.WriteLine($"[API] ListarEstudiantes - Estado: {estado}, IdEspecialidad: {idEspecialidad}");
 
-        using (var db = Conn())
+        #region Listar Estudiantes CON LOGGING COMPLETO
+        [HttpGet]
+        [Route("ListarEstudiantes")]
+        public IActionResult ListarEstudiantes(string estado = null, int idEspecialidad = 0)
         {
-            db.Open();
-            Console.WriteLine("[API] Conexión abierta");
+            try
+            {
+                using (var db = Conn())
+                {
+                    db.Open();
+                    var p = new DynamicParameters();
+                    p.Add("@IdCoordinador", null);
+                    p.Add("@Estado", string.IsNullOrWhiteSpace(estado) ? null : estado.Trim());
+                    p.Add("@IdEspecialidad", idEspecialidad == 0 ? null : (int?)idEspecialidad);
 
-            var p = new DynamicParameters();
-            p.Add("@IdCoordinador", null);
-            p.Add("@Estado", string.IsNullOrWhiteSpace(estado) ? null : estado.Trim());
-            p.Add("@IdEspecialidad", idEspecialidad == 0 ? null : (int?)idEspecialidad);
+                    var data = db.Query<EstudianteListItemModel>(
+                        "ListarEstudiantesSP",
+                        p,
+                        commandType: CommandType.StoredProcedure
+                    ).ToList();
 
-            var data = db.Query<EstudianteListItemModel>(
-                "ListarEstudiantesSP",
-                p,
-                commandType: CommandType.StoredProcedure
-            ).ToList();
-
-            Console.WriteLine($"[API] Estudiantes encontrados: {data.Count}");
-
-            return Ok(data);
+                    // ⭐⭐⭐ AGREGAR ESTA CONFIGURACIÓN ⭐⭐⭐
+                    return Ok(data); // Esto serializa automáticamente
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
-    }
-    catch (SqlException sqlEx)
-    {
-        Console.WriteLine($"[API ERROR SQL] Number: {sqlEx.Number}");
-        Console.WriteLine($"[API ERROR SQL] Message: {sqlEx.Message}");
-        Console.WriteLine($"[API ERROR SQL] Procedure: {sqlEx.Procedure}");
-        Console.WriteLine($"[API ERROR SQL] Line: {sqlEx.LineNumber}");
-
-        return StatusCode(500, new
-        {
-            type = "SQL Error",
-            message = "Error de base de datos al listar estudiantes",
-            error = sqlEx.Message,
-            number = sqlEx.Number,
-            procedure = sqlEx.Procedure,
-            line = sqlEx.LineNumber
-        });
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[API ERROR] Type: {ex.GetType().Name}");
-        Console.WriteLine($"[API ERROR] Message: {ex.Message}");
-        Console.WriteLine($"[API ERROR] Stack: {ex.StackTrace}");
-
-        return StatusCode(500, new
-        {
-            type = ex.GetType().Name,
-            message = "Error al listar estudiantes",
-            error = ex.Message,
-            innerError = ex.InnerException?.Message
-        });
-    }
-}
-#endregion
+        #endregion
 
         #region Consultar Detalle Estudiante
         [HttpGet]

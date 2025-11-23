@@ -22,9 +22,6 @@
 
     var rol = parseInt(CFG.rol || 0, 10);
 
-    // ===============================
-    // Función para crear badges con estilos
-    // ===============================
     function crearBadge(clase, texto) {
         var estilos = {
             'badge-aprobado': 'background-color: #768C46; color: white;',
@@ -60,12 +57,12 @@
                 dataSrc: 'data'
             },
             columns: [
-                { data: 'Cedula' },  // ⭐ PascalCase
-                { data: 'NombreCompleto' },  // ⭐ PascalCase
-                { data: 'EspecialidadNombre' },  // ⭐ PascalCase
-                { data: 'Telefono' },  // ⭐ PascalCase
+                { data: 'cedula' },  // ⭐ minúscula
+                { data: 'nombreCompleto' },  // ⭐ camelCase
+                { data: 'especialidadNombre' },  // ⭐ camelCase
+                { data: 'telefono' },  // ⭐ minúscula
                 {
-                    data: 'EstadoAcademico',  // ⭐ PascalCase
+                    data: 'estadoAcademico',  // ⭐ camelCase
                     render: function (data) {
                         if (data === true) {
                             return crearBadge('badge-aprobado', 'Aprobada');
@@ -77,7 +74,7 @@
                     }
                 },
                 {
-                    data: 'EstadoPractica',  // ⭐ PascalCase
+                    data: 'estadoPractica',  // ⭐ camelCase
                     render: function (data) {
                         var estado = (data || '').toString().trim().toLowerCase();
 
@@ -104,7 +101,7 @@
                     }
                 },
                 {
-                    data: 'IdUsuario',  // ⭐ PascalCase
+                    data: 'idUsuario',  // ⭐ camelCase
                     render: function (data, type, row) {
                         var html =
                             '<button class="btn bg-transparent btn-accion verPerfil" data-id="' + data + '" style="color:#2d594d" title="Ver perfil">' +
@@ -112,7 +109,7 @@
                             '</button>';
                         if (rol === 2 || rol === 3) {
                             html +=
-                                '<button class="btn bg-transparent btn-accion btn-actualizar-estado" data-id="' + data + '" data-estado="' + (row.IdEstado || 0) + '" style="color:#2d594d" title="Actualizar estado">' +  // ⭐ PascalCase
+                                '<button class="btn bg-transparent btn-accion btn-actualizar-estado" data-id="' + data + '" data-estado="' + (row.idEstado || 0) + '" style="color:#2d594d" title="Actualizar estado">' +  // ⭐ camelCase
                                 '<i class="fas fa-sync-alt"></i>' +
                                 '</button>';
                         }
@@ -201,7 +198,6 @@
             }
         });
     });
-
 
     $(document).on("click", ".btn-eliminar-doc", function (e) {
         e.preventDefault();

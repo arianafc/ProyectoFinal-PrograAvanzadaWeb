@@ -57,6 +57,7 @@
         public List<Encargado>? EncargadoMostrar { get; set; }
 
         public Encargado EstudianteEncargado { get; set; } = new Encargado();
+        public string Token { get; set; } = "";
 
 
     }

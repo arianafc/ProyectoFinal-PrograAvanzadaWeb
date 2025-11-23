@@ -2,9 +2,12 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using Microsoft.IdentityModel.Tokens;
 using SIGEP_API.Models;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Mail;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -36,9 +39,14 @@ namespace SIGEP_API.Controllers
                 parametros.Add("@Contrasenna", usuario.Contrasenna);
 
                 var resultado = context.QueryFirstOrDefault<UsuarioModelResponse>("LoginSP", parametros);
+
                 if (resultado != null)
+                {
+                    resultado.Token = GenerarToken(resultado.IdUsuario, resultado.Nombre, resultado.IdRol);
                     return Ok(resultado);
-                return NotFound();
+                }
+
+                return NotFound();  // ⭐ Este estaba después del otro return
             }
         }
 
@@ -238,6 +246,29 @@ namespace SIGEP_API.Controllers
 
 
         #endregion
+
+        private string GenerarToken(int usuarioId, string nombre, int rol)
+        {
+            var key = _configuration["Valores:KeyJWT"]!;
+
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+        new Claim("id", usuarioId.ToString()),
+        new Claim("nombre", nombre),
+        new Claim("rol", rol.ToString())
+    };
+
+            var token = new JwtSecurityToken(
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(8), 
+                signingCredentials: credentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
 
     }
 }

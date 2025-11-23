@@ -11,6 +11,7 @@ namespace SIGEP_API.Models
         [Required]
 
         public string? Contrasenna { get; set; }
+       
 
 
 
