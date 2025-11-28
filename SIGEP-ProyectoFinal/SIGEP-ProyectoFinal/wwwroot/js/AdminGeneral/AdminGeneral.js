@@ -1,5 +1,5 @@
 ﻿(function () {
-    // Resaltar botón activo
+    
     document.querySelectorAll("button[data-tab]").forEach(btn => {
         btn.addEventListener("click", () => {
             document.querySelectorAll("button[data-tab]").forEach(b => b.classList.remove("active-tab"));

@@ -32,22 +32,29 @@ namespace SIGEP_ProyectoFinal.Controllers
         [HttpGet]
         public IActionResult ConsultarUsuarios(string? rol = null)
         {
-            using (var context = _http.CreateClient())
+            try
             {
-                var urlApi = _configuration["Valores:UrlAPI"] + "AdministracionGeneral/ConsultarUsuarios";
-                if (!string.IsNullOrWhiteSpace(rol))
-                    urlApi += "?rol=" + Uri.EscapeDataString(rol);
-
-                context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
-                var respuesta = context.GetAsync(urlApi).Result;
-
-                if (respuesta.IsSuccessStatusCode)
+                using (var context = _http.CreateClient())
                 {
-                    var datosApi = respuesta.Content.ReadFromJsonAsync<List<UsuarioAdminModel>>().Result;
-                    return Json(new { ok = true, data = datosApi });
-                }
+                    var urlApi = _configuration["Valores:UrlAPI"] + "AdministracionGeneral/ConsultarUsuarios";
+                    if (!string.IsNullOrWhiteSpace(rol))
+                        urlApi += "?rol=" + Uri.EscapeDataString(rol);
 
-                return Json(new { ok = false, mensaje = "Error al consultar usuarios" });
+                    context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
+                    var respuesta = context.GetAsync(urlApi).Result;
+
+                    if (respuesta.IsSuccessStatusCode)
+                    {
+                        var datosApi = respuesta.Content.ReadFromJsonAsync<List<UsuarioAdminModel>>().Result;
+                        return Json(new { ok = true, data = datosApi });
+                    }
+
+                    return Json(new { ok = false, mensaje = "Error al consultar usuarios" });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, mensaje = "Error: " + ex.Message });
             }
         }
 
@@ -64,21 +71,23 @@ namespace SIGEP_ProyectoFinal.Controllers
 
                     if (respuesta.IsSuccessStatusCode)
                     {
-                        // ✅ CORREGIDO: Lee el resultado como int directamente
-                        var resultado = respuesta.Content.ReadFromJsonAsync<int>().Result;
+                      
+                        var contenido = respuesta.Content.ReadAsStringAsync().Result;
 
-                        if (resultado > 0)
+                        if (int.TryParse(contenido, out int resultado))
                         {
-                            return Json(new { ok = true, msg = "Estado actualizado correctamente." });
+                           
+                            if (resultado > 0)
+                            {
+                                return Json(new { ok = true, msg = "Estado actualizado correctamente." });
+                            }
+                            else
+                            {
+                                return Json(new { ok = false, msg = "No se pudo cambiar el estado." });
+                            }
                         }
-                        else if (resultado == -1)
-                        {
-                            return Json(new { ok = false, msg = "No se puede cambiar el estado. Hay dependencias activas." });
-                        }
-                        else
-                        {
-                            return Json(new { ok = false, msg = "No se pudo cambiar el estado." });
-                        }
+
+                        return Json(new { ok = false, msg = "Respuesta inesperada del servidor." });
                     }
 
                     return Json(new { ok = false, msg = "Error al comunicarse con el servidor." });
@@ -103,17 +112,22 @@ namespace SIGEP_ProyectoFinal.Controllers
 
                     if (respuesta.IsSuccessStatusCode)
                     {
-                        // ✅ CORREGIDO: Lee el resultado como int directamente
-                        var resultado = respuesta.Content.ReadFromJsonAsync<int>().Result;
+                        
+                        var contenido = respuesta.Content.ReadAsStringAsync().Result;
 
-                        if (resultado > 0)
+                        if (int.TryParse(contenido, out int resultado))
                         {
-                            return Json(new { ok = true, msg = "Rol actualizado correctamente." });
+                            if (resultado > 0)
+                            {
+                                return Json(new { ok = true, msg = "Rol actualizado correctamente." });
+                            }
+                            else
+                            {
+                                return Json(new { ok = false, msg = "No se pudo actualizar el rol. Verifica que el rol exista en el sistema." });
+                            }
                         }
-                        else
-                        {
-                            return Json(new { ok = false, msg = "No se pudo actualizar el rol. Verifica que el rol sea válido." });
-                        }
+
+                        return Json(new { ok = false, msg = "Respuesta inesperada del servidor." });
                     }
 
                     return Json(new { ok = false, msg = "Error al comunicarse con el servidor." });
@@ -132,19 +146,26 @@ namespace SIGEP_ProyectoFinal.Controllers
         [HttpGet]
         public IActionResult ConsultarEspecialidades()
         {
-            using (var context = _http.CreateClient())
+            try
             {
-                var urlApi = _configuration["Valores:UrlAPI"] + "AdministracionGeneral/ConsultarEspecialidades";
-                context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
-                var respuesta = context.GetAsync(urlApi).Result;
-
-                if (respuesta.IsSuccessStatusCode)
+                using (var context = _http.CreateClient())
                 {
-                    var datosApi = respuesta.Content.ReadFromJsonAsync<List<EspecialidadAdminModel>>().Result;
-                    return Json(new { ok = true, data = datosApi });
-                }
+                    var urlApi = _configuration["Valores:UrlAPI"] + "AdministracionGeneral/ConsultarEspecialidades";
+                    context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
+                    var respuesta = context.GetAsync(urlApi).Result;
 
-                return Json(new { ok = false, mensaje = "Error al consultar especialidades" });
+                    if (respuesta.IsSuccessStatusCode)
+                    {
+                        var datosApi = respuesta.Content.ReadFromJsonAsync<List<EspecialidadAdminModel>>().Result;
+                        return Json(new { ok = true, data = datosApi });
+                    }
+
+                    return Json(new { ok = false, mensaje = "Error al consultar especialidades" });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, mensaje = "Error: " + ex.Message });
             }
         }
 
@@ -161,14 +182,19 @@ namespace SIGEP_ProyectoFinal.Controllers
 
                     if (respuesta.IsSuccessStatusCode)
                     {
-                        var resultado = respuesta.Content.ReadFromJsonAsync<int>().Result;
+                        var contenido = respuesta.Content.ReadAsStringAsync().Result;
 
-                        if (resultado > 0)
-                            return Json(new { ok = true, msg = "Especialidad creada correctamente." });
-                        else if (resultado == -1)
-                            return Json(new { ok = false, msg = "Ya existe una especialidad inactiva con ese nombre. Actívala en lugar de crear una nueva." });
-                        else
-                            return Json(new { ok = false, msg = "Ya existe una especialidad activa con ese nombre." });
+                        if (int.TryParse(contenido, out int resultado))
+                        {
+                            if (resultado > 0)
+                                return Json(new { ok = true, msg = "Especialidad creada correctamente." });
+                            else if (resultado == -1)
+                                return Json(new { ok = false, msg = "Ya existe una especialidad inactiva con ese nombre. Actívala en lugar de crear una nueva." });
+                            else
+                                return Json(new { ok = false, msg = "Ya existe una especialidad activa con ese nombre." });
+                        }
+
+                        return Json(new { ok = false, msg = "Respuesta inesperada del servidor." });
                     }
 
                     return Json(new { ok = false, msg = "Error al comunicarse con el servidor." });
@@ -193,14 +219,19 @@ namespace SIGEP_ProyectoFinal.Controllers
 
                     if (respuesta.IsSuccessStatusCode)
                     {
-                        var resultado = respuesta.Content.ReadFromJsonAsync<int>().Result;
+                        var contenido = respuesta.Content.ReadAsStringAsync().Result;
 
-                        if (resultado > 0)
-                            return Json(new { ok = true, msg = "Cambios guardados correctamente." });
-                        else if (resultado == -1)
-                            return Json(new { ok = false, msg = "Ya existe otra especialidad inactiva con ese nombre." });
-                        else
-                            return Json(new { ok = false, msg = "Ya existe otra especialidad activa con ese nombre." });
+                        if (int.TryParse(contenido, out int resultado))
+                        {
+                            if (resultado > 0)
+                                return Json(new { ok = true, msg = "Cambios guardados correctamente." });
+                            else if (resultado == -1)
+                                return Json(new { ok = false, msg = "Ya existe otra especialidad inactiva con ese nombre." });
+                            else
+                                return Json(new { ok = false, msg = "Ya existe otra especialidad activa con ese nombre." });
+                        }
+
+                        return Json(new { ok = false, msg = "Respuesta inesperada del servidor." });
                     }
 
                     return Json(new { ok = false, msg = "Error al comunicarse con el servidor." });
@@ -225,14 +256,19 @@ namespace SIGEP_ProyectoFinal.Controllers
 
                     if (respuesta.IsSuccessStatusCode)
                     {
-                        var resultado = respuesta.Content.ReadFromJsonAsync<int>().Result;
+                        var contenido = respuesta.Content.ReadAsStringAsync().Result;
 
-                        if (resultado > 0)
-                            return Json(new { ok = true, msg = $"Especialidad {(request.NuevoEstado == "Activo" ? "activada" : "desactivada")} correctamente." });
-                        else if (resultado == -1)
-                            return Json(new { ok = false, msg = "No se puede desactivar. Hay usuarios activos con esta especialidad." });
-                        else
-                            return Json(new { ok = false, msg = "No se pudo cambiar el estado." });
+                        if (int.TryParse(contenido, out int resultado))
+                        {
+                            if (resultado > 0)
+                                return Json(new { ok = true, msg = $"Especialidad {(request.NuevoEstado == "Activo" ? "activada" : "desactivada")} correctamente." });
+                            else if (resultado == -1)
+                                return Json(new { ok = false, msg = "No se puede desactivar. Hay usuarios activos con esta especialidad." });
+                            else
+                                return Json(new { ok = false, msg = "No se pudo cambiar el estado." });
+                        }
+
+                        return Json(new { ok = false, msg = "Respuesta inesperada del servidor." });
                     }
 
                     return Json(new { ok = false, msg = "Error al comunicarse con el servidor." });
@@ -251,19 +287,26 @@ namespace SIGEP_ProyectoFinal.Controllers
         [HttpGet]
         public IActionResult ConsultarSecciones()
         {
-            using (var context = _http.CreateClient())
+            try
             {
-                var urlApi = _configuration["Valores:UrlAPI"] + "AdministracionGeneral/ConsultarSecciones";
-                context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
-                var respuesta = context.GetAsync(urlApi).Result;
-
-                if (respuesta.IsSuccessStatusCode)
+                using (var context = _http.CreateClient())
                 {
-                    var datosApi = respuesta.Content.ReadFromJsonAsync<List<SeccionAdminModel>>().Result;
-                    return Json(new { ok = true, data = datosApi });
-                }
+                    var urlApi = _configuration["Valores:UrlAPI"] + "AdministracionGeneral/ConsultarSecciones";
+                    context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
+                    var respuesta = context.GetAsync(urlApi).Result;
 
-                return Json(new { ok = false, mensaje = "Error al consultar secciones" });
+                    if (respuesta.IsSuccessStatusCode)
+                    {
+                        var datosApi = respuesta.Content.ReadFromJsonAsync<List<SeccionAdminModel>>().Result;
+                        return Json(new { ok = true, data = datosApi });
+                    }
+
+                    return Json(new { ok = false, mensaje = "Error al consultar secciones" });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, mensaje = "Error: " + ex.Message });
             }
         }
 
@@ -280,14 +323,19 @@ namespace SIGEP_ProyectoFinal.Controllers
 
                     if (respuesta.IsSuccessStatusCode)
                     {
-                        var resultado = respuesta.Content.ReadFromJsonAsync<int>().Result;
+                        var contenido = respuesta.Content.ReadAsStringAsync().Result;
 
-                        if (resultado > 0)
-                            return Json(new { ok = true, msg = "Sección creada correctamente." });
-                        else if (resultado == -1)
-                            return Json(new { ok = false, msg = "Ya existe una sección inactiva con ese nombre. Actívala en lugar de crear una nueva." });
-                        else
-                            return Json(new { ok = false, msg = "Ya existe una sección activa con ese nombre." });
+                        if (int.TryParse(contenido, out int resultado))
+                        {
+                            if (resultado > 0)
+                                return Json(new { ok = true, msg = "Sección creada correctamente." });
+                            else if (resultado == -1)
+                                return Json(new { ok = false, msg = "Ya existe una sección inactiva con ese nombre. Actívala en lugar de crear una nueva." });
+                            else
+                                return Json(new { ok = false, msg = "Ya existe una sección activa con ese nombre." });
+                        }
+
+                        return Json(new { ok = false, msg = "Respuesta inesperada del servidor." });
                     }
 
                     return Json(new { ok = false, msg = "Error al comunicarse con el servidor." });
@@ -312,14 +360,19 @@ namespace SIGEP_ProyectoFinal.Controllers
 
                     if (respuesta.IsSuccessStatusCode)
                     {
-                        var resultado = respuesta.Content.ReadFromJsonAsync<int>().Result;
+                        var contenido = respuesta.Content.ReadAsStringAsync().Result;
 
-                        if (resultado > 0)
-                            return Json(new { ok = true, msg = "Cambios guardados correctamente." });
-                        else if (resultado == -1)
-                            return Json(new { ok = false, msg = "Ya existe otra sección inactiva con ese nombre." });
-                        else
-                            return Json(new { ok = false, msg = "Ya existe otra sección activa con ese nombre." });
+                        if (int.TryParse(contenido, out int resultado))
+                        {
+                            if (resultado > 0)
+                                return Json(new { ok = true, msg = "Cambios guardados correctamente." });
+                            else if (resultado == -1)
+                                return Json(new { ok = false, msg = "Ya existe otra sección inactiva con ese nombre." });
+                            else
+                                return Json(new { ok = false, msg = "Ya existe otra sección activa con ese nombre." });
+                        }
+
+                        return Json(new { ok = false, msg = "Respuesta inesperada del servidor." });
                     }
 
                     return Json(new { ok = false, msg = "Error al comunicarse con el servidor." });
@@ -344,14 +397,19 @@ namespace SIGEP_ProyectoFinal.Controllers
 
                     if (respuesta.IsSuccessStatusCode)
                     {
-                        var resultado = respuesta.Content.ReadFromJsonAsync<int>().Result;
+                        var contenido = respuesta.Content.ReadAsStringAsync().Result;
 
-                        if (resultado > 0)
-                            return Json(new { ok = true, msg = $"Sección {(request.NuevoEstado == "Activo" ? "activada" : "desactivada")} correctamente." });
-                        else if (resultado == -1)
-                            return Json(new { ok = false, msg = "No se puede desactivar. Hay usuarios activos en esta sección." });
-                        else
-                            return Json(new { ok = false, msg = "No se pudo cambiar el estado." });
+                        if (int.TryParse(contenido, out int resultado))
+                        {
+                            if (resultado > 0)
+                                return Json(new { ok = true, msg = $"Sección {(request.NuevoEstado == "Activo" ? "activada" : "desactivada")} correctamente." });
+                            else if (resultado == -1)
+                                return Json(new { ok = false, msg = "No se puede desactivar. Hay usuarios activos en esta sección." });
+                            else
+                                return Json(new { ok = false, msg = "No se pudo cambiar el estado." });
+                        }
+
+                        return Json(new { ok = false, msg = "Respuesta inesperada del servidor." });
                     }
 
                     return Json(new { ok = false, msg = "Error al comunicarse con el servidor." });

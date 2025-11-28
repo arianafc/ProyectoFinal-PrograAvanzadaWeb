@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using SIGEP_API.Models;
+using System.Data;
 
 namespace SIGEP_API.Controllers
 {
@@ -12,10 +13,12 @@ namespace SIGEP_API.Controllers
     public class AdministracionGeneralController : ControllerBase
     {
         private readonly IConfiguration _configuration;
+        private readonly ILogger<AdministracionGeneralController> _logger;
 
-        public AdministracionGeneralController(IConfiguration configuration)
+        public AdministracionGeneralController(IConfiguration configuration, ILogger<AdministracionGeneralController> logger)
         {
             _configuration = configuration;
+            _logger = logger;
         }
 
         #region Usuarios
@@ -24,13 +27,21 @@ namespace SIGEP_API.Controllers
         [Route("ConsultarUsuarios")]
         public IActionResult ConsultarUsuarios(string? rol = null)
         {
-            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            try
             {
-                var parametros = new DynamicParameters();
-                parametros.Add("Rol", rol);
+                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+                {
+                    var parametros = new DynamicParameters();
+                    parametros.Add("Rol", rol);
 
-                var resultado = context.Query<DatosUsuarioResponseModel>("ConsultarUsuariosSP", parametros, commandType: System.Data.CommandType.StoredProcedure);
-                return Ok(resultado);
+                    var resultado = context.Query<DatosUsuarioResponseModel>("ConsultarUsuariosSP", parametros, commandType: CommandType.StoredProcedure);
+                    return Ok(resultado);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en ConsultarUsuarios");
+                return StatusCode(500, "Error interno del servidor");
             }
         }
 
@@ -38,14 +49,27 @@ namespace SIGEP_API.Controllers
         [Route("CambiarEstadoUsuario")]
         public IActionResult CambiarEstadoUsuario(CambiarEstadoUsuarioRequestModel request)
         {
-            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            try
             {
-                var parametros = new DynamicParameters();
-                parametros.Add("IdUsuario", request.IdUsuario);
-                parametros.Add("NuevoEstado", request.NuevoEstado);
+                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+                {
+                    var parametros = new DynamicParameters();
+                    parametros.Add("IdUsuario", request.IdUsuario);
+                    parametros.Add("NuevoEstado", request.NuevoEstado);
+                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-                var resultado = context.Execute("CambiarEstadoUsuarioSP", parametros, commandType: System.Data.CommandType.StoredProcedure);
-                return Ok(resultado);
+                    context.Execute("CambiarEstadoUsuarioSP", parametros, commandType: CommandType.StoredProcedure);
+
+                    var resultado = parametros.Get<int>("Resultado");
+                    _logger.LogInformation($"CambiarEstadoUsuario - IdUsuario: {request.IdUsuario}, NuevoEstado: {request.NuevoEstado}, Resultado: {resultado}");
+
+                    return Ok(resultado);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en CambiarEstadoUsuario");
+                return StatusCode(500, "Error interno del servidor");
             }
         }
 
@@ -53,14 +77,27 @@ namespace SIGEP_API.Controllers
         [Route("CambiarRolUsuario")]
         public IActionResult CambiarRolUsuario(CambiarRolUsuarioRequestModel request)
         {
-            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            try
             {
-                var parametros = new DynamicParameters();
-                parametros.Add("IdUsuario", request.IdUsuario);
-                parametros.Add("Rol", request.Rol);
+                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+                {
+                    var parametros = new DynamicParameters();
+                    parametros.Add("IdUsuario", request.IdUsuario);
+                    parametros.Add("Rol", request.Rol);
+                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-                var resultado = context.Execute("CambiarRolUsuarioSP", parametros, commandType: System.Data.CommandType.StoredProcedure);
-                return Ok(resultado);
+                    context.Execute("CambiarRolUsuarioSP", parametros, commandType: CommandType.StoredProcedure);
+
+                    var resultado = parametros.Get<int>("Resultado");
+                    _logger.LogInformation($"CambiarRolUsuario - IdUsuario: {request.IdUsuario}, Rol: {request.Rol}, Resultado: {resultado}");
+
+                    return Ok(resultado);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error en CambiarRolUsuario - IdUsuario: {request.IdUsuario}, Rol: {request.Rol}");
+                return StatusCode(500, "Error interno del servidor");
             }
         }
 
@@ -72,10 +109,18 @@ namespace SIGEP_API.Controllers
         [Route("ConsultarEspecialidades")]
         public IActionResult ConsultarEspecialidades()
         {
-            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            try
             {
-                var resultado = context.Query<DatosEspecialidadResponseModel>("ConsultarEspecialidadesSP", commandType: System.Data.CommandType.StoredProcedure);
-                return Ok(resultado);
+                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+                {
+                    var resultado = context.Query<DatosEspecialidadResponseModel>("ConsultarEspecialidadesSP", commandType: CommandType.StoredProcedure);
+                    return Ok(resultado);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en ConsultarEspecialidades");
+                return StatusCode(500, "Error interno del servidor");
             }
         }
 
@@ -83,13 +128,24 @@ namespace SIGEP_API.Controllers
         [Route("CrearEspecialidad")]
         public IActionResult CrearEspecialidad(CrearEspecialidadRequestModel request)
         {
-            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            try
             {
-                var parametros = new DynamicParameters();
-                parametros.Add("Nombre", request.Nombre);
+                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+                {
+                    var parametros = new DynamicParameters();
+                    parametros.Add("Nombre", request.Nombre);
+                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-                var resultado = context.Execute("CrearEspecialidadSP", parametros, commandType: System.Data.CommandType.StoredProcedure);
-                return Ok(resultado);
+                    context.Execute("CrearEspecialidadSP", parametros, commandType: CommandType.StoredProcedure);
+
+                    var resultado = parametros.Get<int>("Resultado");
+                    return Ok(resultado);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en CrearEspecialidad");
+                return StatusCode(500, "Error interno del servidor");
             }
         }
 
@@ -97,14 +153,25 @@ namespace SIGEP_API.Controllers
         [Route("EditarEspecialidad")]
         public IActionResult EditarEspecialidad(EditarEspecialidadRequestModel request)
         {
-            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            try
             {
-                var parametros = new DynamicParameters();
-                parametros.Add("Id", request.Id);
-                parametros.Add("Nombre", request.Nombre);
+                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+                {
+                    var parametros = new DynamicParameters();
+                    parametros.Add("Id", request.Id);
+                    parametros.Add("Nombre", request.Nombre);
+                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-                var resultado = context.Execute("EditarEspecialidadSP", parametros, commandType: System.Data.CommandType.StoredProcedure);
-                return Ok(resultado);
+                    context.Execute("EditarEspecialidadSP", parametros, commandType: CommandType.StoredProcedure);
+
+                    var resultado = parametros.Get<int>("Resultado");
+                    return Ok(resultado);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en EditarEspecialidad");
+                return StatusCode(500, "Error interno del servidor");
             }
         }
 
@@ -112,14 +179,25 @@ namespace SIGEP_API.Controllers
         [Route("CambiarEstadoEspecialidad")]
         public IActionResult CambiarEstadoEspecialidad(CambiarEstadoEspecialidadRequestModel request)
         {
-            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            try
             {
-                var parametros = new DynamicParameters();
-                parametros.Add("Id", request.Id);
-                parametros.Add("NuevoEstado", request.NuevoEstado);
+                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+                {
+                    var parametros = new DynamicParameters();
+                    parametros.Add("Id", request.Id);
+                    parametros.Add("NuevoEstado", request.NuevoEstado);
+                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-                var resultado = context.Execute("CambiarEstadoEspecialidadSP", parametros, commandType: System.Data.CommandType.StoredProcedure);
-                return Ok(resultado);
+                    context.Execute("CambiarEstadoEspecialidadSP", parametros, commandType: CommandType.StoredProcedure);
+
+                    var resultado = parametros.Get<int>("Resultado");
+                    return Ok(resultado);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en CambiarEstadoEspecialidad");
+                return StatusCode(500, "Error interno del servidor");
             }
         }
 
@@ -131,10 +209,18 @@ namespace SIGEP_API.Controllers
         [Route("ConsultarSecciones")]
         public IActionResult ConsultarSecciones()
         {
-            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            try
             {
-                var resultado = context.Query<DatosSeccionResponseModel>("ConsultarSeccionesSP", commandType: System.Data.CommandType.StoredProcedure);
-                return Ok(resultado);
+                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+                {
+                    var resultado = context.Query<DatosSeccionResponseModel>("ConsultarSeccionesSP", commandType: CommandType.StoredProcedure);
+                    return Ok(resultado);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en ConsultarSecciones");
+                return StatusCode(500, "Error interno del servidor");
             }
         }
 
@@ -142,13 +228,24 @@ namespace SIGEP_API.Controllers
         [Route("CrearSeccion")]
         public IActionResult CrearSeccion(CrearSeccionRequestModel request)
         {
-            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            try
             {
-                var parametros = new DynamicParameters();
-                parametros.Add("NombreSeccion", request.NombreSeccion);
+                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+                {
+                    var parametros = new DynamicParameters();
+                    parametros.Add("NombreSeccion", request.NombreSeccion);
+                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-                var resultado = context.Execute("CrearSeccionSP", parametros, commandType: System.Data.CommandType.StoredProcedure);
-                return Ok(resultado);
+                    context.Execute("CrearSeccionSP", parametros, commandType: CommandType.StoredProcedure);
+
+                    var resultado = parametros.Get<int>("Resultado");
+                    return Ok(resultado);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en CrearSeccion");
+                return StatusCode(500, "Error interno del servidor");
             }
         }
 
@@ -156,14 +253,25 @@ namespace SIGEP_API.Controllers
         [Route("EditarSeccion")]
         public IActionResult EditarSeccion(EditarSeccionRequestModel request)
         {
-            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            try
             {
-                var parametros = new DynamicParameters();
-                parametros.Add("Id", request.Id);
-                parametros.Add("NombreSeccion", request.NombreSeccion);
+                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+                {
+                    var parametros = new DynamicParameters();
+                    parametros.Add("Id", request.Id);
+                    parametros.Add("NombreSeccion", request.NombreSeccion);
+                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-                var resultado = context.Execute("EditarSeccionSP", parametros, commandType: System.Data.CommandType.StoredProcedure);
-                return Ok(resultado);
+                    context.Execute("EditarSeccionSP", parametros, commandType: CommandType.StoredProcedure);
+
+                    var resultado = parametros.Get<int>("Resultado");
+                    return Ok(resultado);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en EditarSeccion");
+                return StatusCode(500, "Error interno del servidor");
             }
         }
 
@@ -171,14 +279,25 @@ namespace SIGEP_API.Controllers
         [Route("CambiarEstadoSeccion")]
         public IActionResult CambiarEstadoSeccion(CambiarEstadoSeccionRequestModel request)
         {
-            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            try
             {
-                var parametros = new DynamicParameters();
-                parametros.Add("Id", request.Id);
-                parametros.Add("NuevoEstado", request.NuevoEstado);
+                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+                {
+                    var parametros = new DynamicParameters();
+                    parametros.Add("Id", request.Id);
+                    parametros.Add("NuevoEstado", request.NuevoEstado);
+                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-                var resultado = context.Execute("CambiarEstadoSeccionSP", parametros, commandType: System.Data.CommandType.StoredProcedure);
-                return Ok(resultado);
+                    context.Execute("CambiarEstadoSeccionSP", parametros, commandType: CommandType.StoredProcedure);
+
+                    var resultado = parametros.Get<int>("Resultado");
+                    return Ok(resultado);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en CambiarEstadoSeccion");
+                return StatusCode(500, "Error interno del servidor");
             }
         }
 
