@@ -1182,3 +1182,393 @@ BEGIN
 END
 GO
 
+--27-11-25
+-- =============================================
+-- STORED PROCEDURES PARA ADMINISTRACIÓN GENERAL
+-- =============================================
+
+
+USE SIGEP_WEB
+GO
+
+-- =============================================
+-- 1. ConsultarUsuariosSP: Consulta usuarios con filtro opcional por rol
+-- =============================================
+USE SIGEP_WEB
+GO
+
+CREATE OR ALTER PROCEDURE ConsultarUsuariosSP
+    @Rol VARCHAR(50) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        u.IdUsuario,
+        (u.Nombre + ' ' + u.Apellido1 + ' ' + ISNULL(u.Apellido2, '')) AS Nombre,
+        u.Cedula,
+        (SELECT TOP 1 Email FROM Emails WHERE IdUsuario = u.IdUsuario) AS Email,
+        r.Descripcion AS Rol,
+       
+        CASE 
+            WHEN u.IdEstado = 1 THEN 'Activo'
+            ELSE 'Inactivo'
+        END AS Estado,
+        u.IdEstado
+    FROM Usuarios u
+    INNER JOIN Roles r ON u.IdRol = r.IdRol
+    INNER JOIN Estados e ON u.IdEstado = e.IdEstado
+    WHERE (@Rol IS NULL OR r.Descripcion = @Rol)
+    ORDER BY u.IdEstado ASC, u.Nombre ASC
+END
+GO
+
+
+-- =============================================
+-- 2. CambiarEstadoUsuarioSP: Cambia el estado de un usuario
+-- =============================================
+CREATE OR ALTER PROCEDURE CambiarEstadoUsuarioSP
+    @IdUsuario INT,
+    @NuevoEstado VARCHAR(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DECLARE @IdEstado INT
+    
+    -- Determinar IdEstado según el valor del parámetro
+    IF @NuevoEstado = 'Activo'
+        SET @IdEstado = 1
+    ELSE IF @NuevoEstado = 'Inactivo'
+        SET @IdEstado = 2
+    ELSE
+    BEGIN
+        -- Estado no válido
+        RETURN 0
+    END
+    
+    -- Verificar que el usuario existe
+    IF NOT EXISTS (SELECT 1 FROM Usuarios WHERE IdUsuario = @IdUsuario)
+    BEGIN
+        RETURN 0
+    END
+    
+    -- Actualizar estado
+    UPDATE Usuarios
+    SET IdEstado = @IdEstado
+    WHERE IdUsuario = @IdUsuario
+    
+    RETURN @@ROWCOUNT
+END
+GO
+
+-- =============================================
+-- 3. CambiarRolUsuarioSP: Cambia el rol de un usuario
+-- =============================================
+CREATE OR ALTER PROCEDURE CambiarRolUsuarioSP
+    @IdUsuario INT,
+    @Rol VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DECLARE @IdRol INT
+    
+    -- Obtener IdRol según descripción
+    SELECT @IdRol = IdRol
+    FROM Roles
+    WHERE Descripcion = @Rol
+    
+    IF @IdRol IS NULL
+    BEGIN
+        RETURN 0
+    END
+    
+    -- Verificar que el usuario existe
+    IF NOT EXISTS (SELECT 1 FROM Usuarios WHERE IdUsuario = @IdUsuario)
+    BEGIN
+        RETURN 0
+    END
+    
+    -- Actualizar rol
+    UPDATE Usuarios
+    SET IdRol = @IdRol
+    WHERE IdUsuario = @IdUsuario
+    
+    RETURN @@ROWCOUNT
+END
+GO
+
+-- =============================================
+-- 4. ConsultarEspecialidadesSP: Consulta todas las especialidades
+-- =============================================
+CREATE OR ALTER PROCEDURE ConsultarEspecialidadesSP
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        IdEspecialidad,
+        Nombre,
+        IdEstado
+    FROM Especialidades
+    ORDER BY IdEstado ASC, Nombre ASC
+END
+GO
+
+-- =============================================
+-- 5. CrearEspecialidadSP: Crea una nueva especialidad
+-- =============================================
+CREATE OR ALTER PROCEDURE CrearEspecialidadSP
+    @Nombre VARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Verificar si ya existe una especialidad con ese nombre
+    IF EXISTS (SELECT 1 FROM Especialidades WHERE Nombre = @Nombre)
+    BEGIN
+        DECLARE @EstadoExistente INT
+        SELECT @EstadoExistente = IdEstado
+        FROM Especialidades
+        WHERE Nombre = @Nombre
+        
+      
+        IF @EstadoExistente = 2
+            RETURN -1 
+        ELSE
+            RETURN 0   
+    END
+    
+    -- Insertar nueva especialidad
+    INSERT INTO Especialidades (Nombre, IdEstado)
+    VALUES (@Nombre, 1)
+    
+    RETURN @@ROWCOUNT
+END
+GO
+
+-- =============================================
+-- 6. EditarEspecialidadSP: Edita una especialidad existente
+-- =============================================
+CREATE OR ALTER PROCEDURE EditarEspecialidadSP
+    @Id INT,
+    @Nombre VARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Verificar que la especialidad existe
+    IF NOT EXISTS (SELECT 1 FROM Especialidades WHERE IdEspecialidad = @Id)
+    BEGIN
+        RETURN 0
+    END
+    
+    -- Verificar duplicados (excluyendo el mismo registro)
+    IF EXISTS (SELECT 1 FROM Especialidades WHERE Nombre = @Nombre AND IdEspecialidad <> @Id)
+    BEGIN
+        DECLARE @EstadoDuplicado INT
+        SELECT @EstadoDuplicado = IdEstado
+        FROM Especialidades
+        WHERE Nombre = @Nombre AND IdEspecialidad <> @Id
+        
+        IF @EstadoDuplicado = 2
+            RETURN -1  
+        ELSE
+            RETURN 0   
+    END
+    
+    -- Actualizar especialidad
+    UPDATE Especialidades
+    SET Nombre = @Nombre
+    WHERE IdEspecialidad = @Id
+    
+    RETURN @@ROWCOUNT
+END
+GO
+
+-- =============================================
+-- 7. CambiarEstadoEspecialidadSP: Cambia el estado de una especialidad
+-- =============================================
+CREATE OR ALTER PROCEDURE CambiarEstadoEspecialidadSP
+    @Id INT,
+    @NuevoEstado VARCHAR(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DECLARE @IdEstado INT
+    
+    IF @NuevoEstado = 'Activo'
+        SET @IdEstado = 1
+    ELSE IF @NuevoEstado = 'Inactivo'
+        SET @IdEstado = 2
+    ELSE
+    BEGIN
+        RETURN 0
+    END
+    
+    -- Si se va a desactivar, verificar que no haya usuarios activos relacionados
+    IF @IdEstado = 2
+    BEGIN
+        IF EXISTS (
+            SELECT 1
+            FROM UsuarioEspecialidad ue
+            INNER JOIN Usuarios u ON ue.IdUsuario = u.IdUsuario
+            WHERE ue.IdEspecialidad = @Id AND u.IdEstado = 1
+        )
+        BEGIN
+            RETURN -1  
+        END
+    END
+    
+    -- Verificar que la especialidad existe
+    IF NOT EXISTS (SELECT 1 FROM Especialidades WHERE IdEspecialidad = @Id)
+    BEGIN
+        RETURN 0
+    END
+    
+    -- Actualizar estado
+    UPDATE Especialidades
+    SET IdEstado = @IdEstado
+    WHERE IdEspecialidad = @Id
+    
+    RETURN @@ROWCOUNT
+END
+GO
+
+-- =============================================
+-- 8. ConsultarSeccionesSP: Consulta todas las secciones
+-- =============================================
+CREATE OR ALTER PROCEDURE ConsultarSeccionesSP
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        IdSeccion,
+        Seccion,
+        IdEstado
+    FROM Secciones
+    ORDER BY IdEstado ASC, Seccion ASC
+END
+GO
+
+-- =============================================
+-- 9. CrearSeccionSP: Crea una nueva sección
+-- =============================================
+CREATE OR ALTER PROCEDURE CrearSeccionSP
+    @NombreSeccion VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Verificar si ya existe una sección con ese nombre
+    IF EXISTS (SELECT 1 FROM Secciones WHERE Seccion = @NombreSeccion)
+    BEGIN
+        DECLARE @EstadoExistente INT
+        SELECT @EstadoExistente = IdEstado
+        FROM Secciones
+        WHERE Seccion = @NombreSeccion
+        
+        IF @EstadoExistente = 2
+            RETURN -1  
+        ELSE
+            RETURN 0   
+    END
+    
+    -- Insertar nueva sección
+    INSERT INTO Secciones (Seccion, IdEstado)
+    VALUES (@NombreSeccion, 1)  -- 1 = Activo
+    
+    RETURN @@ROWCOUNT
+END
+GO
+
+-- =============================================
+-- 10. EditarSeccionSP: Edita una sección existente
+-- =============================================
+CREATE OR ALTER PROCEDURE EditarSeccionSP
+    @Id INT,
+    @NombreSeccion VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Verificar que la sección existe
+    IF NOT EXISTS (SELECT 1 FROM Secciones WHERE IdSeccion = @Id)
+    BEGIN
+        RETURN 0
+    END
+    
+    -- Verificar duplicados (excluyendo el mismo registro)
+    IF EXISTS (SELECT 1 FROM Secciones WHERE Seccion = @NombreSeccion AND IdSeccion <> @Id)
+    BEGIN
+        DECLARE @EstadoDuplicado INT
+        SELECT @EstadoDuplicado = IdEstado
+        FROM Secciones
+        WHERE Seccion = @NombreSeccion AND IdSeccion <> @Id
+        
+        IF @EstadoDuplicado = 2
+            RETURN -1 
+        ELSE
+            RETURN 0  
+    END
+    
+    -- Actualizar sección
+    UPDATE Secciones
+    SET Seccion = @NombreSeccion
+    WHERE IdSeccion = @Id
+    
+    RETURN @@ROWCOUNT
+END
+GO
+
+-- =============================================
+-- 11. CambiarEstadoSeccionSP: Cambia el estado de una sección
+-- =============================================
+CREATE OR ALTER PROCEDURE CambiarEstadoSeccionSP
+    @Id INT,
+    @NuevoEstado VARCHAR(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DECLARE @IdEstado INT
+    
+    IF @NuevoEstado = 'Activo'
+        SET @IdEstado = 1
+    ELSE IF @NuevoEstado = 'Inactivo'
+        SET @IdEstado = 2
+    ELSE
+    BEGIN
+        RETURN 0
+    END
+    
+    -- Si se va a desactivar, verificar que no haya usuarios activos relacionados
+    IF @IdEstado = 2
+    BEGIN
+        IF EXISTS (
+            SELECT 1
+            FROM Usuarios
+            WHERE IdSeccion = @Id AND IdEstado = 1
+        )
+        BEGIN
+            RETURN -1  -- Código especial: hay usuarios activos relacionados
+        END
+    END
+    
+    -- Verificar que la sección existe
+    IF NOT EXISTS (SELECT 1 FROM Secciones WHERE IdSeccion = @Id)
+    BEGIN
+        RETURN 0
+    END
+    
+    -- Actualizar estado
+    UPDATE Secciones
+    SET IdEstado = @IdEstado
+    WHERE IdSeccion = @Id
+    
+    RETURN @@ROWCOUNT
+END
+GO

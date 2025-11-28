@@ -1,0 +1,217 @@
+﻿table.dataTable tbody tr {
+    background-color: #fff !important;
+}
+
+:root {
+    --c-terracota: #BE6E46;
+    --c-azul-oscuro: #162657;
+    --c-verde-oscuro: #2D594D;
+    --c-turquesa: #48A9A6;
+    --c-verde-claro: #A3BFA8;
+}
+
+/* Base */
+.vacantes-wrapper .tab-btn {
+    color: var(--c-verde-oscuro);
+    font-weight: 600;
+    border: 2px solid var(--c-verde-oscuro);
+    background-color: #ffffff;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+    letter-spacing: .02em;
+}
+
+    .vacantes-wrapper .tab-btn i {
+        font-size: 1.1rem;
+    }
+
+    /* Estados generales: siempre texto blanco en hover/activo */
+    .vacantes-wrapper .tab-btn:hover,
+    .vacantes-wrapper .tab-btn.active-tab {
+        color: #fff;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+    }
+
+    .vacantes-wrapper .tab-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+    }
+
+    /* Usuarios: azul oscuro */
+    .vacantes-wrapper .tab-btn.usuarios {
+        border-color: var(--c-azul-oscuro);
+        color: var(--c-azul-oscuro);
+    }
+
+        .vacantes-wrapper .tab-btn.usuarios:hover,
+        .vacantes-wrapper .tab-btn.usuarios.active-tab {
+            background-color: var(--c-azul-oscuro);
+            border-color: var(--c-azul-oscuro);
+            color: #fff;
+        }
+
+    /* Especialidades: terracota */
+    .vacantes-wrapper .tab-btn.especialidades {
+        border-color: var(--c-terracota);
+        color: var(--c-terracota);
+    }
+
+        .vacantes-wrapper .tab-btn.especialidades:hover,
+        .vacantes-wrapper .tab-btn.especialidades.active-tab {
+            background-color: var(--c-terracota);
+            border-color: var(--c-terracota);
+            color: #fff;
+        }
+
+    /* Secciones: turquesa */
+    .vacantes-wrapper .tab-btn.secciones {
+        border-color: var(--c-turquesa);
+        color: var(--c-turquesa);
+    }
+
+        .vacantes-wrapper .tab-btn.secciones:hover,
+        .vacantes-wrapper .tab-btn.secciones.active-tab {
+            background-color: var(--c-turquesa);
+            border-color: var(--c-turquesa);
+            color: #fff;
+        }
+
+/* Sección activa (mostrar con animación suave) */
+.seccion-adm {
+    animation: fadeIn 0.4s ease;
+}
+
+    /* Encabezado de secciones */
+    .seccion-adm h3 {
+        color: #2D594D;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    /* Botones dentro de secciones (como "+ Nueva Especialidad") */
+    .seccion-adm button.btn {
+        background-color: #2D594D;
+        color: white;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+        .seccion-adm button.btn:hover {
+            background-color: #768C46;
+            transform: scale(1.03);
+        }
+
+    /* Tarjetas contenedoras de tablas */
+    .seccion-adm .card {
+        border: none;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        background-color: #fff;
+    }
+
+/* Tablas */
+table.dataTable thead {
+    background-color: #2D594D;
+    color: white;
+    border-radius: 8px;
+}
+
+table.dataTable th,
+table.dataTable td {
+    vertical-align: middle;
+    text-align: center;
+}
+
+table.dataTable th {
+    color: #fff !important;
+}
+
+table.dataTable tbody tr:hover {
+    background-color: #EAF2D8;
+}
+
+/* Modales */
+.modal-content {
+    border: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    background-color: #2D594D !important;
+    color: white !important;
+    border-bottom: none;
+}
+
+.modal-footer .btn {
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+/* Formulario dentro del modal */
+.modal-body label {
+    color: #2D594D;
+    font-weight: 600;
+}
+
+/* Transición visual entre tabs */
+.d-none {
+    display: none !important;
+}
+
+.estado-badge {
+    font-weight: bold;
+    padding: 4px 12px;
+    border-radius: 12px;
+    color: white;
+    display: inline-block;
+}
+
+.estado-activo {
+    background-color: #2D594D;
+    border: 1px solid #2D594D;
+}
+
+.estado-inactivo {
+    background-color: #F8D7DA;
+    color: #842029;
+}
+
+.acciones-tabla {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-accion {
+    border: none;
+    background: transparent;
+    padding: 6px;
+    border-radius: 6px;
+    transition: all 0.2s ease-in-out;
+}
+
+    .btn-accion i {
+        font-size: .9rem;
+    }
+
+    .btn-accion.editar {
+        color: #2D594D;
+    }
+
+    .btn-accion.toggle {
+        color: #842029;
+    }
+
+    .btn-accion:hover {
+        transform: scale(1.15);
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .btn-accion.toggle:hover {
+        color: #842029;
+    }
+
+    .btn-accion.editar:hover {
+        color: #2D594D;
+    }
