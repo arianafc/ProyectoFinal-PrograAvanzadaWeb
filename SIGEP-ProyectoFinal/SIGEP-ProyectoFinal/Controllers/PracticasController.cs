@@ -3,11 +3,12 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using SIGEP_ProyectoFinal.Models;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using static SIGEP_ProyectoFinal.Models.VacantePracticaModel;
 
 namespace SIGEP_ProyectoFinal.Controllers
 {
     [Seguridad]
-    [FiltroUsuarioAdmin]
+    //[FiltroUsuarioAdmin]
     public class PracticasController : Controller
     {
         private readonly IHttpClientFactory _http;
@@ -239,17 +240,17 @@ namespace SIGEP_ProyectoFinal.Controllers
         /* ======================================================
          * 9. VISUALIZACIÓN POSTULACIÓN
          * ====================================================== */
-        [HttpGet]
-        public IActionResult VisualizacionPostulacion(int idVacante, int idUsuario)
-        {
-            using (var context = _http.CreateClient())
-            {
-                var url = Api($"Practicas/VisualizacionPostulacion?idVacante={idVacante}&idUsuario={idUsuario}");
-                var resp = context.GetAsync(url).Result;
+        //[HttpGet]
+        //public IActionResult VisualizacionPostulacion(int idVacante, int idUsuario)
+        //{
+        //    using (var context = _http.CreateClient())
+        //    {
+        //        var url = Api($"Practicas/VisualizacionPostulacion?idVacante={idVacante}&idUsuario={idUsuario}");
+        //        var resp = context.GetAsync(url).Result;
 
-                return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
-            }
-        }
+        //        return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
+        //    }
+        //}
 
 
         /* ======================================================
@@ -336,5 +337,151 @@ namespace SIGEP_ProyectoFinal.Controllers
                 return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
             }
         }
+
+        [HttpGet]
+        public IActionResult VisualizacionPostulacion(int idVacante, int idUsuario)
+        {
+            ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
+            ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
+            ViewBag.Usuario = HttpContext.Session.GetInt32("IdUsuario");
+
+            try
+            {
+                using (var context = _http.CreateClient())
+                {
+                    // Obtener datos de la práctica
+                    var urlPractica = _configuration["Valores:UrlAPI"] + $"Practicas/ObtenerVisualizacionPractica?idVacante={idVacante}&idUsuario={idUsuario}";
+                    var respuestaPractica = context.GetAsync(urlPractica).Result;
+
+                    if (!respuestaPractica.IsSuccessStatusCode)
+                    {
+                        ViewBag.Error = "No se encontró información de la práctica.";
+                        return View(new VacantePracticaModel());
+                    }
+
+                    var practica = respuestaPractica.Content.ReadFromJsonAsync<VacantePracticaModel>().Result;
+
+                    if (practica == null)
+                    {
+                        ViewBag.Error = "No se encontró información de la práctica.";
+                        return View(new VacantePracticaModel());
+                    }
+
+                    // Obtener comentarios
+                    var urlComentarios = _configuration["Valores:UrlAPI"] + $"Practicas/ObtenerComentariosPractica?idVacante={idVacante}&idUsuario={idUsuario}";
+                    var respuestaComentarios = context.GetAsync(urlComentarios).Result;
+
+                    if (respuestaComentarios.IsSuccessStatusCode)
+                    {
+                        var comentarios = respuestaComentarios.Content.ReadFromJsonAsync<List<ComentarioPracticaModel>>().Result;
+                        practica.Comentarios = comentarios ?? new List<ComentarioPracticaModel>();
+                    }
+
+                    // Obtener estados
+                    var urlEstados = _configuration["Valores:UrlAPI"] + "Practicas/ObtenerEstadosPractica";
+                    var respuestaEstados = context.GetAsync(urlEstados).Result;
+
+                    if (respuestaEstados.IsSuccessStatusCode)
+                    {
+                        var estados = respuestaEstados.Content.ReadFromJsonAsync<List<EstadoPracticaModel>>().Result;
+                        practica.ListaEstados = estados ?? new List<EstadoPracticaModel>();
+                    }
+
+                    return View(practica);
+                }
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = "Error al cargar la información: " + ex.Message;
+                return View(new VacantePracticaModel());
+            }
+        }
+        [HttpPost]
+        public IActionResult AgregarComentario(int idVacante, int idUsuario, string comentario)
+        {
+            try
+            {
+                var idUsuarioSesion = HttpContext.Session.GetInt32("IdUsuario");
+
+                if (idUsuarioSesion == null)
+                {
+                    return Json(new { success = false, message = "Sesión expirada" });
+                }
+
+                if (string.IsNullOrWhiteSpace(comentario))
+                {
+                    return Json(new { success = false, message = "El comentario no puede estar vacío" });
+                }
+
+                using (var context = _http.CreateClient())
+                {
+                    var urlApi = _configuration["Valores:UrlAPI"] + "Practicas/AgregarComentario";
+
+                    var request = new
+                    {
+                        IdVacante = idVacante,
+                        IdUsuario = idUsuario,
+                        Comentario = comentario,
+                        IdUsuarioComentario = idUsuarioSesion.Value
+                    };
+
+                    var respuesta = context.PostAsJsonAsync(urlApi, request).Result;
+
+                    if (respuesta.IsSuccessStatusCode)
+                    {
+                        var resultado = respuesta.Content.ReadAsStringAsync().Result;
+                        return Content(resultado, "application/json");
+                    }
+
+                    var error = respuesta.Content.ReadAsStringAsync().Result;
+                    return Content(error, "application/json");
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: " + ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public IActionResult ActualizarEstadoPractica(int idPractica, int idEstado, string comentario)
+        {
+            try
+            {
+                var idUsuarioSesion = HttpContext.Session.GetInt32("IdUsuario");
+                if (idUsuarioSesion == null)
+                {
+                    return Json(new { success = false, message = "Sesión expirada" });
+                }
+
+                using (var context = _http.CreateClient())
+                {
+                    var urlApi = _configuration["Valores:UrlAPI"] + "Practicas/ActualizarEstadoPractica";
+                    var request = new
+                    {
+                        IdPractica = idPractica,
+                        IdEstado = idEstado,
+                        Comentario = comentario,
+                        IdUsuarioSesion = idUsuarioSesion.Value
+                    };
+
+                    var respuesta = context.PostAsJsonAsync(urlApi, request).Result;
+
+                    if (respuesta.IsSuccessStatusCode)
+                    {
+                        var resultado = respuesta.Content.ReadAsStringAsync().Result;
+                        return Content(resultado, "application/json");
+                    }
+
+                    var error = respuesta.Content.ReadAsStringAsync().Result;
+                    return Content(error, "application/json");
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: " + ex.Message });
+            }
+        }
+
     }
 }
