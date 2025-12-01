@@ -1,0 +1,85 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actualización de Estado de Práctica</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <table align="center" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 20px auto;">
+        <!-- Encabezado -->
+        <tr>
+            <td align="center" style="background-color: #2d594d; padding: 30px;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: bold;">
+                    Sistema SIGEP
+                </h1>
+                <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px;">
+                    Actualización de Estado de Práctica
+                </p>
+            </td>
+        </tr>
+
+        <!-- Contenido -->
+        <tr>
+            <td style="padding: 40px 30px; color: #333333; font-size: 15px; line-height: 1.6;">
+                <p style="margin: 0 0 20px 0;">
+                    Estimado(a) <strong>{{NombreEstudiante}}</strong>,
+                </p>
+
+                <p style="margin: 0 0 20px 0;">
+                    Le informamos que su práctica profesional ha cambiado de estado.
+                </p>
+
+                <!-- Tabla de información -->
+                <table style="width: 100%; border-collapse: collapse; margin: 30px 0;">
+                    <tr style="background-color: #f8f9fa;">
+                        <td style="padding: 15px; border: 1px solid #dee2e6; font-weight: bold; color: #2d594d; width: 40%;">
+                            Nuevo Estado:
+                        </td>
+                        <td style="padding: 15px; border: 1px solid #dee2e6;">
+                            {{EstadoDescripcion}}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 15px; border: 1px solid #dee2e6; font-weight: bold; color: #2d594d;">
+                            Comentario:
+                        </td>
+                        <td style="padding: 15px; border: 1px solid #dee2e6;">
+                            {{Comentario}}
+                        </td>
+                    </tr>
+                    <tr style="background-color: #f8f9fa;">
+                        <td style="padding: 15px; border: 1px solid #dee2e6; font-weight: bold; color: #2d594d;">
+                            Fecha de Actualización:
+                        </td>
+                        <td style="padding: 15px; border: 1px solid #dee2e6;">
+                            {{FechaComentario}}
+                        </td>
+                    </tr>
+                </table>
+
+                <p style="margin: 20px 0;">
+                    Para más información, puede ingresar al sistema SIGEP.
+                </p>
+
+                <p style="margin: 20px 0 0 0;">
+                    Saludos cordiales,<br>
+                    <strong>Sistema SIGEP</strong>
+                </p>
+            </td>
+        </tr>
+
+        <!-- Pie de página -->
+        <tr>
+            <td align="center" style="background-color: #f0f0f0; padding: 20px; font-size: 12px; color: #666666;">
+                <p style="margin: 0;">
+                    © 2025 SIGEP. Todos los derechos reservados.
+                </p>
+                <p style="margin: 5px 0 0 0;">
+                    Este es un correo automático, por favor no responder.
+                </p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

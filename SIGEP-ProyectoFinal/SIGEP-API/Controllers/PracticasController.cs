@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using SIGEP_API.Models;
+using SIGEP_API.Services;
 
 namespace SIGEP_API.Controllers
 {
@@ -12,7 +13,13 @@ namespace SIGEP_API.Controllers
 
 
         private readonly IConfiguration _config;
-        public PracticasController(IConfiguration config) => _config = config;
+        private readonly IEmailService _emailService;
+
+        public PracticasController(IConfiguration config, IEmailService emailService)
+        {
+            _config = config;
+            _emailService = emailService;
+        }
 
         private SqlConnection Conn() =>
             new SqlConnection(_config.GetConnectionString("BDConnection"));
@@ -447,29 +454,32 @@ namespace SIGEP_API.Controllers
                         return BadRequest(new { exito = false, mensaje = "No se encontró la práctica" });
                     }
 
-                    // TODO: Enviar correo de notificación (implementar después)
+
                     bool correoEnviado = false;
-                    // if (!string.IsNullOrEmpty(resultado.EstudianteCorreo))
-                    // {
-                    //     try
-                    //     {
-                    //         string htmlCorreo = GenerarHtmlCorreo(resultado);
-                    //         correoEnviado = await _emailService.EnviarCorreoAsync(
-                    //             resultado.EstudianteCorreo,
-                    //             "Actualización de Estado de Práctica - SIGEP",
-                    //             htmlCorreo
-                    //         );
-                    //     }
-                    //     catch (Exception emailEx)
-                    //     {
-                    //         Console.WriteLine($"Error al enviar correo: {emailEx.Message}");
-                    //     }
-                    // }
+                    if (!string.IsNullOrEmpty(resultado.EstudianteCorreo))
+                    {
+                        try
+                        {
+                            correoEnviado = _emailService.EnviarCorreoActualizacionEstado(
+                                resultado.EstudianteCorreo,
+                                resultado.EstudianteNombre,
+                                resultado.EstadoDescripcion,
+                                resultado.Comentario,
+                                resultado.FechaComentario
+                            );
+                        }
+                        catch (Exception emailEx)
+                        {
+                            Console.WriteLine($"Error al enviar correo: {emailEx.Message}");
+                        }
+                    }
 
                     return Ok(new
                     {
                         exito = true,
-                        mensaje = "Estado actualizado correctamente.",
+                        mensaje = correoEnviado
+                            ? "Estado actualizado correctamente y notificación enviada por correo."
+                            : "Estado actualizado correctamente, pero no se pudo enviar el correo de notificación.",
                         data = new
                         {
                             estado = resultado.EstadoDescripcion,
@@ -484,14 +494,5 @@ namespace SIGEP_API.Controllers
                 return StatusCode(500, new { exito = false, mensaje = "Error: " + ex.Message });
             }
         }
-
-        // TODO: Implementar después
-        // private string GenerarHtmlCorreo(ActualizarEstadoPracticaResponseModel datos)
-        // {
-        //     var sb = new StringBuilder();
-        //     // ... código del correo
-        //     return sb.ToString();
-        // }
-
     }
 }

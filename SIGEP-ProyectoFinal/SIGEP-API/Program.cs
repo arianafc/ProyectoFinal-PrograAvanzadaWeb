@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using SIGEP_API.Services;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,7 +12,7 @@ builder.Services.AddControllers()
     });
 
 builder.Services.AddOpenApi();
-
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 string key = builder.Configuration["Valores:KeyJWT"]!;
 builder.Services.AddAuthentication("Bearer")

@@ -236,23 +236,6 @@ namespace SIGEP_ProyectoFinal.Controllers
             }
         }
 
-
-        /* ======================================================
-         * 9. VISUALIZACIÓN POSTULACIÓN
-         * ====================================================== */
-        //[HttpGet]
-        //public IActionResult VisualizacionPostulacion(int idVacante, int idUsuario)
-        //{
-        //    using (var context = _http.CreateClient())
-        //    {
-        //        var url = Api($"Practicas/VisualizacionPostulacion?idVacante={idVacante}&idUsuario={idUsuario}");
-        //        var resp = context.GetAsync(url).Result;
-
-        //        return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
-        //    }
-        //}
-
-
         /* ======================================================
          * 10. ESTUDIANTES PARA ASIGNAR
          * ====================================================== */

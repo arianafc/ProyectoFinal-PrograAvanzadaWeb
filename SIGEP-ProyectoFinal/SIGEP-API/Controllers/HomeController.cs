@@ -10,6 +10,7 @@ using System.Net.Mail;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using SIGEP_API.Services;
 
 namespace SIGEP_API.Controllers
 {
@@ -19,10 +20,13 @@ namespace SIGEP_API.Controllers
     {
         private readonly IConfiguration _configuration;
         private readonly IHostEnvironment _environment;
-        public HomeController(IConfiguration configuration, IHostEnvironment environment)
+        private readonly IEmailService _emailService;
+
+        public HomeController(IConfiguration configuration, IHostEnvironment environment, IEmailService emailService)
         {
             _configuration = configuration;
             _environment = environment;
+            _emailService = emailService;
         }
 
         #region Iniciar Sesion
@@ -131,28 +135,33 @@ namespace SIGEP_API.Controllers
                 parametros.Add("@Cedula", Cedula);
                 var resultado = context.QueryFirstOrDefault<UsuarioModelResponse>("ValidarUsuarioSP", parametros);
 
-                if (resultado!= null)
+                if (resultado != null)
                 {
-                    var ContrasennaGenerada = GenerarContrasenna();
+                    var contrasennaGenerada = GenerarContrasenna();
                     var correo = resultado.Correo;
-                    
+
                     var parametrosActualizar = new DynamicParameters();
                     parametrosActualizar.Add("@IdUsuario", resultado.IdUsuario);
-                    parametrosActualizar.Add("@Contrasenna", ContrasennaGenerada);
+                    parametrosActualizar.Add("@Contrasenna", contrasennaGenerada);
                     var ejecutar = context.Execute("ActualizarContrasennaSP", parametrosActualizar);
+
                     if (ejecutar > 0)
                     {
-                        var ruta = Path.Combine(_environment.ContentRootPath, "PlantillaCorreo.html");
-                        var html = System.IO.File.ReadAllText(ruta, UTF8Encoding.UTF8);
+                        var correoEnviado = _emailService.EnviarCorreoRecuperacion(correo, resultado.Nombre, contrasennaGenerada);
 
-                        html = html.Replace("{{Nombre}}", resultado.Nombre);
-                        html = html.Replace("{{Contrasenna}}", ContrasennaGenerada);
-
-                        EnviarCorreo("Recuperar Acceso", html, correo);
-                        return Ok(resultado);
-
+                        if (correoEnviado)
+                        {
+                            return Ok(resultado);
+                        }
+                        else
+                        {
+                            return Ok(new
+                            {
+                                mensaje = "Contraseña actualizada pero no se pudo enviar el correo",
+                                usuario = resultado
+                            });
+                        }
                     }
-                  
                 }
 
                 return BadRequest("Error. La cédula no coincide con nuestros registros.");
