@@ -39,7 +39,7 @@ BEGIN
     LEFT JOIN Telefonos t ON u.IdUsuario = t.IdUsuario
     INNER JOIN PracticaEstudiante p ON u.IdUsuario = p.IdUsuario
     LEFT JOIN VacantesPractica v ON p.IdVacante = v.IdVacantePractica
-    LEFT JOIN NotasEstudiantesTB n ON u.IdUsuario = n.IdUsuario
+    LEFT JOIN NotasEstudiantes n ON u.IdUsuario = n.IdUsuario
     INNER JOIN Estados est ON p.IdEstado = est.IdEstado
     WHERE u.IdRol = 1  
         AND u.IdEstado = 1 
@@ -143,7 +143,7 @@ BEGIN
         ISNULL(Nota1, 0.00) AS Nota1,
         ISNULL(Nota2, 0.00) AS Nota2,
         ISNULL(NotaFinal, 0.00) AS NotaFinal
-    FROM NotasEstudiantesTB
+    FROM NotasEstudiantes
     WHERE IdUsuario = @IdUsuario;
 END
 GO
@@ -171,9 +171,9 @@ BEGIN
             RETURN;
         END
         
-        IF EXISTS (SELECT 1 FROM NotasEstudiantesTB WHERE IdUsuario = @IdUsuario)
+        IF EXISTS (SELECT 1 FROM NotasEstudiantes WHERE IdUsuario = @IdUsuario)
         BEGIN
-            UPDATE NotasEstudiantesTB
+            UPDATE NotasEstudiantes
             SET Nota1 = @Nota1,
                 Nota2 = @Nota2,
                 NotaFinal = @NotaFinal,
@@ -183,7 +183,7 @@ BEGIN
         END
         ELSE
         BEGIN
-            INSERT INTO NotasEstudiantesTB (IdUsuario, Nota1, Nota2, NotaFinal, FechaRegistro, IdCoordinador)
+            INSERT INTO NotasEstudiantes (IdUsuario, Nota1, Nota2, NotaFinal, FechaRegistro, IdCoordinador)
             VALUES (@IdUsuario, @Nota1, @Nota2, @NotaFinal, GETDATE(), @IdCoordinador);
         END
         
@@ -361,7 +361,7 @@ END
 GO
 
 -- Crear tabla para almacenar las notas de los estudiantes
-CREATE TABLE [dbo].[NotasEstudiantesTB](
+CREATE TABLE [dbo].[NotasEstudiantes](
     [IdNota] [int] IDENTITY(1,1) NOT NULL,
     [IdUsuario] [int] NOT NULL,
     [Nota1] [decimal](5, 2) NULL,
@@ -370,8 +370,241 @@ CREATE TABLE [dbo].[NotasEstudiantesTB](
     [FechaRegistro] [datetime] NOT NULL DEFAULT GETDATE(),
     [FechaActualizacion] [datetime] NULL,
     [IdCoordinador] [int] NOT NULL,
-    CONSTRAINT [PK_NotasEstudiantesTB] PRIMARY KEY CLUSTERED ([IdNota] ASC),
+    CONSTRAINT [PK_NotasEstudiantes] PRIMARY KEY CLUSTERED ([IdNota] ASC),
     CONSTRAINT [FK_NotasEstudiantes_Usuario] FOREIGN KEY([IdUsuario]) REFERENCES [dbo].[Usuarios] ([IdUsuario]),
     CONSTRAINT [FK_NotasEstudiantes_Coordinador] FOREIGN KEY([IdCoordinador]) REFERENCES [dbo].[Usuarios] ([IdUsuario])
 )
+GO
+
+-- Stored Procedure principal para obtener todos los datos
+CREATE OR ALTER PROCEDURE [dbo].[ObtenerVisualizacionPracticaSP]
+    @IdVacante INT,
+    @IdUsuario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        -- Datos de la Vacante
+        v.IdVacantePractica,
+        v.Nombre,
+        e.NombreEmpresa as EmpresaNombre,
+        v.Requisitos as Requerimientos,
+        v.FechaMaxAplicacion,
+        ISNULL(m.Descripcion, v.IdModalidad) as ModalidadNombre,
+        
+        -- Datos del Estudiante
+        u.IdUsuario,
+        CONCAT(u.Nombre, ' ', u.Apellido1, ' ', u.Apellido2) as EstudianteNombre,
+        u.Cedula as EstudianteCedula,
+        DATEDIFF(YEAR, u.FechaNacimiento, GETDATE()) as EstudianteEdad,
+        esp.Nombre as EstudianteEspecialidad,
+        eu.Email as EstudianteCorreo,
+        
+        -- Datos de Contacto Empresa
+        e.NombreContacto as ContactoEmpresaNombre,
+        ee.Email as ContactoEmpresaEmail,
+        te.Telefono as ContactoEmpresaTelefono,
+        
+        -- Datos de la Práctica
+        p.IdPractica,
+        p.FechaAplicacion,
+        est.Descripcion as EstadoPractica,
+        
+        -- Notas
+        n.Nota1,
+        n.Nota2,
+        n.NotaFinal
+        
+    FROM VacantesPractica v
+    INNER JOIN Empresas e ON v.IdEmpresa = e.IdEmpresa
+    LEFT JOIN Modalidades m ON v.IdModalidad = m.IdModalidad
+    INNER JOIN PracticaEstudiante p ON v.IdVacantePractica = p.IdVacante AND p.IdUsuario = @IdUsuario
+    INNER JOIN Usuarios u ON p.IdUsuario = u.IdUsuario
+    INNER JOIN Estados est ON p.IdEstado = est.IdEstado
+    LEFT JOIN UsuarioEspecialidad ue ON u.IdUsuario = ue.IdUsuario AND ue.IdEstado = 1
+    LEFT JOIN Especialidades esp ON ue.IdEspecialidad = esp.IdEspecialidad
+    LEFT JOIN Emails eu ON u.IdUsuario = eu.IdUsuario
+    LEFT JOIN Emails ee ON e.IdEmpresa = ee.IdEmpresa  
+    LEFT JOIN Telefonos te ON e.IdEmpresa = te.IdEmpresa
+    LEFT JOIN NotasEstudiantes n ON u.IdUsuario = n.IdUsuario
+    WHERE v.IdVacantePractica = @IdVacante
+END
+GO
+
+-- Stored Procedure para obtener comentarios
+CREATE OR ALTER PROCEDURE [dbo].[ObtenerComentariosPracticaSP]
+    @IdVacante INT,
+    @IdUsuario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        c.IdComentario as Id,
+        c.Fecha,
+        CONCAT(u.Nombre, ' ', u.Apellido1) as Usuario,
+        c.Comentario
+    FROM ComentariosPractica c
+    INNER JOIN Usuarios u ON c.IdUsuario = u.IdUsuario
+    INNER JOIN PracticaEstudiante p ON c.IdPractica = p.IdPractica
+    WHERE p.IdVacante = @IdVacante AND p.IdUsuario = @IdUsuario
+    ORDER BY c.Fecha DESC, c.IdComentario DESC;
+END
+GO
+
+-- Stored Procedure para insertar comentarios
+CREATE OR ALTER PROCEDURE [dbo].[InsertarComentarioPracticaSP]
+    @IdVacante INT,
+    @IdUsuario INT,
+    @Comentario VARCHAR(1000),
+    @IdUsuarioComentario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DECLARE @IdPractica INT;
+    DECLARE @FilasAfectadas INT = 0;
+    
+    -- Obtener el IdPractica
+    SELECT @IdPractica = IdPractica 
+    FROM PracticaEstudiante 
+    WHERE IdVacante = @IdVacante AND IdUsuario = @IdUsuario;
+    
+    IF @IdPractica IS NOT NULL
+    BEGIN
+        INSERT INTO ComentariosPractica 
+        (Comentario, Fecha, IdUsuario, IdPractica, Tipo)
+        VALUES 
+        (@Comentario, GETDATE(), @IdUsuarioComentario, @IdPractica, 'General');
+        
+        SET @FilasAfectadas = @@ROWCOUNT;
+    END
+    
+    -- Devolver el número de filas afectadas
+    SELECT @FilasAfectadas as FilasAfectadas;
+END
+GO
+
+-- Stored Procedure para actualizar estado de la practica
+CREATE OR ALTER PROCEDURE ActualizarEstadoPracticaSP
+    @IdPractica INT,
+    @IdEstado INT,
+    @Comentario NVARCHAR(MAX),
+    @IdUsuarioSesion INT 
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        
+        -- 1. Actualizar estado de la práctica
+        UPDATE PracticaEstudiante
+        SET IdEstado = @IdEstado
+        WHERE IdPractica = @IdPractica;
+        
+        -- 2. Insertar comentario si se proporcionó
+        DECLARE @IdComentarioNuevo INT = NULL;
+        
+        IF @Comentario IS NOT NULL AND LTRIM(RTRIM(@Comentario)) <> ''
+        BEGIN
+            -- Usar @IdUsuarioSesion en lugar de p.IdUsuario
+            INSERT INTO ComentariosPractica (Comentario, Fecha, IdUsuario, IdPractica, Tipo)
+            VALUES (@Comentario, GETDATE(), @IdUsuarioSesion, @IdPractica, 'Actualización Estado');
+            
+            -- Capturar el ID del comentario recién insertado
+            SET @IdComentarioNuevo = SCOPE_IDENTITY();
+        END
+        
+        -- 3. Devolver información relevante
+        SELECT 
+            p.IdPractica,
+            p.IdVacante,
+            p.IdUsuario,
+            u.Nombre + ' ' + u.Apellido1 + ' ' + ISNULL(u.Apellido2, '') AS EstudianteNombre,
+            e.Email AS EstudianteCorreo,
+            es.Descripcion AS EstadoDescripcion,
+            c.Comentario,
+            c.Fecha AS FechaComentario
+        FROM PracticaEstudiante p
+        INNER JOIN Usuarios u ON p.IdUsuario = u.IdUsuario
+        LEFT JOIN Emails e ON u.IdUsuario = e.IdUsuario
+        INNER JOIN Estados es ON p.IdEstado = es.IdEstado
+        -- Usar el comentario específico que acabamos de insertar
+        LEFT JOIN ComentariosPractica c ON c.IdComentario = @IdComentarioNuevo
+        WHERE p.IdPractica = @IdPractica;
+        
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE [dbo].[ObtenerEstadosPracticaSP]
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Lista de estados permitidos para las prácticas
+    SELECT 
+        IdEstado,
+        Descripcion
+    FROM Estados
+    WHERE Descripcion IN (
+        'En Proceso de Aplicacion',
+        'Rechazado',
+        'Asignada',
+        'Retirada',
+        'En Curso'
+    )
+    ORDER BY Descripcion;
+END
+GO
+
+CREATE OR ALTER PROCEDURE [dbo].[VerificarEstadoAcademicoEstudianteSP]
+    @IdPractica INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        u.IdUsuario
+    FROM PracticaEstudiante p
+    INNER JOIN Usuarios u ON p.IdUsuario = u.IdUsuario
+    WHERE p.IdPractica = @IdPractica;
+END
+GO
+
+CREATE OR ALTER PROCEDURE [dbo].[ObtenerDescripcionEstadoSP]
+    @IdEstado INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT Descripcion 
+    FROM Estados 
+    WHERE IdEstado = @IdEstado;
+END
+GO
+
+CREATE OR ALTER PROCEDURE [dbo].[VerificarPracticasSP]
+    @IdPractica INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT TOP 1 
+        v.Nombre,
+        e.Descripcion as Estado
+    FROM PracticaEstudiante p
+    INNER JOIN Estados e ON p.IdEstado = e.IdEstado
+    LEFT JOIN VacantesPractica v ON p.IdVacante = v.IdVacantePractica
+    WHERE p.IdUsuario = (SELECT IdUsuario FROM PracticaEstudiante WHERE IdPractica = @IdPractica)
+        AND p.IdPractica != @IdPractica
+        AND e.Descripcion IN ('Asignada', 'En Curso', 'Aprobada', 'Finalizada');
+END
 GO
