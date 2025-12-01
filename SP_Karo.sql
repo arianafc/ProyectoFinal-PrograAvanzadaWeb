@@ -18,7 +18,8 @@ GO
    GET: Listar Vacantes (para DataTable)
    Controller: GET api/vacantes/listar?idEstado=&idEspecialidad=&idModalidad=
    ========================================================= */
-CREATE OR ALTER PROCEDURE dbo.GetVacantesSP
+   --30-11-25
+   CREATE OR ALTER PROCEDURE dbo.GetVacantesSP
     @IdEstado       INT = 0,
     @IdEspecialidad INT = 0,
     @IdModalidad    INT = 0
@@ -26,19 +27,28 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    DECLARE @IdE_Asig   INT = dbo.fn_IdEstado('Asignada');
-    DECLARE @IdE_Curso  INT = dbo.fn_IdEstado('En Curso');
-    DECLARE @IdE_Aprob  INT = dbo.fn_IdEstado('Aprobada');
-    DECLARE @IdE_Fin    INT = dbo.fn_IdEstado('Finalizada');
-    DECLARE @IdE_Rezag  INT = dbo.fn_IdEstado('Rezagado');
+    -- Obtener IDs de estados usando función
+    DECLARE @IdE_Asig   INT;
+    DECLARE @IdE_Curso  INT;
+    DECLARE @IdE_Aprob  INT;
+    DECLARE @IdE_Fin    INT;
+    DECLARE @IdE_Rezag  INT;
+    
+    SELECT @IdE_Asig = IdEstado FROM Estados WHERE LOWER(LTRIM(RTRIM(Descripcion))) = 'asignada';
+    SELECT @IdE_Curso = IdEstado FROM Estados WHERE LOWER(LTRIM(RTRIM(Descripcion))) = 'en curso';
+    SELECT @IdE_Aprob = IdEstado FROM Estados WHERE LOWER(LTRIM(RTRIM(Descripcion))) = 'aprobada';
+    SELECT @IdE_Fin = IdEstado FROM Estados WHERE LOWER(LTRIM(RTRIM(Descripcion))) = 'finalizada';
+    SELECT @IdE_Rezag = IdEstado FROM Estados WHERE LOWER(LTRIM(RTRIM(Descripcion))) = 'rezagado';
 
+    -- CTE para especialidades
     ;WITH Esp AS (
         SELECT ev.IdVacante,
-               STRING_AGG(e.Nombre, ', ') WITHIN GROUP (ORDER BY e.Nombre) AS EspecialidadNombre
+               STRING_AGG(e.Nombre, ', ') AS EspecialidadNombre
         FROM EspecialidadesVacante ev
         INNER JOIN Especialidades e ON e.IdEspecialidad = ev.IdEspecialidad
         GROUP BY ev.IdVacante
     ),
+    -- CTE para postulados
     Post AS (
         SELECT p.IdVacante,
                COUNT(*) AS NumPostulados
@@ -46,21 +56,22 @@ BEGIN
         WHERE p.IdEstado IN (@IdE_Asig, @IdE_Curso, @IdE_Aprob, @IdE_Fin, @IdE_Rezag)
         GROUP BY p.IdVacante
     )
+    -- SELECT principal
     SELECT
         v.IdVacantePractica            AS IdVacante,
-        v.Nombre,
-        emp.IdEmpresa,
+        v.Nombre                        AS Nombre,
+        emp.IdEmpresa                   AS IdEmpresa,
         emp.NombreEmpresa              AS EmpresaNombre,
-        COALESCE(esp.EspecialidadNombre, '—') AS EspecialidadNombre,
+        ISNULL(esp.EspecialidadNombre, '—') AS EspecialidadNombre,
         v.Requisitos                   AS Requerimientos,
         v.NumeroCupos                  AS NumCupos,
-        COALESCE(po.NumPostulados, 0)  AS NumPostulados,
+        ISNULL(po.NumPostulados, 0)    AS NumPostulados,
         est.Descripcion                AS EstadoNombre,
-        v.IdModalidad,
-        v.Descripcion,
-        v.FechaMaxAplicacion,
-        v.FechaCierre,
-        v.Tipo
+        v.IdModalidad                   AS IdModalidad,
+        v.Descripcion                   AS Descripcion,
+        v.FechaMaxAplicacion           AS FechaMaxAplicacion,
+        v.FechaCierre                   AS FechaCierre,
+        v.Tipo                          AS Tipo
     FROM VacantesPractica v
     INNER JOIN Empresas emp   ON emp.IdEmpresa = v.IdEmpresa
     INNER JOIN Estados est    ON est.IdEstado  = v.IdEstado
@@ -73,15 +84,17 @@ BEGIN
               AND ev.IdEspecialidad = @IdEspecialidad
       ))
       AND (@IdModalidad = 0 OR v.IdModalidad = @IdModalidad)
-    ORDER BY v.Nombre;
+    ORDER BY v.IdVacantePractica DESC;
 END
-GO
+go
 
 /* =========================================================
    GET: Detalle Vacante
    Controller: GET api/vacantes/detalle/{id}
    ========================================================= */
-CREATE OR ALTER PROCEDURE dbo.DetalleVacanteSP
+   USE SIGEP_WEB;
+GO
+   CREATE OR ALTER PROCEDURE dbo.DetalleVacanteSP
     @IdVacante INT
 AS
 BEGIN
@@ -89,7 +102,8 @@ BEGIN
 
     ;WITH Esp AS (
         SELECT ev.IdVacante,
-               STRING_AGG(e.Nombre, ', ') WITHIN GROUP (ORDER BY e.Nombre) AS Especialidades
+               STRING_AGG(e.Nombre, ', ') AS Especialidades,
+               MIN(e.IdEspecialidad) AS IdEspecialidad
         FROM EspecialidadesVacante ev
         INNER JOIN Especialidades e ON e.IdEspecialidad = ev.IdEspecialidad
         WHERE ev.IdVacante = @IdVacante
@@ -98,11 +112,17 @@ BEGIN
     Ubi AS (
         SELECT
             emp.IdEmpresa,
-            CONCAT(
-                ISNULL(p.Nombre, ''), CASE WHEN p.Nombre IS NULL THEN '' ELSE ', ' END,
-                ISNULL(c.Nombre, ''), CASE WHEN c.Nombre IS NULL THEN '' ELSE ', ' END,
-                ISNULL(d.Nombre, ''), CASE WHEN d.Nombre IS NULL THEN '' ELSE ', ' END,
-                ISNULL(dir.DireccionExacta, '')
+            ISNULL(
+                CONCAT(
+                    ISNULL(p.Nombre, ''),
+                    CASE WHEN p.Nombre IS NOT NULL AND c.Nombre IS NOT NULL THEN ', ' ELSE '' END,
+                    ISNULL(c.Nombre, ''),
+                    CASE WHEN c.Nombre IS NOT NULL AND d.Nombre IS NOT NULL THEN ', ' ELSE '' END,
+                    ISNULL(d.Nombre, ''),
+                    CASE WHEN d.Nombre IS NOT NULL AND dir.DireccionExacta IS NOT NULL THEN '. ' ELSE '' END,
+                    ISNULL(dir.DireccionExacta, '')
+                ),
+                'No registrada'
             ) AS Ubicacion
         FROM Empresas emp
         LEFT JOIN Direcciones dir ON dir.IdDireccion = emp.IdDireccion
@@ -115,198 +135,24 @@ BEGIN
         v.IdVacantePractica AS IdVacante,
         v.Nombre,
         v.IdEmpresa,
-        emp.NombreEmpresa AS EmpresaNombre,
+        emp.NombreEmpresa AS EmpresaNombre,  -- ✅ CORREGIDO: Ahora trae el nombre
+        ISNULL(esp.IdEspecialidad, 0) AS IdEspecialidad,
         v.IdModalidad,
         v.Descripcion,
-        v.Requisitos       AS Requerimientos,
-        v.NumeroCupos      AS NumCupos,
+        v.Requisitos AS Requerimientos,
+        v.NumeroCupos AS NumCupos,
         v.FechaMaxAplicacion,
         v.FechaCierre,
         v.Tipo,
-        e.Descripcion      AS EstadoNombre,
-        COALESCE(esp.Especialidades,'—') AS Especialidades,
-        COALESCE(u.Ubicacion,'No registrada') AS Ubicacion
+        e.Descripcion AS EstadoNombre,
+        ISNULL(esp.Especialidades,'—') AS Especialidades,
+        ISNULL(u.Ubicacion,'No registrada') AS Ubicacion
     FROM VacantesPractica v
-    INNER JOIN Empresas emp ON emp.IdEmpresa = v.IdEmpresa
+    INNER JOIN Empresas emp ON emp.IdEmpresa = v.IdEmpresa  -- ✅ INNER JOIN para garantizar nombre
     INNER JOIN Estados e    ON e.IdEstado  = v.IdEstado
     LEFT  JOIN Esp esp      ON esp.IdVacante = v.IdVacantePractica
     LEFT  JOIN Ubi u        ON u.IdEmpresa = v.IdEmpresa
     WHERE v.IdVacantePractica = @IdVacante;
-END
-GO
-
-/* =========================================================
-   GET: Ubicación Empresa
-   Controller: GET api/vacantes/ubicacion-empresa?idEmpresa=
-   ========================================================= */
-CREATE OR ALTER PROCEDURE dbo.ObtenerUbicacionEmpresaSP
-    @IdEmpresa INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SELECT TOP 1
-        Ubicacion = CONCAT(
-            ISNULL(p.Nombre, ''), CASE WHEN p.Nombre IS NULL THEN '' ELSE ', ' END,
-            ISNULL(c.Nombre, ''), CASE WHEN c.Nombre IS NULL THEN '' ELSE ', ' END,
-            ISNULL(d.Nombre, ''), CASE WHEN d.Nombre IS NULL THEN '' ELSE ', ' END,
-            ISNULL(dir.DireccionExacta, '')
-        )
-    FROM Empresas emp
-    LEFT JOIN Direcciones dir ON dir.IdDireccion = emp.IdDireccion
-    LEFT JOIN Distritos d     ON d.IdDistrito    = dir.IdDistrito
-    LEFT JOIN Cantones c      ON c.IdCanton      = d.IdCanton
-    LEFT JOIN Provincias p    ON p.IdProvincia   = c.IdProvincia
-    WHERE emp.IdEmpresa = @IdEmpresa;
-END
-GO
-
-/* =========================================================
-   POST: Crear Vacante
-   Controller: POST api/vacantes/crear
-   ========================================================= */
-   USE SIGEP_WEB;
-GO
-
-CREATE OR ALTER PROCEDURE dbo.CrearVacanteSP
-    @Nombre NVARCHAR(255),
-    @IdEmpresa INT,
-    @IdEspecialidad INT,
-    @NumCupos INT,
-    @IdModalidad INT,
-    @Requerimientos NVARCHAR(MAX),
-    @Descripcion NVARCHAR(255),
-    @FechaMaxAplicacion DATE,
-    @FechaCierre DATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @IdEstadoActivo INT = dbo.fn_IdEstado('Activo');
-    IF @IdEstadoActivo IS NULL
-    BEGIN
-        SELECT 0 AS ok, 'No existe estado "Activo" en Estados.' AS message, NULL AS IdVacante;
-        RETURN;
-    END
-
-    BEGIN TRY
-        BEGIN TRAN;
-
-        INSERT INTO VacantesPractica
-        (Nombre, IdEstado, IdEmpresa, Requisitos, FechaMaxAplicacion, NumeroCupos, FechaCierre, IdModalidad, Descripcion, Tipo)
-        VALUES
-        (@Nombre, @IdEstadoActivo, @IdEmpresa, @Requerimientos, @FechaMaxAplicacion, @NumCupos, @FechaCierre, @IdModalidad, @Descripcion, NULL);
-
-        DECLARE @NewId INT = SCOPE_IDENTITY();
-
-        IF @IdEspecialidad IS NOT NULL AND @IdEspecialidad > 0
-        BEGIN
-            INSERT INTO EspecialidadesVacante (IdVacante, IdEspecialidad)
-            VALUES (@NewId, @IdEspecialidad);
-        END
-
-        COMMIT TRAN;
-
-        SELECT 1 AS ok, 'Vacante creada correctamente.' AS message, @NewId AS IdVacante;
-    END TRY
-    BEGIN CATCH
-        ROLLBACK TRAN;
-
-        DECLARE @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE();
-        SELECT 0 AS ok, @ErrMsg AS message, NULL AS IdVacante;
-    END CATCH
-END
-GO
-
-
-/* =========================================================
-   POST: Editar Vacante
-   Controller: POST api/vacantes/editar
-   ========================================================= */
-CREATE OR ALTER PROCEDURE dbo.EditarVacanteSP
-    @IdVacante INT,
-    @Nombre NVARCHAR(255),
-    @IdEmpresa INT,
-    @IdEspecialidad INT,
-    @NumCupos INT,
-    @IdModalidad INT,
-    @Requerimientos NVARCHAR(MAX),
-    @Descripcion NVARCHAR(255),
-    @FechaMaxAplicacion DATE,
-    @FechaCierre DATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    BEGIN TRY
-        BEGIN TRAN;
-
-        UPDATE VacantesPractica
-        SET Nombre = @Nombre,
-            IdEmpresa = @IdEmpresa,
-            Requisitos = @Requerimientos,
-            NumeroCupos = @NumCupos,
-            IdModalidad = @IdModalidad,
-            Descripcion = @Descripcion,
-            FechaMaxAplicacion = @FechaMaxAplicacion,
-            FechaCierre = @FechaCierre
-        WHERE IdVacantePractica = @IdVacante;
-
-        IF @IdEspecialidad IS NOT NULL AND @IdEspecialidad > 0
-        BEGIN
-            -- Mantener una especialidad principal (si usas varias, quita estas dos líneas y gestiona aparte)
-            DELETE FROM EspecialidadesVacante WHERE IdVacante = @IdVacante;
-            INSERT INTO EspecialidadesVacante (IdVacante, IdEspecialidad) VALUES (@IdVacante, @IdEspecialidad);
-        END
-
-        COMMIT TRAN;
-    END TRY
-    BEGIN CATCH
-        ROLLBACK TRAN;
-        THROW;
-    END CATCH
-END
-GO
-
-/* =========================================================
-   POST: Eliminar/Archivar Vacante
-   Controller: POST api/vacantes/eliminar
-   Devuelve (ok, message)
-   ========================================================= */
-CREATE OR ALTER PROCEDURE dbo.EliminarVacanteSP
-    @IdVacante INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @IdE_Asig  INT = dbo.fn_IdEstado('Asignada');
-    DECLARE @IdE_Curso INT = dbo.fn_IdEstado('En Curso');
-    DECLARE @IdE_Aprob INT = dbo.fn_IdEstado('Aprobada');
-    DECLARE @IdE_Fin   INT = dbo.fn_IdEstado('Finalizada');
-    DECLARE @IdE_Rezag INT = dbo.fn_IdEstado('Rezagado');
-    DECLARE @IdE_Arch  INT = dbo.fn_IdEstado('Archivado');
-
-    IF @IdE_Arch IS NULL
-    BEGIN
-        SELECT 0 AS ok, 'No existe estado "Archivado".' AS message;
-        RETURN;
-    END
-
-    IF EXISTS (
-        SELECT 1 FROM PracticaEstudiante p
-        WHERE p.IdVacante = @IdVacante
-          AND p.IdEstado IN (@IdE_Asig,@IdE_Curso,@IdE_Aprob,@IdE_Fin,@IdE_Rezag)
-    )
-    BEGIN
-        SELECT 0 AS ok, 'No se puede archivar: hay estudiantes con proceso activo.' AS message;
-        RETURN;
-    END
-
-    UPDATE VacantesPractica
-    SET IdEstado = @IdE_Arch
-    WHERE IdVacantePractica = @IdVacante;
-
-    SELECT 1 AS ok, 'Vacante archivada correctamente.' AS message;
 END
 GO
 
@@ -439,190 +285,6 @@ BEGIN
 END
 GO
 
-/* =========================================================
-   POST: Asignar Estudiante (2 clics: En Proceso -> Asignada)
-   Controller: POST api/vacantes/asignar-estudiante
-   Devuelve (ok, message)
-   ========================================================= */
-CREATE OR ALTER PROCEDURE dbo.AsignarEstudianteSP
-    @IdVacante INT,
-    @IdUsuario INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @NumCupos INT, @Ocupados INT;
-    DECLARE @IdE_Proc  INT = dbo.fn_IdEstado('En Proceso de Aplicacion');
-    DECLARE @IdE_Asig  INT = dbo.fn_IdEstado('Asignada');
-    DECLARE @IdE_Curso INT = dbo.fn_IdEstado('En Curso');
-    DECLARE @IdE_Aprob INT = dbo.fn_IdEstado('Aprobada');
-    DECLARE @IdE_Fin   INT = dbo.fn_IdEstado('Finalizada');
-    DECLARE @IdE_Rezag INT = dbo.fn_IdEstado('Rezagado');
-    DECLARE @IdE_Ret   INT = dbo.fn_IdEstado('Retirada');
-
-    IF @IdE_Proc IS NULL OR @IdE_Asig IS NULL OR @IdE_Ret IS NULL
-    BEGIN
-        SELECT 0 AS ok, 'Estados requeridos no existen (En Proceso, Asignada, Retirada).' AS message;
-        RETURN;
-    END
-
-    SELECT @NumCupos = NumeroCupos FROM VacantesPractica WHERE IdVacantePractica = @IdVacante;
-    IF @NumCupos IS NULL
-    BEGIN
-        SELECT 0 AS ok, 'Vacante no encontrada.' AS message; RETURN;
-    END
-
-    SELECT @Ocupados = COUNT(*) 
-    FROM PracticaEstudiante 
-    WHERE IdVacante = @IdVacante AND IdEstado IN (@IdE_Asig,@IdE_Curso,@IdE_Aprob,@IdE_Fin,@IdE_Rezag);
-
-    IF @Ocupados >= @NumCupos
-    BEGIN
-        SELECT 0 AS ok, CONCAT('Cupos llenos (',@NumCupos,').') AS message; RETURN;
-    END
-
-    IF EXISTS (
-        SELECT 1 FROM PracticaEstudiante p
-        INNER JOIN Estados e ON e.IdEstado = p.IdEstado
-        WHERE p.IdUsuario = @IdUsuario
-          AND p.IdVacante <> @IdVacante
-          AND e.IdEstado IN (@IdE_Asig,@IdE_Curso,@IdE_Aprob,@IdE_Fin,@IdE_Rezag)
-    )
-    BEGIN
-        SELECT 0 AS ok, 'El estudiante tiene una práctica activa en otra vacante.' AS message; RETURN;
-    END
-
-    DECLARE @IdPractica INT, @IdEstadoActual INT, @EstadoActual NVARCHAR(100);
-    SELECT TOP 1 @IdPractica = IdPractica, @IdEstadoActual = IdEstado
-    FROM PracticaEstudiante
-    WHERE IdUsuario = @IdUsuario AND IdVacante = @IdVacante
-    ORDER BY IdPractica DESC;
-
-    SELECT @EstadoActual = LTRIM(RTRIM(LOWER(Descripcion))) FROM Estados WHERE IdEstado = @IdEstadoActual;
-
-    IF @IdPractica IS NULL
-    BEGIN
-        INSERT INTO PracticaEstudiante (IdVacante, IdEstado, IdUsuario, FechaAplicacion)
-        VALUES (@IdVacante, @IdE_Proc, @IdUsuario, GETDATE());
-        SELECT 1 AS ok, 'Estudiante agregado en "En Proceso de Aplicación".' AS message; RETURN;
-    END
-
-    IF @EstadoActual = 'retirada'
-    BEGIN
-        UPDATE PracticaEstudiante SET IdEstado = @IdE_Proc, FechaAplicacion = GETDATE()
-        WHERE IdPractica = @IdPractica;
-        SELECT 1 AS ok, 'Reactivado a "En Proceso de Aplicación".' AS message; RETURN;
-    END
-
-    IF @EstadoActual = 'en proceso de aplicacion'
-    BEGIN
-        UPDATE PracticaEstudiante SET IdEstado = @IdE_Asig, FechaAplicacion = GETDATE()
-        WHERE IdPractica = @IdPractica;
-        SELECT 1 AS ok, 'Actualizado a "Asignada".' AS message; RETURN;
-    END
-
-    IF @EstadoActual = 'asignada'
-    BEGIN
-        SELECT 0 AS ok, 'Ya está asignado en esta vacante.' AS message; RETURN;
-    END
-
-    IF @EstadoActual IN ('aprobada','en curso','finalizada','rezagado')
-    BEGIN
-        SELECT 0 AS ok, CONCAT('No se puede reasignar desde estado "', @EstadoActual, '".') AS message; RETURN;
-    END
-
-    -- fallback: volver a "En Proceso"
-    UPDATE PracticaEstudiante SET IdEstado = @IdE_Proc, FechaAplicacion = GETDATE()
-    WHERE IdPractica = @IdPractica;
-    SELECT 1 AS ok, 'Estudiante en "En Proceso de Aplicación".' AS message;
-END
-GO
-
-/* =========================================================
-   POST: Retirar Estudiante (sin IdPractica)
-   Controller: POST api/vacantes/retirar-estudiante
-   Devuelve (ok, message)
-   ========================================================= */
-CREATE OR ALTER PROCEDURE dbo.RetirarEstudianteSP
-    @IdVacante INT,
-    @IdUsuario INT,
-    @Comentario NVARCHAR(MAX)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @IdE_Ret INT = dbo.fn_IdEstado('Retirada');
-    IF @IdE_Ret IS NULL
-    BEGIN
-        SELECT 0 AS ok, 'No existe estado "Retirada".' AS message; RETURN;
-    END
-
-    DECLARE @IdPractica INT;
-    SELECT TOP 1 @IdPractica = IdPractica
-    FROM PracticaEstudiante
-    WHERE IdVacante = @IdVacante AND IdUsuario = @IdUsuario
-    ORDER BY IdPractica DESC;
-
-    IF @IdPractica IS NULL
-    BEGIN
-        -- crea registro retirado directo si no existe
-        INSERT INTO PracticaEstudiante (IdVacante, IdEstado, IdUsuario, FechaAplicacion)
-        VALUES (@IdVacante, @IdE_Ret, @IdUsuario, GETDATE());
-        SET @IdPractica = SCOPE_IDENTITY();
-    END
-    ELSE
-    BEGIN
-        UPDATE PracticaEstudiante SET IdEstado = @IdE_Ret, FechaAplicacion = GETDATE()
-        WHERE IdPractica = @IdPractica;
-    END
-
-    IF (ISNULL(@Comentario,'') <> '')
-    BEGIN
-        INSERT INTO ComentariosPractica (Comentario, Fecha, IdUsuario, IdPractica, Nota, Tipo)
-        VALUES (@Comentario, GETDATE(), @IdUsuario, @IdPractica, NULL, 'Retiro');
-    END
-
-    SELECT 1 AS ok, 'Estudiante retirado (estado "Retirada").' AS message;
-END
-GO
-
-/* =========================================================
-   POST: Desasignar por IdPractica
-   Controller: POST api/vacantes/desasignar-practica
-   Devuelve (ok, message)
-   ========================================================= */
-CREATE OR ALTER PROCEDURE dbo.DesasignarPracticaSP
-    @IdPractica INT,
-    @Comentario NVARCHAR(MAX)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @IdE_Ret INT = dbo.fn_IdEstado('Retirada');
-    IF @IdE_Ret IS NULL
-    BEGIN
-        SELECT 0 AS ok, 'No existe estado "Retirada".' AS message; RETURN;
-    END
-
-    IF NOT EXISTS (SELECT 1 FROM PracticaEstudiante WHERE IdPractica = @IdPractica)
-    BEGIN
-        SELECT 0 AS ok, 'Práctica no encontrada.' AS message; RETURN;
-    END
-
-    UPDATE PracticaEstudiante
-    SET IdEstado = @IdE_Ret, FechaAplicacion = GETDATE()
-    WHERE IdPractica = @IdPractica;
-
-    IF (ISNULL(@Comentario,'') <> '')
-    BEGIN
-        DECLARE @IdUsuario INT = (SELECT IdUsuario FROM PracticaEstudiante WHERE IdPractica = @IdPractica);
-        INSERT INTO ComentariosPractica (Comentario, Fecha, IdUsuario, IdPractica, Nota, Tipo)
-        VALUES (@Comentario, GETDATE(), @IdUsuario, @IdPractica, NULL, 'Desasignación');
-    END
-
-    SELECT 1 AS ok, 'Práctica desasignada (Retirada).' AS message;
-END
-GO
 
 --16-11-25
 USE SIGEP_WEB;
@@ -1572,3 +1234,563 @@ BEGIN
     RETURN @@ROWCOUNT
 END
 GO
+
+--28-11-25
+
+USE SIGEP_WEB;
+GO
+
+-- =============================================
+-- SP 1: Obtener Ubicación de Empresa
+-- =============================================
+CREATE OR ALTER PROCEDURE dbo.ObtenerUbicacionEmpresaSP
+    @IdEmpresa INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT 
+        ISNULL(
+            CONCAT(
+                ISNULL(p.Nombre, ''),
+                CASE WHEN p.Nombre IS NOT NULL AND c.Nombre IS NOT NULL THEN ', ' ELSE '' END,
+                ISNULL(c.Nombre, ''),
+                CASE WHEN c.Nombre IS NOT NULL AND d.Nombre IS NOT NULL THEN ', ' ELSE '' END,
+                ISNULL(d.Nombre, ''),
+                CASE WHEN d.Nombre IS NOT NULL AND dir.DireccionExacta IS NOT NULL THEN '. ' ELSE '' END,
+                ISNULL(dir.DireccionExacta, '')
+            ),
+            'No registrada'
+        ) AS Ubicacion
+    FROM Empresas emp
+    LEFT JOIN Direcciones dir ON dir.IdDireccion = emp.IdDireccion
+    LEFT JOIN Distritos d     ON d.IdDistrito    = dir.IdDistrito
+    LEFT JOIN Cantones c      ON c.IdCanton      = d.IdCanton
+    LEFT JOIN Provincias p    ON p.IdProvincia   = c.IdProvincia
+    WHERE emp.IdEmpresa = @IdEmpresa;
+END
+GO
+
+PRINT '✅ ObtenerUbicacionEmpresaSP creado';
+GO
+
+-- =============================================
+-- SP 2: Crear Vacante de Práctica
+-- CRÍTICO: Tu BD usa "Requisitos", NO "Requerimientos"
+-- =============================================
+
+CREATE OR ALTER PROCEDURE dbo.CrearVacanteSP
+    @Nombre NVARCHAR(255),
+    @IdEmpresa INT,
+    @IdEspecialidad INT,
+    @NumCupos INT,
+    @IdModalidad INT,
+    @Requerimientos NVARCHAR(MAX),
+    @Descripcion NVARCHAR(255),
+    @FechaMaxAplicacion DATE,
+    @FechaCierre DATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Obtener IdEstado "Activo"
+    DECLARE @IdEstadoActivo INT;
+    SELECT TOP 1 @IdEstadoActivo = IdEstado 
+    FROM Estados 
+    WHERE LOWER(LTRIM(RTRIM(Descripcion))) IN ('activo', 'activa')
+    ORDER BY IdEstado;
+
+    IF @IdEstadoActivo IS NULL
+        SET @IdEstadoActivo = 1;
+
+    -- Validaciones
+    IF @NumCupos <= 0 RETURN 0;
+    IF @FechaCierre < @FechaMaxAplicacion RETURN 0;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        -- Insertar vacante
+        INSERT INTO VacantesPractica 
+        (Nombre, IdEstado, IdEmpresa, Requisitos, FechaMaxAplicacion, 
+         NumeroCupos, FechaCierre, IdModalidad, Descripcion, Tipo)
+        VALUES 
+        (@Nombre, @IdEstadoActivo, @IdEmpresa, @Requerimientos, @FechaMaxAplicacion, 
+         @NumCupos, @FechaCierre, @IdModalidad, @Descripcion, NULL);
+
+        DECLARE @NewId INT = SCOPE_IDENTITY();
+
+        -- Insertar especialidad
+        IF @IdEspecialidad > 0
+        BEGIN
+            INSERT INTO EspecialidadesVacante (IdVacante, IdEspecialidad)
+            VALUES (@NewId, @IdEspecialidad);
+        END
+
+        COMMIT TRANSACTION;
+        RETURN @NewId;
+
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+        RETURN 0;
+    END CATCH
+END
+GO
+
+PRINT '✅ CrearVacanteSP creado';
+GO
+
+-- =============================================
+-- SP 3: Editar Vacante
+-- =============================================
+
+CREATE OR ALTER PROCEDURE dbo.EditarVacanteSP
+    @IdVacante INT,
+    @Nombre NVARCHAR(255),
+    @IdEmpresa INT,
+    @IdEspecialidad INT,
+    @NumCupos INT,
+    @IdModalidad INT,
+    @Requerimientos NVARCHAR(MAX),
+    @Descripcion NVARCHAR(255),
+    @FechaMaxAplicacion DATE,
+    @FechaCierre DATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM VacantesPractica WHERE IdVacantePractica = @IdVacante)
+        RETURN 0;
+
+    IF @NumCupos <= 0 RETURN 0;
+    IF @FechaCierre < @FechaMaxAplicacion RETURN 0;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        UPDATE VacantesPractica
+        SET Nombre = @Nombre,
+            IdEmpresa = @IdEmpresa,
+            Requisitos = @Requerimientos,
+            FechaMaxAplicacion = @FechaMaxAplicacion,
+            NumeroCupos = @NumCupos,
+            FechaCierre = @FechaCierre,
+            IdModalidad = @IdModalidad,
+            Descripcion = @Descripcion
+        WHERE IdVacantePractica = @IdVacante;
+
+        -- Actualizar especialidad
+        IF EXISTS (SELECT 1 FROM EspecialidadesVacante WHERE IdVacante = @IdVacante)
+        BEGIN
+            UPDATE EspecialidadesVacante
+            SET IdEspecialidad = @IdEspecialidad
+            WHERE IdVacante = @IdVacante;
+        END
+        ELSE
+        BEGIN
+            INSERT INTO EspecialidadesVacante (IdVacante, IdEspecialidad)
+            VALUES (@IdVacante, @IdEspecialidad);
+        END
+
+        COMMIT TRANSACTION;
+        RETURN @IdVacante;
+
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+        RETURN 0;
+    END CATCH
+END
+GO
+
+PRINT '✅ EditarVacanteSP creado';
+GO
+-- =============================================
+-- SP 4: Eliminar Vacante
+-- =============================================
+CREATE OR ALTER PROCEDURE dbo.EliminarVacanteSP
+    @IdVacante INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM VacantesPractica WHERE IdVacantePractica = @IdVacante)
+        RETURN 0;
+
+    -- Verificar dependencias
+    IF EXISTS (SELECT 1 FROM PracticaEstudiante WHERE IdVacante = @IdVacante)
+        RETURN -1;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DELETE FROM EspecialidadesVacante WHERE IdVacante = @IdVacante;
+        DELETE FROM VacantesPractica WHERE IdVacantePractica = @IdVacante;
+
+        COMMIT TRANSACTION;
+        RETURN 1;
+
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+        RETURN 0;
+    END CATCH
+END
+GO
+
+-- =============================================
+-- SP 5: Asignar Estudiante
+-- =============================================
+CREATE OR ALTER PROCEDURE dbo.AsignarEstudianteSP
+    @IdVacante INT,
+    @IdUsuario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    PRINT '=== INICIO AsignarEstudianteSP ===';
+    PRINT '@IdVacante: ' + CAST(@IdVacante AS VARCHAR);
+    PRINT '@IdUsuario: ' + CAST(@IdUsuario AS VARCHAR);
+
+    -- Validar vacante
+    IF NOT EXISTS (SELECT 1 FROM VacantesPractica WHERE IdVacantePractica = @IdVacante)
+    BEGIN
+        PRINT 'ERROR: Vacante no existe';
+        RETURN 0;
+    END
+
+    -- Verificar si ya tiene práctica activa
+    IF EXISTS (
+        SELECT 1 
+        FROM PracticaEstudiante 
+        WHERE IdUsuario = @IdUsuario 
+        AND IdEstado IN (SELECT IdEstado FROM Estados WHERE LOWER(Descripcion) IN ('activo', 'activa', 'aprobada', 'asignada'))
+    )
+    BEGIN
+        PRINT 'ERROR: Estudiante ya tiene práctica activa';
+        RETURN -1;
+    END
+
+    -- Verificar cupos
+    DECLARE @CuposOcupados INT;
+    DECLARE @NumeroCupos INT;
+
+    SELECT @NumeroCupos = NumeroCupos
+    FROM VacantesPractica
+    WHERE IdVacantePractica = @IdVacante;
+
+    SELECT @CuposOcupados = COUNT(*)
+    FROM PracticaEstudiante
+    WHERE IdVacante = @IdVacante
+    AND IdEstado IN (SELECT IdEstado FROM Estados WHERE LOWER(Descripcion) IN ('activo', 'activa', 'aprobada', 'asignada'));
+
+    PRINT 'Cupos totales: ' + CAST(@NumeroCupos AS VARCHAR);
+    PRINT 'Cupos ocupados: ' + CAST(@CuposOcupados AS VARCHAR);
+
+    IF @CuposOcupados >= @NumeroCupos
+    BEGIN
+        PRINT 'ERROR: No hay cupos disponibles';
+        RETURN -2;
+    END
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        -- Obtener IdEstado "Activo" o "Asignada"
+        DECLARE @IdEstadoActivo INT;
+        SELECT TOP 1 @IdEstadoActivo = IdEstado 
+        FROM Estados 
+        WHERE LOWER(LTRIM(RTRIM(Descripcion))) IN ('activo', 'activa', 'asignada', 'aprobada')
+        ORDER BY IdEstado;
+
+        IF @IdEstadoActivo IS NULL
+            SET @IdEstadoActivo = 1;
+
+        PRINT 'Insertando práctica con IdEstado: ' + CAST(@IdEstadoActivo AS VARCHAR);
+
+        INSERT INTO PracticaEstudiante (IdVacante, IdEstado, IdUsuario, FechaAplicacion)
+        VALUES (@IdVacante, @IdEstadoActivo, @IdUsuario, GETDATE());
+
+        COMMIT TRANSACTION;
+
+        PRINT '=== ÉXITO: Estudiante asignado ===';
+        RETURN 1;
+
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        PRINT 'ERROR: ' + ERROR_MESSAGE();
+        RETURN 0;
+    END CATCH
+END
+GO
+
+-- =============================================
+-- SP 6: Retirar Estudiante
+-- =============================================
+CREATE OR ALTER PROCEDURE dbo.RetirarEstudianteSP
+    @IdVacante INT,
+    @IdUsuario INT,
+    @Comentario NVARCHAR(MAX)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @IdPractica INT;
+
+    SELECT @IdPractica = IdPractica
+    FROM PracticaEstudiante
+    WHERE IdVacante = @IdVacante
+    AND IdUsuario = @IdUsuario;
+
+    IF @IdPractica IS NULL
+    BEGIN
+        RETURN 0;
+    END
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @IdEstadoInactivo INT;
+        SELECT TOP 1 @IdEstadoInactivo = IdEstado 
+        FROM Estados 
+        WHERE LOWER(LTRIM(RTRIM(Descripcion))) IN ('inactivo', 'inactiva', 'retirado', 'retirada')
+        ORDER BY IdEstado;
+
+        IF @IdEstadoInactivo IS NULL
+            SET @IdEstadoInactivo = 2;
+
+        UPDATE PracticaEstudiante
+        SET IdEstado = @IdEstadoInactivo
+        WHERE IdPractica = @IdPractica;
+
+        IF @Comentario IS NOT NULL AND LEN(@Comentario) > 0
+        BEGIN
+            INSERT INTO ComentariosPractica (Comentario, Fecha, IdUsuario, IdPractica, Tipo)
+            VALUES (@Comentario, GETDATE(), @IdUsuario, @IdPractica, 'Retiro');
+        END
+
+        COMMIT TRANSACTION;
+
+        RETURN 1;
+
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        RETURN 0;
+    END CATCH
+END
+GO
+
+-- =============================================
+-- SP 7: Desasignar Práctica
+-- =============================================
+CREATE OR ALTER PROCEDURE dbo.DesasignarPracticaSP
+    @IdPractica INT,
+    @Comentario NVARCHAR(MAX)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM PracticaEstudiante WHERE IdPractica = @IdPractica)
+    BEGIN
+        RETURN 0;
+    END
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @IdEstadoInactivo INT;
+        SELECT TOP 1 @IdEstadoInactivo = IdEstado 
+        FROM Estados 
+        WHERE LOWER(LTRIM(RTRIM(Descripcion))) IN ('inactivo', 'inactiva', 'retirado', 'retirada')
+        ORDER BY IdEstado;
+
+        IF @IdEstadoInactivo IS NULL
+            SET @IdEstadoInactivo = 2;
+
+        DECLARE @IdUsuario INT;
+        SELECT @IdUsuario = IdUsuario
+        FROM PracticaEstudiante
+        WHERE IdPractica = @IdPractica;
+
+        UPDATE PracticaEstudiante
+        SET IdEstado = @IdEstadoInactivo
+        WHERE IdPractica = @IdPractica;
+
+        IF @Comentario IS NOT NULL AND LEN(@Comentario) > 0
+        BEGIN
+            INSERT INTO ComentariosPractica (Comentario, Fecha, IdUsuario, IdPractica, Tipo)
+            VALUES (@Comentario, GETDATE(), @IdUsuario, @IdPractica, 'Desasignación');
+        END
+
+        COMMIT TRANSACTION;
+
+        RETURN 1;
+
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        RETURN 0;
+    END CATCH
+END
+GO
+
+-- =============================================
+-- PRUEBAS DIAGNÓSTICAS
+-- =============================================
+
+PRINT '========================================';
+PRINT 'PRUEBAS DE DIAGNÓSTICO';
+PRINT '========================================';
+
+-- Ver estados disponibles
+PRINT '';
+PRINT 'Estados disponibles:';
+SELECT IdEstado, Descripcion FROM Estados;
+
+-- Ver empresas disponibles
+PRINT '';
+PRINT 'Empresas disponibles:';
+SELECT IdEmpresa, NombreEmpresa, IdDireccion FROM Empresas;
+
+-- Ver especialidades disponibles
+PRINT '';
+PRINT 'Especialidades disponibles:';
+SELECT IdEspecialidad, Nombre FROM Especialidades;
+
+-- Ver modalidades disponibles
+PRINT '';
+PRINT 'Modalidades disponibles:';
+SELECT IdModalidad, Descripcion FROM Modalidades;
+
+PRINT '';
+PRINT '========================================';
+PRINT 'PRUEBA 1: Obtener ubicación empresa';
+PRINT '========================================';
+EXEC ObtenerUbicacionEmpresaSP @IdEmpresa = 1;
+
+PRINT '';
+PRINT '========================================';
+PRINT 'PRUEBA 2: Crear vacante';
+PRINT '========================================';
+DECLARE @ResultadoCrear INT;
+EXEC @ResultadoCrear = CrearVacanteSP 
+    @Nombre = 'Práctica de Prueba DIAGNÓSTICO',
+    @IdEmpresa = 1,
+    @IdEspecialidad = 1,
+    @NumCupos = 5,
+    @IdModalidad = 1,
+    @Requerimientos = 'Prueba de requisitos',
+    @Descripcion = 'Prueba de descripción',
+    @FechaMaxAplicacion = '2025-12-31',
+    @FechaCierre = '2026-01-15';
+
+PRINT 'Resultado CrearVacanteSP: ' + CAST(@ResultadoCrear AS VARCHAR);
+
+IF @ResultadoCrear > 0
+BEGIN
+    PRINT 'ÉXITO: Vacante creada con ID ' + CAST(@ResultadoCrear AS VARCHAR);
+    
+    -- Verificar que se guardó
+    SELECT * FROM VacantesPractica WHERE IdVacantePractica = @ResultadoCrear;
+    SELECT * FROM EspecialidadesVacante WHERE IdVacante = @ResultadoCrear;
+END
+ELSE
+BEGIN
+    PRINT 'ERROR: No se pudo crear la vacante';
+END
+
+PRINT '';
+PRINT '========================================';
+PRINT 'FIN DE PRUEBAS';
+PRINT '========================================';
+
+SELECT * FROM Empresas;
+
+PRINT '';
+PRINT '3. Verificando empresa con IdEmpresa = 1...';
+DECLARE @IdEstadoActivo INT;
+
+IF NOT EXISTS (SELECT 1 FROM Empresas WHERE IdEmpresa = 1)
+BEGIN
+    -- Verificar si existe al menos 1 dirección
+    DECLARE @IdDireccionPrueba INT;
+    SELECT TOP 1 @IdDireccionPrueba = IdDireccion FROM Direcciones;
+    
+    IF @IdDireccionPrueba IS NULL
+    BEGIN
+        -- Crear dirección de prueba si no existe ninguna
+        DECLARE @IdDistritoPrueba INT;
+        SELECT TOP 1 @IdDistritoPrueba = IdDistrito FROM Distritos;
+        
+        IF @IdDistritoPrueba IS NOT NULL
+        BEGIN
+            INSERT INTO Direcciones (IdDistrito, DireccionExacta)
+            VALUES (@IdDistritoPrueba, 'Dirección de prueba');
+            
+            SET @IdDireccionPrueba = SCOPE_IDENTITY();
+            PRINT '   ✅ Dirección de prueba creada';
+        END
+    END
+    
+    -- Ahora sí, crear la empresa
+    SET IDENTITY_INSERT Empresas ON;
+    
+    INSERT INTO Empresas (IdEmpresa, NombreEmpresa, IdEstado, NombreContacto, IdDireccion, AreasAfinidad)
+    VALUES (1, 'Tech Solutions Principal', @IdEstadoActivo, 'Pablo Quiros', @IdDireccionPrueba, 'Informatica');
+    
+    SET IDENTITY_INSERT Empresas OFF;
+    
+    PRINT '   ✅ Empresa con IdEmpresa = 1 creada';
+END
+ELSE
+BEGIN
+    -- Si existe, asegurarse que esté activa
+    UPDATE Empresas 
+    SET IdEstado = @IdEstadoActivo 
+    WHERE IdEmpresa = 1;
+    
+    PRINT '   ℹ️ Empresa con IdEmpresa = 1 ya existe (actualizada a activa)';
+END
+
+USE SIGEP_WEB;
+GO
+
+SELECT COLUMN_NAME, DATA_TYPE 
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'VacantesPractica';
+SELECT TOP 5 * FROM VacantesPractica;
+EXEC GetVacantesSP @IdEstado = 0, @IdEspecialidad = 0, @IdModalidad = 0;
+
+SELECT OBJECT_ID('dbo.CrearVacanteSP');
+
+SELECT COLUMN_NAME 
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'VacantesPractica';
+
+DECLARE @Resultado INT;
+
+EXEC @Resultado = CrearVacanteSP 
+    @Nombre = 'PRUEBA DESDE SQL',
+    @IdEmpresa = 1,
+    @IdEspecialidad = 1,
+    @NumCupos = 3,
+    @IdModalidad = 1,
+    @Requerimientos = 'Prueba de requisitos',
+    @Descripcion = 'Prueba de descripción',
+    @FechaMaxAplicacion = '2025-12-31',
+    @FechaCierre = '2026-01-15';
+
+SELECT @Resultado AS IdVacanteCreada;
+EXEC DetalleVacanteSP @IdVacante = 5;

@@ -132,7 +132,7 @@
     // === Desasignar práctica (desde tabla del coordinador) ===
     $(document).on('click', '.desasignar', function () {
         const idVacante = $(this).data('id');
-        const idUsuario = $('#IdUsuario').val(); // o el id del estudiante que estés mostrando
+        const idUsuario = $('#IdUsuario').val();
 
         Swal.fire({
             title: '¿Deseas desasignar esta práctica?',
@@ -145,22 +145,35 @@
         }).then(r => {
             if (!r.isConfirmed) return;
 
-            $.post(PracticasCfg.urls.retirarEstudiante, { idVacante, idUsuario })
-                .done(res => {
-                    if (res.ok) {
+            $.ajax({
+                url: '/api/Practicas/RetirarEstudiante',
+                type: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + sessionStorage.getItem('token'),
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                data: { idVacante, idUsuario, comentario: 'Desasignado desde coordinador' },
+                success: function (resultado) {
+                    console.log('[Desasignar] Resultado:', resultado);
+
+                    // El API retorna un NÚMERO (1 = Éxito, 0 = Error)
+                    if (resultado === 1) {
                         Swal.fire({
                             icon: 'success',
                             title: 'Desasignado',
-                            text: res.message || 'La práctica fue desasignada correctamente.',
+                            text: 'La práctica fue desasignada correctamente.',
                             timer: 1500,
                             showConfirmButton: false
                         });
-                        refrescarVacantes(idUsuario); // 🔁 recargar tabla auxiliar
+                        refrescarVacantes(idUsuario);
                     } else {
-                        Swal.fire('Error', res.message || 'No se pudo desasignar.', 'error');
+                        Swal.fire('Error', 'No se pudo desasignar.', 'error');
                     }
-                })
-                .fail(() => Swal.fire('Error', 'Error al conectar con el servidor.', 'error'));
+                },
+                error: function () {
+                    Swal.fire('Error', 'Error al conectar con el servidor.', 'error');
+                }
+            });
         });
     });
 
@@ -169,8 +182,8 @@
     // === FIX: prevenir duplicados de estudiantes en DataTable ===
     if ($.fn.dataTable.isDataTable('#miTabla')) {
         console.warn("⚠️ La tabla #miTabla ya estaba inicializada, se destruye para evitar duplicados");
-        $('#miTabla').DataTable().clear().destroy(); // elimina la anterior
-        $('#miTabla').empty(); // limpia el contenido de la tabla
+        $('#miTabla').DataTable().clear().destroy();
+        $('#miTabla').empty();
     }
 
     $.ajaxSetup({
@@ -195,7 +208,7 @@
             url: '/Practicas/ListarEstudiantesJson',
             type: 'GET',
             data: function (d) {
-                d._ts = new Date().getTime(); // evita caché
+                d._ts = new Date().getTime();
             },
             dataSrc: 'data'
         },
@@ -338,13 +351,32 @@
             confirmButtonColor: '#2d594d'
         }).then(r => {
             if (r.isConfirmed) {
-                $.post('/Practicas/DesasignarPractica', {
-                    idPractica,
-                    comentario: r.value || ''
-                }).done(res => {
-                    Swal.fire(res.ok ? 'Hecho' : 'Ups', res.msg, res.ok ? 'success' : 'error');
-                    if (res.ok) table.ajax.reload(null, false);
-                }).fail(() => Swal.fire('Error', 'No se pudo desasignar', 'error'));
+                $.ajax({
+                    url: '/api/Practicas/DesasignarPractica',
+                    type: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + sessionStorage.getItem('token'),
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    data: {
+                        idPractica: idPractica,
+                        comentario: r.value || ''
+                    },
+                    success: function (resultado) {
+                        console.log('[Desasignar] Resultado:', resultado);
+
+                        // El API retorna un NÚMERO (1 = Éxito, 0 = Error)
+                        if (resultado === 1) {
+                            Swal.fire('Hecho', 'Práctica desasignada correctamente.', 'success');
+                            table.ajax.reload(null, false);
+                        } else {
+                            Swal.fire('Error', 'No se pudo desasignar.', 'error');
+                        }
+                    },
+                    error: function () {
+                        Swal.fire('Error', 'No se pudo desasignar', 'error');
+                    }
+                });
             }
         });
     });
@@ -404,7 +436,6 @@
         }
         $('#modalAsignar').modal('show');
 
-        // Carga inicial de vacantes usando la función unificada
         recargarModalVacantes(idUsuario);
     });
 
@@ -424,26 +455,42 @@
         }).then(res => {
             if (!res.isConfirmed) return;
 
-            $.post('/Practicas/AsignarEstudiante', { idVacante, idUsuario })
-                .done(resp => {
-                    if (!resp.ok) {
-                        Swal.fire('Error', resp.message || 'No se pudo asignar el estudiante.', 'error');
-                        return;
+            $.ajax({
+                url: '/api/Practicas/AsignarEstudiante',
+                type: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + sessionStorage.getItem('token'),
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                data: { idVacante, idUsuario },
+                success: function (resultado) {
+                    console.log('[Asignar] Resultado:', resultado);
+
+                    // El API retorna un NÚMERO
+                    // 1 = Éxito, 0 = Error, -1 = Ya tiene práctica, -2 = No hay cupos
+                    if (resultado === 1) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Éxito',
+                            text: 'Asignación completada correctamente.',
+                            timer: 1800,
+                            showConfirmButton: false
+                        });
+
+                        recargarModalVacantes(idUsuario);
+                        $('#miTabla').DataTable().ajax.reload(null, false);
+                    } else if (resultado === -1) {
+                        Swal.fire('Aviso', 'El estudiante ya tiene una práctica activa.', 'warning');
+                    } else if (resultado === -2) {
+                        Swal.fire('Aviso', 'No hay cupos disponibles.', 'warning');
+                    } else {
+                        Swal.fire('Error', 'No se pudo asignar el estudiante.', 'error');
                     }
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Éxito',
-                        text: resp.message || 'Asignación completada correctamente.',
-                        timer: 1800,
-                        showConfirmButton: false
-                    });
-
-                    // Actualizar modal sin cerrarlo y refrescar tabla principal
-                    recargarModalVacantes(idUsuario);
-                    $('#miTabla').DataTable().ajax.reload(null, false);
-                })
-                .fail(() => Swal.fire('Error', 'Error al conectar con el servidor.', 'error'));
+                },
+                error: function () {
+                    Swal.fire('Error', 'Error al conectar con el servidor.', 'error');
+                }
+            });
         });
     });
 
@@ -459,7 +506,6 @@
             return;
         }
 
-        // Evitar bloqueo de foco del modal Bootstrap mientras aparece SweetAlert
         const modal = document.getElementById('modalAsignar');
         const modalInstance = modal ? bootstrap.Modal.getInstance(modal) : null;
         if (modalInstance?._focustrap) modalInstance._focustrap.deactivate();
@@ -493,28 +539,41 @@
             }
 
             const comentario = result.value.trim();
-            $.post('/Practicas/DesasignarPractica', { idPractica, comentario })
-                .done(res => {
-                    if (res.ok) {
+
+            $.ajax({
+                url: '/api/Practicas/DesasignarPractica',
+                type: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + sessionStorage.getItem('token'),
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                data: { idPractica, comentario },
+                success: function (resultado) {
+                    console.log('[Desasignar] Resultado:', resultado);
+
+                    // El API retorna un NÚMERO (1 = Éxito, 0 = Error)
+                    if (resultado === 1) {
                         Swal.fire({
                             icon: 'success',
                             title: 'Desasignado correctamente',
-                            text: res.msg || 'La práctica fue desasignada exitosamente.',
+                            text: 'La práctica fue desasignada exitosamente.',
                             timer: 1800,
                             showConfirmButton: false
                         });
 
-                        // 🔁 Actualizar modal sin cerrarlo y refrescar tabla principal
                         recargarModalVacantes(idUsuario);
                         $('#miTabla').DataTable().ajax.reload(null, false);
                     } else {
-                        Swal.fire('Error', res.msg || 'No se pudo desasignar la práctica.', 'error');
+                        Swal.fire('Error', 'No se pudo desasignar la práctica.', 'error');
                     }
-                })
-                .fail(() => Swal.fire('Error', 'Error de conexión al servidor.', 'error'))
-                .always(() => {
+                },
+                error: function () {
+                    Swal.fire('Error', 'Error de conexión al servidor.', 'error');
+                },
+                complete: function () {
                     if (modalInstance?._focustrap) modalInstance._focustrap.activate();
-                });
+                }
+            });
         });
     });
 
