@@ -6,6 +6,8 @@
         // =====================================================
         const CFG = window.VacantesCfg || { urls: {}, rol: 0 };
 
+        console.log('[VacantesEstudiantes] CFG cargado:', CFG);
+
         // =====================================================
         // 🔹 Helpers
         // =====================================================
@@ -76,7 +78,8 @@
             responsive: true,
             processing: true,
             ajax: {
-                url: CFG.urls.getVacantes,
+                // ✅ USA EL WEB CONTROLLER, NO EL API DIRECTO
+                url: CFG.urls.getVacantes || '/Practicas/GetVacantes',
                 type: 'GET',
                 cache: false,
                 dataType: 'json',
@@ -88,6 +91,8 @@
                     };
                 },
                 dataSrc: function (json) {
+                    console.log('[DataTable] Respuesta recibida:', json);
+
                     if (typeof json === 'string') {
                         if (json.indexOf('<!DOCTYPE html') >= 0 || json.indexOf('<html') >= 0) {
                             Swal.fire('Error', 'La sesión puede haber expirado o el servidor devolvió HTML.', 'error');
@@ -102,14 +107,25 @@
                         }
                     }
 
+                    // El Web Controller retorna { data: [...] }
+                    if (json && Array.isArray(json.data)) {
+                        return json.data;
+                    }
+
+                    // Si viene array directo del API
+                    if (Array.isArray(json)) {
+                        return json;
+                    }
+
                     if (json && json.ok === false) {
                         Swal.fire('Error', json.error || 'Error en servidor.', 'error');
                         return [];
                     }
 
-                    return (json && Array.isArray(json.data)) ? json.data : [];
+                    return [];
                 },
                 error: function (xhr) {
+                    console.error('[DataTable] Error:', xhr);
                     const ct = xhr.getResponseHeader('content-type') || '';
                     if (ct.indexOf('text/html') >= 0) {
                         Swal.fire('Error', 'Se recibió HTML en lugar de JSON (¿login/500?).', 'error');
@@ -119,35 +135,59 @@
                 }
             },
             columns: [
-                { data: 'EmpresaNombre', title: 'Empresa' },
-                { data: 'EspecialidadNombre', title: 'Especialidad' },
-                { data: 'Requerimientos', title: 'Requisitos' },
-                { data: 'NumCupos', title: 'Cupos Disponibles' },
                 {
-                    data: 'NumPostulados',
+                    data: 'empresaNombre',
+                    title: 'Empresa',
+                    render: function (d) {
+                        return d || '—';
+                    }
+                },
+                {
+                    data: 'especialidadNombre',
+                    title: 'Especialidad',
+                    render: function (d) {
+                        return d || '—';
+                    }
+                },
+                {
+                    data: 'requerimientos',
+                    title: 'Requisitos',
+                    render: function (d) {
+                        return d || '—';
+                    }
+                },
+                {
+                    data: 'numCupos',
+                    title: 'Cupos Disponibles',
+                    render: function (d) {
+                        return d || 0;
+                    }
+                },
+                {
+                    data: 'numPostulados',
                     title: 'Estudiantes Postulados',
                     render: function (d) {
                         return `<strong>${d || 0}</strong>`;
                     }
                 },
                 {
-                    data: 'EstadoNombre',
+                    data: 'estadoNombre',
                     title: 'Estado',
                     render: function (d) {
                         return badgeEstado(d);
                     }
                 },
                 {
-                    data: 'IdVacante',
+                    data: 'idVacante',
                     orderable: false,
                     title: 'Acciones',
                     render: function (data, type, row) {
-                        const estado = normalizarEstado(row.EstadoNombre);
+                        const estado = normalizarEstado(row.estadoNombre);
                         const inactivo = (estado === 'inactivo' || estado === 'archivado');
                         const dis = inactivo ? 'disabled aria-disabled="true"' : '';
                         const muted = inactivo ? 'opacity:0.35; cursor:not-allowed;' : '';
 
-                        const nombreVacante = (row.Nombre || '').toString().toLowerCase();
+                        const nombreVacante = (row.nombre || '').toString().toLowerCase();
                         const autog = nombreVacante.includes('práctica autogestionada') ||
                             nombreVacante.includes('practica autogestionada');
 
@@ -194,6 +234,7 @@
 
         // =====================================================
         // 🔹 Ubicación empresa en Crear / Editar
+        // ✅ CORREGIDO: USA EL WEB CONTROLLER
         // =====================================================
 
         $('#IdEmpresa, #edit-IdEmpresa').on('change', function () {
@@ -207,24 +248,27 @@
                 return;
             }
 
-            $.getJSON(CFG.urls.getUbicacionEmpresa, { idEmpresa: idEmpresa })
-                .done(function (res) {
-                    const ok = res.ok ?? true;
-                    const ubic = res.ubicacion || res.Ubicacion || '';
+            console.log('[Ubicación] Consultando empresa:', idEmpresa);
 
-                    if (ok && ubic) {
-                        $inputUbicacion.val(ubic);
-                    } else {
-                        $inputUbicacion.val('No registrada');
-                    }
-                })
-                .fail(function () {
+            // ✅ LLAMAR AL WEB CONTROLLER, NO AL API DIRECTO
+            $.ajax({
+                url: `/Practicas/GetUbicacionEmpresa?idEmpresa=${idEmpresa}`,
+                type: 'GET',
+                dataType: 'text', // El Web Controller retorna STRING directo
+                success: function (ubicacion) {
+                    console.log('[Ubicación] Recibida:', ubicacion);
+                    $inputUbicacion.val(ubicacion || 'No registrada');
+                },
+                error: function (xhr) {
+                    console.error('[Ubicación] Error:', xhr);
                     $inputUbicacion.val('Error al obtener ubicación');
-                });
-        }); 
+                }
+            });
+        });
 
         // =====================================================
         // 🔹 Crear Vacante
+        // ✅ CORREGIDO: USA EL WEB CONTROLLER
         // =====================================================
 
         $('#formCrearVacante').on('submit', function (e) {
@@ -258,7 +302,6 @@
             }
 
             const payload = {
-                IdVacante: 0,
                 Nombre: nombre,
                 IdEmpresa: parseInt(idEmpresa),
                 IdEspecialidad: parseInt(idEspecialidad),
@@ -270,173 +313,199 @@
                 FechaCierre: fechaCierre
             };
 
+            console.log('[Crear Vacante] Payload:', payload);
+
+            // ✅ LLAMAR AL WEB CONTROLLER
             $.ajax({
-                url: CFG.urls.crear,
+                url: '/Practicas/Crear',
                 type: "POST",
                 contentType: "application/json",
                 data: JSON.stringify(payload),
-                success: function (res, status, xhr) {
-                    if (redirSiLogin(res, xhr)) return;
+                success: function (resultado) {
+                    console.log('[Crear Vacante] Resultado:', resultado);
 
-                    if (res.ok) {
-                        Swal.fire('Éxito', res.message || 'Vacante creada correctamente.', 'success')
+                    // ✅ AGREGAR ESTA VALIDACIÓN
+                    if (typeof resultado === 'string' && resultado.indexOf('<!DOCTYPE html') >= 0) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Sesión expirada',
+                            text: 'Tu sesión ha expirado. Serás redirigido al login.'
+                        }).then(() => {
+                            window.location.href = '/Home/IniciarSesion';
+                        });
+                        return;
+                    }
+
+                    const idCreado = typeof resultado === 'number' ? resultado : parseInt(resultado);
+
+                    if (idCreado > 0) {
+                        Swal.fire('Éxito', 'Vacante creada correctamente.', 'success')
                             .then(function () {
                                 $('#modalCrearVacante').modal('hide');
                                 $('#formCrearVacante')[0].reset();
                                 tabla.ajax.reload(null, false);
                             });
                     } else {
-                        Swal.fire('Error', res.message || 'No se pudo crear la vacante.', 'error');
+                        Swal.fire('Error', 'No se pudo crear la vacante. Verifique los datos.', 'error');
                     }
                 },
-                error: function () {
-                    Swal.fire('Error', 'Error al crear la vacante.', 'error');
+                error: function (xhr) {
+                    console.error('[Crear Vacante] Error:', xhr.responseText);
+
+                    // ✅ AGREGAR VALIDACIÓN DE HTML
+                    if (xhr.responseText && xhr.responseText.indexOf('<!DOCTYPE html') >= 0) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Sesión expirada',
+                            text: 'Tu sesión ha expirado. Serás redirigido al login.'
+                        }).then(() => {
+                            window.location.href = '/Home/IniciarSesion';
+                        });
+                        return;
+                    }
+
+                    Swal.fire('Error', xhr.responseText || 'Error al crear la vacante.', 'error');
                 }
             });
         });
 
         // =====================================================
         // 🔹 Visualizar Vacante + Postulaciones
+        // ✅ CORREGIDO: USA EL WEB CONTROLLER
         // =====================================================
 
         $('#miTabla').on('click', '.btn-visualizar', function () {
             const id = $(this).data('id');
 
-            $.get(CFG.urls.detalle, { id: id }, function (res, _, xhr) {
-                if (redirSiLogin(res, xhr)) return;
+            $.ajax({
+                url: `/Practicas/Detalle?id=${id}`,
+                type: 'GET',
+                success: function (d) {
+                    console.log('[Detalle Vacante]', d);
 
-                if (!res.ok || !res.data) {
+                    $('#vis-Nombre').val(d.Nombre || d.nombre);
+                    $('#vis-Empresa').val(d.IdEmpresa || d.idEmpresa);
+                    $('#vis-Ubicacion').val(d.Ubicacion || d.ubicacion || 'No registrada');
+                    $('#vis-Especialidad').val(d.IdEspecialidad || d.idEspecialidad);
+                    $('#vis-NumCupos').val(d.NumCupos || d.numCupos);
+                    $('#vis-Modalidad').val(d.IdModalidad || d.idModalidad);
+                    $('#vis-Requerimientos').val(d.Requerimientos || d.requisitos);
+                    $('#vis-Descripcion').val(d.Descripcion || d.descripcion);
+                    $('#vis-FechaAplicacion').val(d.FechaMaxAplicacion ? d.FechaMaxAplicacion.split('T')[0] : '');
+                    $('#vis-FechaCierre').val(d.FechaCierre ? d.FechaCierre.split('T')[0] : '');
+
+                    $('#modalVisualizarVacante').data('idVacante', id);
+                    $('#modalVisualizarVacante').modal('show');
+
+                    // Cargar postulaciones
+                    $.ajax({
+                        url: `/Practicas/ObtenerPostulaciones?idVacante=${id}`,
+                        type: 'GET',
+                        success: function (postulaciones) {
+                            const $lista = $('#listaPostulaciones').empty();
+                            const hayData = Array.isArray(postulaciones) && postulaciones.length > 0;
+                            $('#mensajeSinPostulaciones').toggle(!hayData);
+
+                            if (hayData) {
+                                postulaciones.forEach(function (p) {
+                                    const estado = p.EstadoDescripcion || p.estadoDescripcion || 'Sin estado';
+                                    const badge = badgeEstado(estado);
+
+                                    $lista.append(`
+                                        <li class="d-flex justify-content-between align-items-center p-2 border rounded mb-2">
+                                            <div>
+                                                <a href="${CFG.urls.visualizacionPostulacion}?idVacante=${p.IdVacante || p.idVacante}&idUsuario=${p.IdUsuario || p.idUsuario}"
+                                                   class="text-decoration-none fw-bold"
+                                                   style="color:#2d594d;">
+                                                    ${escapeHtml(p.NombreCompleto || p.nombreCompleto)}
+                                                </a>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">${badge}</div>
+                                        </li>`);
+                                });
+                            }
+                        }
+                    });
+                },
+                error: function () {
                     Swal.fire('Error', 'No se pudo cargar la vacante.', 'error');
-                    return;
                 }
-
-                const d = res.data;
-
-                $('#vis-Nombre').val(d.Nombre);
-                $('#vis-Empresa').val(d.IdEmpresa);
-                $('#vis-Ubicacion').val(d.Ubicacion);
-                $('#vis-Especialidad').val(d.IdEspecialidad);
-                $('#vis-NumCupos').val(d.NumCupos);
-                $('#vis-Modalidad').val(d.IdModalidad);
-                $('#vis-Requerimientos').val(d.Requerimientos);
-                $('#vis-Descripcion').val(d.Descripcion);
-                $('#vis-FechaAplicacion').val(d.FechaMaxAplicacion ? d.FechaMaxAplicacion.split('T')[0] : '');
-                $('#vis-FechaCierre').val(d.FechaCierre ? d.FechaCierre.split('T')[0] : '');
-
-                $('#modalVisualizarVacante').data('idVacante', id);
-                $('#modalVisualizarVacante').modal('show');
-
-                $.getJSON(CFG.urls.obtenerPostulaciones, { idVacante: id }, function (r2) {
-                    const $lista = $('#listaPostulaciones').empty();
-                    $('#mensajeSinPostulaciones').toggle(!r2.ok || !r2.data || !r2.data.length);
-
-                    if (r2.ok && r2.data && r2.data.length) {
-                        r2.data.forEach(function (p) {
-                            const estado = p.EstadoDescripcion || 'Sin estado';
-                            const badge = badgeEstado(estado);
-
-                            $lista.append(`
-                                <li class="d-flex justify-content-between align-items-center p-2 border rounded mb-2">
-                                    <div>
-                                        <a href="${CFG.urls.visualizacionPostulacion}?idVacante=${p.IdVacante}&idUsuario=${p.IdUsuario}"
-                                           class="text-decoration-none fw-bold"
-                                           style="color:#2d594d;">
-                                            ${escapeHtml(p.NombreCompleto)}
-                                        </a>
-                                    </div>
-                                    <div class="d-flex align-items-center gap-2">${badge}</div>
-                                </li>`);
-                        });
-                    }
-                });
-
             });
         });
 
         // =====================================================
         // 🔹 Helper: cargar estudiantes para asignar
+        // ✅ CORREGIDO: USA EL WEB CONTROLLER
         // =====================================================
 
         function cargarEstudiantesAsignar(idVacante) {
-            $.getJSON(CFG.urls.obtenerEstudiantesAsignar, {
-                idVacante: idVacante,
-                idUsuarioSesion: CFG.idUsuarioSesion || 0
-            }, function (res) {
+            $.ajax({
+                url: `/Practicas/ObtenerEstudiantesAsignar?idVacante=${idVacante}&idUsuarioSesion=${CFG.idUsuarioSesion || 0}`,
+                type: 'GET',
+                success: function (estudiantes) {
+                    const tbody = $('#miTablaAsignar tbody').empty();
 
-                const tbody = $('#miTablaAsignar tbody').empty();
-                $('[title]').tooltip({ placement: 'top', trigger: 'hover' });
+                    // El Web Controller puede retornar array directo o wrapped
+                    const data = Array.isArray(estudiantes) ? estudiantes : (estudiantes.data || []);
 
-                if (!res || !res.ok || !res.data || !res.data.length) {
-                    tbody.append('<tr><td colspan="5" class="text-center text-muted">No hay estudiantes disponibles</td></tr>');
-                    return;
-                }
-
-                res.data.forEach(function (e) {
-
-                    const estadoVacante = normalizarEstado(e.EstadoVacante || e.EstadoPractica || 'Sin proceso activo');
-                    let estadoMostrar = e.EstadoVacante || e.EstadoPractica || 'Sin proceso activo';
-
-                    if ((e.TipoMensaje || '').toLowerCase() === 'autogestionada') {
-                        if (!estadoMostrar.toLowerCase().includes('autogestionada')) {
-                            estadoMostrar += ' (Autogestionada)';
-                        }
-                    }
-
-                    const badge = badgeEstado(estadoMostrar);
-                    const estadoAcademico = parseInt(e.EstadoAcademico || 0);
-                    let btn = '';
-
-                    if (estadoAcademico === 9) {
+                    if (!data.length) {
+                        tbody.append('<tr><td colspan="5" class="text-center text-muted">No hay estudiantes disponibles</td></tr>');
                         return;
                     }
 
-                    if (['sin proceso activo', 'retirada', 'en proceso de aplicacion'].includes(estadoVacante)) {
+                    data.forEach(function (e) {
+                        const estadoVacante = normalizarEstado(e.EstadoVacante || e.EstadoPractica || 'Sin proceso activo');
+                        let estadoMostrar = e.EstadoVacante || e.EstadoPractica || 'Sin proceso activo';
 
-                        btn = `<button class="btn btn-sm btn-asignar-estudiante"
-                               data-idusuario="${e.IdUsuario}"
-                               data-nombre="${escapeHtml(e.NombreCompleto)}"
-                               title="Asignar o confirmar asignación"
-                               style="background:none; border:none; color:#198754;">
-                            <i class="fas fa-user-plus fa-lg"></i>
-                        </button>`;
+                        if ((e.TipoMensaje || '').toLowerCase() === 'autogestionada') {
+                            if (!estadoMostrar.toLowerCase().includes('autogestionada')) {
+                                estadoMostrar += ' (Autogestionada)';
+                            }
+                        }
 
-                    } else if (estadoVacante === 'asignada') {
+                        const badge = badgeEstado(estadoMostrar);
+                        const estadoAcademico = parseInt(e.EstadoAcademico || 0);
+                        let btn = '';
 
-                        btn = `<button class="btn btn-sm btn-retirar-estudiante"
-                               data-idusuario="${e.IdUsuario}"
-                               data-idpractica="${e.IdPracticaVacante || e.idPracticaVacante || 0}"
-                               data-nombre="${escapeHtml(e.NombreCompleto)}"
-                               title="Retirar estudiante"
-                               style="background:none; border:none; color:#dc3545;">
-                            <i class="fas fa-trash-alt fa-lg"></i>
-                        </button>`;
+                        if (estadoAcademico === 9) {
+                            return;
+                        }
 
-                    } else if (['en curso', 'finalizada', 'rezagado', 'rechazada', 'aprobada'].includes(estadoVacante)) {
+                        if (['sin proceso activo', 'retirada', 'en proceso de aplicacion'].includes(estadoVacante)) {
+                            btn = `<button class="btn btn-sm btn-asignar-estudiante"
+                                   data-idusuario="${e.IdUsuario}"
+                                   data-nombre="${escapeHtml(e.NombreCompleto)}"
+                                   title="Asignar o confirmar asignación"
+                                   style="background:none; border:none; color:#198754;">
+                                <i class="fas fa-user-plus fa-lg"></i>
+                            </button>`;
+                        } else if (estadoVacante === 'asignada') {
+                            btn = `<button class="btn btn-sm btn-retirar-estudiante"
+                                   data-idusuario="${e.IdUsuario}"
+                                   data-idpractica="${e.IdPracticaVacante || e.idPracticaVacante || 0}"
+                                   data-nombre="${escapeHtml(e.NombreCompleto)}"
+                                   title="Retirar estudiante"
+                                   style="background:none; border:none; color:#dc3545;">
+                                <i class="fas fa-trash-alt fa-lg"></i>
+                            </button>`;
+                        } else {
+                            btn = `<button class="btn btn-sm btn-bloqueado"
+                                   title="No puede ser asignado"
+                                   style="background:none; border:none; color:#6c757d;" disabled>
+                                <i class="fas fa-ban fa-lg"></i>
+                            </button>`;
+                        }
 
-                        btn = `<button class="btn btn-sm btn-bloqueado"
-                               title="No puede ser asignado"
-                               style="background:none; border:none; color:#6c757d;" disabled>
-                            <i class="fas fa-ban fa-lg"></i>
-                        </button>`;
-
-                    } else {
-
-                        btn = `<button class="btn btn-sm" disabled
-                               title="Estado desconocido"
-                               style="background:none; border:none; color:#6c757d;">
-                            <i class="fas fa-question fa-lg"></i>
-                        </button>`;
-                    }
-
-                    tbody.append(`
-                        <tr>
-                            <td>${escapeHtml(e.NombreCompleto)}</td>
-                            <td>${escapeHtml(e.Cedula || '')}</td>
-                            <td>${escapeHtml(e.Especialidad || '')}</td>
-                            <td class="text-center">${badge}</td>
-                            <td class="text-center">${btn}</td>
-                        </tr>`);
-                });
+                        tbody.append(`
+                            <tr>
+                                <td>${escapeHtml(e.NombreCompleto)}</td>
+                                <td>${escapeHtml(e.Cedula || '')}</td>
+                                <td>${escapeHtml(e.Especialidad || '')}</td>
+                                <td class="text-center">${badge}</td>
+                                <td class="text-center">${btn}</td>
+                            </tr>`);
+                    });
+                }
             });
         }
 
@@ -452,6 +521,7 @@
 
         // =====================================================
         // 🔹 Asignar estudiante
+        // ✅ CORREGIDO: USA EL WEB CONTROLLER
         // =====================================================
 
         $(document).on('click', '.btn-asignar-estudiante', function () {
@@ -472,36 +542,46 @@
             }).then(function (r) {
                 if (!r.isConfirmed) return;
 
-                $.post(CFG.urls.asignarEstudiante, { idUsuario: idUsuario, idVacante: idVacante })
-                    .done(function (res) {
-                        if (!res) {
-                            Swal.fire('Error', 'Sin respuesta del servidor.', 'error');
-                            return;
-                        }
+                $.ajax({
+                    url: '/Practicas/AsignarEstudiante',
+                    type: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    data: { idUsuario: idUsuario, idVacante: idVacante },
+                    success: function (resultado) {
+                        console.log('[Asignar] Resultado:', resultado);
 
-                        if (res.ok) {
+                        const res = typeof resultado === 'number' ? resultado : parseInt(resultado);
+
+                        if (res === 1) {
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Éxito',
-                                text: res.message || 'Acción completada correctamente.',
+                                text: 'Estudiante asignado correctamente.',
                                 timer: 2000,
                                 showConfirmButton: false
                             });
-
                             cargarEstudiantesAsignar(idVacante);
                             tabla.ajax.reload(null, false);
+                        } else if (res === -1) {
+                            Swal.fire('Aviso', 'El estudiante ya tiene una práctica asignada.', 'warning');
+                        } else if (res === -2) {
+                            Swal.fire('Aviso', 'No hay cupos disponibles en esta vacante.', 'warning');
                         } else {
-                            Swal.fire('Aviso', res.message || 'No se pudo completar la acción.', 'warning');
+                            Swal.fire('Error', 'No se pudo completar la asignación.', 'error');
                         }
-                    })
-                    .fail(function () {
+                    },
+                    error: function () {
                         Swal.fire('Error', 'Error de conexión al servidor.', 'error');
-                    });
+                    }
+                });
             });
         });
 
         // =====================================================
         // 🔹 Retirar estudiante
+        // ✅ CORREGIDO: USA EL WEB CONTROLLER
         // =====================================================
 
         $(document).on('click', '.btn-retirar-estudiante', function () {
@@ -509,23 +589,10 @@
             const idUsuario = $(this).data('idusuario');
             const idPractica = $(this).data('idpractica') || 0;
             const nombre = $(this).data('nombre') || '—';
-            const estadoAcademico = $(this).data('estadoacademico') || 'Activo';
-
-            const modal = document.getElementById('modalAsignar');
-            const modalInstance = modal ? bootstrap.Modal.getInstance(modal) : null;
-
-            if (modalInstance && modalInstance._focustrap) {
-                modalInstance._focustrap.deactivate();
-            }
 
             Swal.fire({
                 title: '¿Deseas desasignar esta práctica?',
-                html: `
-                    <div style="font-size:15px;line-height:1.5;">
-                        El estudiante <b style="color:#2d594d;">${nombre}</b><br>
-                        <small>Estado académico actual: <b>${estadoAcademico}</b></small><br><br>
-                        Pasará al estado de práctica <b>"Retirada"</b>.
-                    </div>`,
+                html: `El estudiante <b>${nombre}</b> pasará al estado de práctica <b>"Retirada"</b>.`,
                 icon: 'warning',
                 input: 'textarea',
                 inputLabel: 'Comentario (obligatorio)',
@@ -541,154 +608,124 @@
                     }
                 }
             }).then(function (result) {
-
-                if (!result.isConfirmed) {
-                    if (modalInstance && modalInstance._focustrap) {
-                        modalInstance._focustrap.activate();
-                    }
-                    return;
-                }
+                if (!result.isConfirmed) return;
 
                 const comentario = result.value.trim();
-                const url = idPractica > 0 ? CFG.urls.desasignarPractica : CFG.urls.retirarEstudiante;
+                const url = idPractica > 0 ? '/Practicas/DesasignarPractica' : '/Practicas/RetirarEstudiante';
                 const data = idPractica > 0
                     ? { idPractica: idPractica, comentario: comentario }
                     : { idVacante: idVacante, idUsuario: idUsuario, comentario: comentario };
 
-                $.post(url, data)
-                    .done(function (res) {
-                        if (res.ok) {
+                $.ajax({
+                    url: url,
+                    type: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    data: data,
+                    success: function (resultado) {
+                        console.log('[Desasignar] Resultado:', resultado);
+
+                        const res = typeof resultado === 'number' ? resultado : parseInt(resultado);
+
+                        if (res === 1) {
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Desasignado correctamente',
-                                text: res.msg || res.message || 'La práctica fue desasignada exitosamente.',
+                                text: 'La práctica fue desasignada exitosamente.',
                                 timer: 1800,
                                 showConfirmButton: false
                             });
-
                             cargarEstudiantesAsignar(idVacante);
                             tabla.ajax.reload(null, false);
                         } else {
-                            Swal.fire('Error', res.msg || res.message || 'No se pudo desasignar la práctica.', 'error');
+                            Swal.fire('Error', 'No se pudo desasignar la práctica.', 'error');
                         }
-                    })
-                    .fail(function () {
+                    },
+                    error: function () {
                         Swal.fire('Error', 'Error de conexión al servidor.', 'error');
-                    })
-                    .always(function () {
-                        if (modalInstance && modalInstance._focustrap) {
-                            modalInstance._focustrap.activate();
-                        }
-                    });
-            });
-        });
-
-        // =====================================================
-        // 🔹 Botón bloqueado
-        // =====================================================
-
-        $(document).on('click', '.btn-bloqueado', function () {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Estudiante no disponible',
-                text: 'Este estudiante ya tiene una práctica activa o completada y no puede ser asignado.'
+                    }
+                });
             });
         });
 
         // =====================================================
         // 🔹 Editar Vacante
+        // ✅ CORREGIDO: USA EL WEB CONTROLLER
         // =====================================================
 
         $('#miTabla').on('click', '.btn-editar', function () {
             const id = $(this).data('id');
 
-            $.get(CFG.urls.detalle, { id: id }, function (res, _, xhr) {
-                if (redirSiLogin(res, xhr)) return;
+            $.ajax({
+                url: `/Practicas/Detalle?id=${id}`,
+                type: 'GET',
+                success: function (d) {
+                    $('#edit-IdVacante').val(d.IdVacante || d.idVacante);
+                    $('#edit-Nombre').val(d.Nombre || d.nombre);
+                    $('#edit-IdEmpresa').val(d.IdEmpresa || d.idEmpresa);
+                    $('#edit-Ubicacion').val(d.Ubicacion || d.ubicacion);
+                    $('#edit-IdEspecialidad').val(d.IdEspecialidad || d.idEspecialidad);
+                    $('#edit-NumCupos').val(d.NumCupos || d.numCupos);
+                    $('#edit-IdModalidad').val(d.IdModalidad || d.idModalidad);
+                    $('#edit-Requerimientos').val(d.Requerimientos || d.requisitos);
+                    $('#edit-Descripcion').val(d.Descripcion || d.descripcion);
+                    $('#edit-FechaMaxAplicacion').val(d.FechaMaxAplicacion ? d.FechaMaxAplicacion.split('T')[0] : '');
+                    $('#edit-FechaCierre').val(d.FechaCierre ? d.FechaCierre.split('T')[0] : '');
 
-                if (!res.ok || !res.data) {
+                    $('#modalEditarVacante').modal('show');
+                },
+                error: function () {
                     Swal.fire('Error', 'No se pudo cargar la información.', 'error');
-                    return;
                 }
-
-                const d = res.data;
-
-                $('#edit-IdVacante').val(d.IdVacante);
-                $('#edit-Nombre').val(d.Nombre);
-                $('#edit-IdEmpresa').val(d.IdEmpresa);
-                $('#edit-Ubicacion').val(d.Ubicacion);
-                $('#edit-IdEspecialidad').val(d.IdEspecialidad);
-                $('#edit-NumCupos').val(d.NumCupos);
-                $('#edit-IdModalidad').val(d.IdModalidad);
-                $('#edit-Requerimientos').val(d.Requerimientos);
-                $('#edit-Descripcion').val(d.Descripcion);
-                $('#edit-FechaMaxAplicacion').val(d.FechaMaxAplicacion ? d.FechaMaxAplicacion.split('T')[0] : '');
-                $('#edit-FechaCierre').val(d.FechaCierre ? d.FechaCierre.split('T')[0] : '');
-
-                $('#modalEditarVacante').modal('show');
             });
         });
 
         $('#formEditarVacante').on('submit', function (e) {
             e.preventDefault();
 
-            const idVacante = parseInt($('#edit-IdVacante').val()) || 0;
-            const nombre = $('#edit-Nombre').val().trim();
-            const idEmpresa = $('#edit-IdEmpresa').val();
-            const idEspecialidad = $('#edit-IdEspecialidad').val();
-            const numCupos = parseInt($('#edit-NumCupos').val()) || 0;
-            const idModalidad = $('#edit-IdModalidad').val();
-            const fAplic = $('#edit-FechaMaxAplicacion').val();
-            const fCierre = $('#edit-FechaCierre').val();
-            const req = $('#edit-Requerimientos').val().trim();
-            const desc = $('#edit-Descripcion').val().trim();
-
-            if (!nombre || !idEmpresa || !req || numCupos < 1 || !idEspecialidad || !idModalidad) {
-                Swal.fire('Campos obligatorios', 'Debe completar todos los campos requeridos.', 'warning');
-                return false;
-            }
-
-            if (validarFechas(fAplic, fCierre)) {
-                Swal.fire('Fechas inválidas', 'La fecha de aplicación no puede ser mayor que la de cierre.', 'warning');
-                return false;
-            }
-
             const payload = {
-                IdVacante: idVacante,
-                Nombre: nombre,
-                IdEmpresa: parseInt(idEmpresa),
-                IdEspecialidad: parseInt(idEspecialidad),
-                NumCupos: numCupos,
-                IdModalidad: parseInt(idModalidad),
-                Requerimientos: req,
-                Descripcion: desc,
-                FechaMaxAplicacion: fAplic,
-                FechaCierre: fCierre
+                IdVacante: parseInt($('#edit-IdVacante').val()) || 0,
+                Nombre: $('#edit-Nombre').val().trim(),
+                IdEmpresa: parseInt($('#edit-IdEmpresa').val()),
+                IdEspecialidad: parseInt($('#edit-IdEspecialidad').val()),
+                NumCupos: parseInt($('#edit-NumCupos').val()) || 0,
+                IdModalidad: parseInt($('#edit-IdModalidad').val()),
+                Requerimientos: $('#edit-Requerimientos').val().trim(),
+                Descripcion: $('#edit-Descripcion').val().trim(),
+                FechaMaxAplicacion: $('#edit-FechaMaxAplicacion').val(),
+                FechaCierre: $('#edit-FechaCierre').val()
             };
 
+            console.log('[Editar Vacante] Payload:', payload);
+
             $.ajax({
-                url: CFG.urls.editar,
+                url: '/Practicas/Editar',
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(payload),
-                success: function (res, _, xhr) {
-                    if (redirSiLogin(res, xhr)) return;
+                success: function (resultado) {
+                    console.log('[Editar Vacante] Resultado:', resultado);
 
-                    if (res.ok) {
-                        Swal.fire('Éxito', res.message || 'Vacante actualizada.', 'success');
+                    const res = typeof resultado === 'number' ? resultado : parseInt(resultado);
+
+                    if (res > 0) {
+                        Swal.fire('Éxito', 'Vacante actualizada correctamente.', 'success');
                         $('#modalEditarVacante').modal('hide');
                         tabla.ajax.reload(null, false);
                     } else {
-                        Swal.fire('Error', res.message || 'Ocurrió un problema al actualizar.', 'error');
+                        Swal.fire('Error', 'No se pudo actualizar la vacante.', 'error');
                     }
                 },
-                error: function () {
-                    Swal.fire('Error', 'Ocurrió un problema al actualizar.', 'error');
+                error: function (xhr) {
+                    Swal.fire('Error', xhr.responseText || 'Error al actualizar.', 'error');
                 }
             });
         });
 
         // =====================================================
-        // 🔹 Eliminar / Archivar Vacante
+        // 🔹 Eliminar Vacante
+        // ✅ CORREGIDO: USA EL WEB CONTROLLER
         // =====================================================
 
         $('#miTabla').on('click', '.btn-eliminar', function () {
@@ -705,153 +742,25 @@
             }).then(function (r) {
                 if (!r.isConfirmed) return;
 
-                $.post(CFG.urls.eliminar, { id: id })
-                    .done(function (res, _, xhr) {
-                        if (redirSiLogin(res, xhr)) return;
-
-                        if (res.ok) {
-                            Swal.fire('Éxito', res.message, 'success');
-                            tabla.ajax.reload(null, false);
-                        } else {
-                            Swal.fire('Aviso', res.message, 'warning');
-                        }
-                    })
-                    .fail(function () {
-                        Swal.fire('Error', 'Error al archivar la vacante.', 'error');
-                    });
-            });
-        });
-
-        // =====================================================
-        // 🔹 Desasignar desde modal Visualizar
-        // =====================================================
-
-        $(document).on('click', '.BtnDesasignarPracticaEstudiante', function (e) {
-            e.preventDefault();
-
-            const idPractica = $(this).data('idpractica');
-            const nombreEst = $(this).data('nombre');
-            const idVacante = $('#modalVisualizarVacante').data('idVacante');
-
-            if (!idPractica) {
-                Swal.fire('Error', 'No se encontró el identificador de la práctica.', 'error');
-                return;
-            }
-
-            const modalVisual = document.getElementById('modalVisualizarVacante');
-            const modalInstance = modalVisual ? bootstrap.Modal.getInstance(modalVisual) : null;
-
-            if (modalInstance && modalInstance._focustrap) {
-                modalInstance._focustrap.deactivate();
-            }
-
-            Swal.fire({
-                title: '¿Deseas desasignar esta práctica?',
-                html: `
-                    <p>El estado de <b>${escapeHtml(nombreEst || 'el estudiante')}</b> se cambiará a <b>"Retirada"</b>.</p>
-                `,
-                icon: 'warning',
-                input: 'textarea',
-                inputLabel: 'Comentario (opcional)',
-                inputPlaceholder: 'Escribe el motivo de la desasignación...',
-                inputAttributes: { maxlength: 500 },
-                showCancelButton: true,
-                confirmButtonText: 'Sí, desasignar',
-                cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#2d594d',
-                allowOutsideClick: false,
-                didOpen: function () {
-                    const textarea = Swal.getInput();
-                    if (textarea) {
-                        setTimeout(function () { textarea.focus(); }, 150);
-                    }
-                }
-            }).then(function (result) {
-                if (!result.isConfirmed) {
-                    if (modalInstance && modalInstance._focustrap) {
-                        modalInstance._focustrap.activate();
-                    }
-                    return;
-                }
-
-                const comentario = (result.value || '').trim();
-
                 $.ajax({
-                    url: CFG.urls.desasignarPractica,
+                    url: `/Practicas/Eliminar?id=${id}`,
                     type: 'POST',
-                    data: {
-                        idPractica: idPractica,
-                        comentario: comentario
-                    },
-                    success: function (res, status, xhr) {
-                        if (redirSiLogin(res, xhr)) return;
+                    success: function (resultado) {
+                        console.log('[Eliminar] Resultado:', resultado);
 
-                        if (res.ok) {
-                            Swal.fire({
-                                title: 'Desasignado',
-                                text: res.msg || 'La práctica fue desasignada correctamente.',
-                                icon: 'success',
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(function () {
+                        const res = typeof resultado === 'number' ? resultado : parseInt(resultado);
 
-                                $.getJSON(CFG.urls.obtenerPostulaciones, { idVacante: idVacante }, function (r2) {
-                                    const $lista = $('#listaPostulaciones').empty();
-                                    $('#mensajeSinPostulaciones').toggle(!r2.ok || !r2.data || !r2.data.length);
-
-                                    if (r2.ok && r2.data && r2.data.length) {
-
-                                        r2.data.forEach(function (p) {
-                                            const estado = p.EstadoDescripcion || 'Sin estado';
-                                            const estNorm = normalizarEstado(estado);
-                                            const badge = badgeEstado(estado);
-                                            const mostrarBoton =
-                                                ['asignada', 'en proceso de aplicacion'].includes(estNorm);
-
-                                            const btnDes = mostrarBoton
-                                                ? `<button class="btn bg-transparent BtnDesasignarPracticaEstudiante"
-                                                           data-idpractica="${p.IdPractica}"
-                                                           data-nombre="${escapeHtml(p.NombreCompleto)}"
-                                                           title="Desasignar práctica"
-                                                           style="color:#2D594D;">
-                                                       <i class="fas fa-trash-alt"></i>
-                                                   </button>`
-                                                : '';
-
-                                            $lista.append(`
-                                                <li class="d-flex justify-content-between align-items-center p-2 border rounded mb-2">
-                                                    <div>
-                                                        <a href="${CFG.urls.visualizacionPostulacion}?idVacante=${p.IdVacante}&idUsuario=${p.IdUsuario}"
-                                                           class="text-decoration-none fw-bold"
-                                                           style="color:#2d594d;">
-                                                            ${escapeHtml(p.NombreCompleto)}
-                                                        </a>
-                                                    </div>
-                                                    <div class="d-flex align-items-center gap-2">${badge}${btnDes}</div>
-                                                </li>`);
-                                        });
-                                    }
-
-                                    if (typeof tabla !== 'undefined') {
-                                        tabla.ajax.reload(null, false);
-                                    }
-                                });
-
-                                if (modalInstance && modalInstance._focustrap) {
-                                    modalInstance._focustrap.activate();
-                                }
-                            });
+                        if (res === 1) {
+                            Swal.fire('Éxito', 'Vacante archivada correctamente.', 'success');
+                            tabla.ajax.reload(null, false);
+                        } else if (res === -1) {
+                            Swal.fire('Aviso', 'No se puede eliminar porque tiene estudiantes asignados.', 'warning');
                         } else {
-                            Swal.fire('Error', res.msg || 'No se pudo desasignar la práctica.', 'error');
+                            Swal.fire('Error', 'No se pudo archivar la vacante.', 'error');
                         }
                     },
                     error: function () {
-                        Swal.fire('Error', 'Ocurrió un error al procesar la solicitud.', 'error');
-                    },
-                    complete: function () {
-                        if (modalInstance && modalInstance._focustrap) {
-                            modalInstance._focustrap.activate();
-                        }
+                        Swal.fire('Error', 'Error al archivar.', 'error');
                     }
                 });
             });

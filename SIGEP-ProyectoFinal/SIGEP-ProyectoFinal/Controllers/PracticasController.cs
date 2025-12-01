@@ -7,7 +7,6 @@ using System.Text.Json;
 namespace SIGEP_ProyectoFinal.Controllers
 {
     [Seguridad]
-    [FiltroUsuarioAdmin]
     public class PracticasController : Controller
     {
         private readonly IHttpClientFactory _http;
@@ -25,11 +24,8 @@ namespace SIGEP_ProyectoFinal.Controllers
         }
 
         /* ======================================================
-         * 1. VISTA PRINCIPAL
+         * 1. VISTA: VACANTES ESTUDIANTES
          * ====================================================== */
-        /* ====================================================================================
-  * 1. VISTA PRINCIPAL — CARGA DE DROPDOWNS (CORREGIDO)
-  * ==================================================================================== */
         [HttpGet]
         public IActionResult VacantesEstudiantes()
         {
@@ -40,9 +36,8 @@ namespace SIGEP_ProyectoFinal.Controllers
             var vm = new VacantesViewModel();
 
             var client = _http.CreateClient();
-
-           
             var token = HttpContext.Session.GetString("Token");
+
             if (!string.IsNullOrEmpty(token))
             {
                 client.DefaultRequestHeaders.Authorization =
@@ -109,9 +104,123 @@ namespace SIGEP_ProyectoFinal.Controllers
             return View("VacantesEstudiantes", vm);
         }
 
+        /* ======================================================
+         * 2. VISTA: PRÁCTICAS COORDINADOR (NUEVO)
+         * ====================================================== */
+        [HttpGet]
+        public IActionResult PracticasCoordinador()
+        {
+            ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
+            ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
+            ViewBag.Usuario = HttpContext.Session.GetInt32("IdUsuario");
+
+            var vm = new VacantesViewModel();
+
+            var client = _http.CreateClient();
+            var token = HttpContext.Session.GetString("Token");
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                client.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", token);
+            }
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            // ESPECIALIDADES
+            try
+            {
+                var resEsp = client.GetStringAsync(Api("Auxiliar/Especialidades")).Result;
+                var especialidades = JsonSerializer.Deserialize<List<ComboVm>>(resEsp, options);
+                vm.Especialidades = especialidades?.Select(x => new SelectListItem
+                {
+                    Value = x.value,
+                    Text = x.text
+                }).ToList() ?? new List<SelectListItem>();
+            }
+            catch { vm.Especialidades = new List<SelectListItem>(); }
+
+            return View("PracticasCoordinador", vm);
+        }
 
         /* ======================================================
-         * 2. LLENAR TABLA
+         * 3. LISTAR ESTUDIANTES JSON (PARA DATATABLE)
+         * ====================================================== */
+        [HttpGet]
+        public IActionResult ListarEstudiantesJson()
+        {
+            using (var context = _http.CreateClient())
+            {
+                var url = Api("Estudiante/ListarEstudiantesConPracticas");
+
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
+
+                var resp = context.GetAsync(url).Result;
+
+                if (!resp.IsSuccessStatusCode)
+                    return Json(new { data = new List<object>() });
+
+                var json = resp.Content.ReadAsStringAsync().Result;
+
+                var parsed = JsonSerializer.Deserialize<ApiResponse<List<dynamic>>>(
+                    json,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                );
+
+                return Json(new { data = parsed?.Data ?? new List<dynamic>() });
+            }
+        }
+
+        /* ======================================================
+         * 4. OBTENER VACANTES PARA ASIGNAR
+         * ====================================================== */
+        [HttpGet]
+        public IActionResult ObtenerVacantesAsignar(int idUsuario)
+        {
+            using (var context = _http.CreateClient())
+            {
+                var url = Api($"Practicas/VacantesParaAsignar?idUsuario={idUsuario}");
+
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
+
+                var resp = context.GetAsync(url).Result;
+
+                return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
+            }
+        }
+
+        /* ======================================================
+         * 5. CAMBIAR ESTADO ACADÉMICO
+         * ====================================================== */
+        [HttpPost]
+        public IActionResult CambiarEstadoAcademico(int idUsuario, string nuevoEstado)
+        {
+            using (var context = _http.CreateClient())
+            {
+                var url = Api("Estudiante/CambiarEstadoAcademico");
+
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
+
+                var form = new Dictionary<string, string>
+                {
+                    ["idUsuario"] = idUsuario.ToString(),
+                    ["nuevoEstado"] = nuevoEstado
+                };
+
+                var resp = context.PostAsync(url, new FormUrlEncodedContent(form)).Result;
+
+                return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
+            }
+        }
+
+        /* ======================================================
+         * 6. LLENAR TABLA VACANTES - CORREGIDO
          * ====================================================== */
         [HttpGet]
         public IActionResult GetVacantes(int idEstado = 0, int idEspecialidad = 0, int idModalidad = 0)
@@ -130,18 +239,27 @@ namespace SIGEP_ProyectoFinal.Controllers
 
                 var json = resp.Content.ReadAsStringAsync().Result;
 
-                var parsed = JsonSerializer.Deserialize<ApiResponse<List<VacanteListVm>>>(
-                    json,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
-                );
+                try
+                {
+                    // ✅ CORRECTO: El API retorna List<VacanteListDto> directamente
+                    // NO está envuelto en ApiResponse
+                    var vacantes = JsonSerializer.Deserialize<List<VacanteListVm>>(
+                        json,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                    );
 
-                return Json(new { data = parsed?.Data ?? new List<VacanteListVm>() });
+                    // DataTable espera { data: [...] }
+                    return Json(new { data = vacantes ?? new List<VacanteListVm>() });
+                }
+                catch
+                {
+                    return Json(new { data = new List<object>() });
+                }
             }
         }
 
-
         /* ======================================================
-         * 3. CREAR
+         * 7. CREAR VACANTE
          * ====================================================== */
         [HttpPost]
         public IActionResult Crear([FromBody] VacanteCrearEditarVm model)
@@ -149,15 +267,20 @@ namespace SIGEP_ProyectoFinal.Controllers
             using (var context = _http.CreateClient())
             {
                 var url = Api("Practicas/Crear");
+
+                // ✅ VERIFICAR QUE ESTO EXISTA:
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
+
                 var resp = context.PostAsJsonAsync(url, model).Result;
 
                 return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
             }
         }
 
-
         /* ======================================================
-         * 4. EDITAR
+         * 8. EDITAR VACANTE
+         * ✅ CORREGIDO: Usa PutAsJsonAsync en lugar de PostAsJsonAsync
          * ====================================================== */
         [HttpPost]
         public IActionResult Editar([FromBody] VacanteCrearEditarVm model)
@@ -165,31 +288,41 @@ namespace SIGEP_ProyectoFinal.Controllers
             using (var context = _http.CreateClient())
             {
                 var url = Api("Practicas/Editar");
-                var resp = context.PostAsJsonAsync(url, model).Result;
+
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
+
+                // CRÍTICO: El API usa [HttpPut], así que debemos usar PutAsJsonAsync
+                var resp = context.PutAsJsonAsync(url, model).Result;
 
                 return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
             }
         }
 
-
         /* ======================================================
-         * 5. ELIMINAR / ARCHIVAR
+         * 9. ELIMINAR / ARCHIVAR
+         * ✅ CORREGIDO: Usa DeleteAsync en lugar de PostAsync
          * ====================================================== */
         [HttpPost]
         public IActionResult Eliminar(int id)
         {
             using (var context = _http.CreateClient())
             {
-                var url = Api($"Practicas/Eliminar?id={id}");
-                var resp = context.PostAsync(url, null).Result;
+                // CRÍTICO: El API usa [HttpDelete] y espera /{id} en la ruta
+                var url = Api($"Practicas/Eliminar/{id}");
+
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
+
+                // CRÍTICO: Usar DeleteAsync, NO PostAsync
+                var resp = context.DeleteAsync(url).Result;
 
                 return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
             }
         }
 
-
         /* ======================================================
-         * 6. DETALLE
+         * 10. DETALLE
          * ====================================================== */
         [HttpGet]
         public IActionResult Detalle(int id)
@@ -197,31 +330,40 @@ namespace SIGEP_ProyectoFinal.Controllers
             using (var context = _http.CreateClient())
             {
                 var url = Api($"Practicas/Detalle?id={id}");
+
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
+
                 var resp = context.GetAsync(url).Result;
 
                 return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
             }
         }
 
-
         /* ======================================================
-         * 7. UBICACIÓN EMPRESA
+         * 11. UBICACIÓN EMPRESA
+         * ✅ CORREGIDO: Usa /{idEmpresa} en la ruta, NO ?idEmpresa=
          * ====================================================== */
         [HttpGet]
         public IActionResult GetUbicacionEmpresa(int idEmpresa)
         {
             using (var context = _http.CreateClient())
             {
-                var url = Api($"Practicas/UbicacionEmpresa?idEmpresa={idEmpresa}");
+                // CRÍTICO: El API espera /{idEmpresa} en la ruta
+                // Ejemplo: /api/Practicas/UbicacionEmpresa/1
+                var url = Api($"Practicas/UbicacionEmpresa/{idEmpresa}");
+
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
+
                 var resp = context.GetAsync(url).Result;
 
                 return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
             }
         }
 
-
         /* ======================================================
-         * 8. POSTULACIONES
+         * 12. POSTULACIONES
          * ====================================================== */
         [HttpGet]
         public IActionResult ObtenerPostulaciones(int idVacante)
@@ -229,15 +371,18 @@ namespace SIGEP_ProyectoFinal.Controllers
             using (var context = _http.CreateClient())
             {
                 var url = Api($"Practicas/Postulaciones?idVacante={idVacante}");
+
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
+
                 var resp = context.GetAsync(url).Result;
 
                 return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
             }
         }
 
-
         /* ======================================================
-         * 9. VISUALIZACIÓN POSTULACIÓN
+         * 13. VISUALIZACIÓN POSTULACIÓN
          * ====================================================== */
         [HttpGet]
         public IActionResult VisualizacionPostulacion(int idVacante, int idUsuario)
@@ -245,15 +390,18 @@ namespace SIGEP_ProyectoFinal.Controllers
             using (var context = _http.CreateClient())
             {
                 var url = Api($"Practicas/VisualizacionPostulacion?idVacante={idVacante}&idUsuario={idUsuario}");
+
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
+
                 var resp = context.GetAsync(url).Result;
 
                 return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
             }
         }
 
-
         /* ======================================================
-         * 10. ESTUDIANTES PARA ASIGNAR
+         * 14. ESTUDIANTES PARA ASIGNAR
          * ====================================================== */
         [HttpGet]
         public IActionResult ObtenerEstudiantesAsignar(int idVacante, int idUsuarioSesion)
@@ -261,15 +409,18 @@ namespace SIGEP_ProyectoFinal.Controllers
             using (var context = _http.CreateClient())
             {
                 var url = Api($"Practicas/EstudiantesAsignar?idVacante={idVacante}&idUsuarioSesion={idUsuarioSesion}");
+
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
+
                 var resp = context.GetAsync(url).Result;
 
                 return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
             }
         }
 
-
         /* ======================================================
-         * 11. ASIGNAR
+         * 15. ASIGNAR ESTUDIANTE
          * ====================================================== */
         [HttpPost]
         public IActionResult AsignarEstudiante(int idUsuario, int idVacante)
@@ -277,6 +428,9 @@ namespace SIGEP_ProyectoFinal.Controllers
             using (var context = _http.CreateClient())
             {
                 var url = Api("Practicas/AsignarEstudiante");
+
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
 
                 var form = new Dictionary<string, string>
                 {
@@ -290,9 +444,8 @@ namespace SIGEP_ProyectoFinal.Controllers
             }
         }
 
-
         /* ======================================================
-         * 12. RETIRAR
+         * 16. RETIRAR ESTUDIANTE
          * ====================================================== */
         [HttpPost]
         public IActionResult RetirarEstudiante(int idVacante, int idUsuario, string comentario)
@@ -300,6 +453,9 @@ namespace SIGEP_ProyectoFinal.Controllers
             using (var context = _http.CreateClient())
             {
                 var url = Api("Practicas/RetirarEstudiante");
+
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
 
                 var form = new Dictionary<string, string>
                 {
@@ -314,9 +470,8 @@ namespace SIGEP_ProyectoFinal.Controllers
             }
         }
 
-
         /* ======================================================
-         * 13. DESASIGNAR
+         * 17. DESASIGNAR PRÁCTICA
          * ====================================================== */
         [HttpPost]
         public IActionResult DesasignarPractica(int idPractica, string comentario)
@@ -324,6 +479,9 @@ namespace SIGEP_ProyectoFinal.Controllers
             using (var context = _http.CreateClient())
             {
                 var url = Api("Practicas/DesasignarPractica");
+
+                context.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
 
                 var form = new Dictionary<string, string>
                 {

@@ -11,10 +11,10 @@
         public int NumCupos { get; set; }
         public int NumPostulados { get; set; }
         public string EstadoNombre { get; set; } = "";
-        public int IdModalidad { get; set; }
+        public int? IdModalidad { get; set; }
         public string Descripcion { get; set; } = "";
-        public DateTime FechaMaxAplicacion { get; set; }
-        public DateTime FechaCierre { get; set; }
+        public DateTime? FechaMaxAplicacion { get; set; }
+        public DateTime? FechaCierre { get; set; }
         public string Tipo { get; set; } = "";
     }
 }

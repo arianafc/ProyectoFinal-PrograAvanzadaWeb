@@ -10,8 +10,8 @@
         public string EstadoPractica { get; set; } = "";
         public string EstadoVacante { get; set; } = "";
         public int IdPracticaVacante { get; set; }
-        public bool TieneRelacionEnVacante { get; set; }
-        public bool TienePracticaActiva { get; set; }
-        public string? TipoMensaje { get; set; }
+        //public bool TieneRelacionEnVacante { get; set; }
+        //public bool TienePracticaActiva { get; set; }
+        //public string? TipoMensaje { get; set; }
     }
 }
