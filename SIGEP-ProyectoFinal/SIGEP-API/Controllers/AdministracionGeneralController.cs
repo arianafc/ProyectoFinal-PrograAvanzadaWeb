@@ -32,9 +32,9 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("Rol", rol);
+                    parametros.Add("@Rol", rol);
 
-                    var resultado = context.Query<DatosUsuarioResponseModel>("ConsultarUsuariosSP", parametros, commandType: CommandType.StoredProcedure);
+                    var resultado = context.Query<DatosUsuarioResponseModel>("ConsultarUsuariosSP", parametros);
                     return Ok(resultado);
                 }
             }
@@ -54,13 +54,13 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("IdUsuario", request.IdUsuario);
-                    parametros.Add("NuevoEstado", request.NuevoEstado);
-                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+                    parametros.Add("@IdUsuario", request.IdUsuario);
+                    parametros.Add("@NuevoEstado", request.NuevoEstado);
+                    parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
 
-                    context.Execute("CambiarEstadoUsuarioSP", parametros, commandType: CommandType.StoredProcedure);
+                    context.Execute("CambiarEstadoUsuarioSP", parametros);
 
-                    var resultado = parametros.Get<int>("Resultado");
+                    var resultado = parametros.Get<int>("@Resultado");
                     _logger.LogInformation($"CambiarEstadoUsuario - IdUsuario: {request.IdUsuario}, NuevoEstado: {request.NuevoEstado}, Resultado: {resultado}");
 
                     return Ok(resultado);
@@ -82,13 +82,13 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("IdUsuario", request.IdUsuario);
-                    parametros.Add("Rol", request.Rol);
-                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+                    parametros.Add("@IdUsuario", request.IdUsuario);
+                    parametros.Add("@Rol", request.Rol);
+                    parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
 
-                    context.Execute("CambiarRolUsuarioSP", parametros, commandType: CommandType.StoredProcedure);
+                    context.Execute("CambiarRolUsuarioSP", parametros);
 
-                    var resultado = parametros.Get<int>("Resultado");
+                    var resultado = parametros.Get<int>("@Resultado");
                     _logger.LogInformation($"CambiarRolUsuario - IdUsuario: {request.IdUsuario}, Rol: {request.Rol}, Resultado: {resultado}");
 
                     return Ok(resultado);
@@ -113,7 +113,7 @@ namespace SIGEP_API.Controllers
             {
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
-                    var resultado = context.Query<DatosEspecialidadResponseModel>("ConsultarEspecialidadesSP", commandType: CommandType.StoredProcedure);
+                    var resultado = context.Query<DatosEspecialidadResponseModel>("ConsultarEspecialidadesSP");
                     return Ok(resultado);
                 }
             }
@@ -133,12 +133,12 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("Nombre", request.Nombre);
-                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+                    parametros.Add("@Nombre", request.Nombre);
+                    parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
 
-                    context.Execute("CrearEspecialidadSP", parametros, commandType: CommandType.StoredProcedure);
+                    context.Execute("CrearEspecialidadSP", parametros);
 
-                    var resultado = parametros.Get<int>("Resultado");
+                    var resultado = parametros.Get<int>("@Resultado");
                     return Ok(resultado);
                 }
             }
@@ -158,13 +158,13 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("Id", request.Id);
-                    parametros.Add("Nombre", request.Nombre);
-                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+                    parametros.Add("@Id", request.Id);
+                    parametros.Add("@Nombre", request.Nombre);
+                    parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
 
-                    context.Execute("EditarEspecialidadSP", parametros, commandType: CommandType.StoredProcedure);
+                    context.Execute("EditarEspecialidadSP", parametros);
 
-                    var resultado = parametros.Get<int>("Resultado");
+                    var resultado = parametros.Get<int>("@Resultado");
                     return Ok(resultado);
                 }
             }
@@ -184,13 +184,13 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("Id", request.Id);
-                    parametros.Add("NuevoEstado", request.NuevoEstado);
-                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+                    parametros.Add("@Id", request.Id);
+                    parametros.Add("@NuevoEstado", request.NuevoEstado);
+                    parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
 
-                    context.Execute("CambiarEstadoEspecialidadSP", parametros, commandType: CommandType.StoredProcedure);
+                    context.Execute("CambiarEstadoEspecialidadSP", parametros);
 
-                    var resultado = parametros.Get<int>("Resultado");
+                    var resultado = parametros.Get<int>("@Resultado");
                     return Ok(resultado);
                 }
             }
@@ -213,7 +213,7 @@ namespace SIGEP_API.Controllers
             {
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
-                    var resultado = context.Query<DatosSeccionResponseModel>("ConsultarSeccionesSP", commandType: CommandType.StoredProcedure);
+                    var resultado = context.Query<DatosSeccionResponseModel>("ConsultarSeccionesSP");
                     return Ok(resultado);
                 }
             }
@@ -233,12 +233,12 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("NombreSeccion", request.NombreSeccion);
-                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+                    parametros.Add("@NombreSeccion", request.NombreSeccion);
+                    parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
 
-                    context.Execute("CrearSeccionSP", parametros, commandType: CommandType.StoredProcedure);
+                    context.Execute("CrearSeccionSP", parametros);
 
-                    var resultado = parametros.Get<int>("Resultado");
+                    var resultado = parametros.Get<int>("@Resultado");
                     return Ok(resultado);
                 }
             }
@@ -258,13 +258,13 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("Id", request.Id);
-                    parametros.Add("NombreSeccion", request.NombreSeccion);
-                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+                    parametros.Add("@Id", request.Id);
+                    parametros.Add("@NombreSeccion", request.NombreSeccion);
+                    parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
 
-                    context.Execute("EditarSeccionSP", parametros, commandType: CommandType.StoredProcedure);
+                    context.Execute("EditarSeccionSP", parametros);
 
-                    var resultado = parametros.Get<int>("Resultado");
+                    var resultado = parametros.Get<int>("@Resultado");
                     return Ok(resultado);
                 }
             }
@@ -284,13 +284,13 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("Id", request.Id);
-                    parametros.Add("NuevoEstado", request.NuevoEstado);
-                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+                    parametros.Add("@Id", request.Id);
+                    parametros.Add("@NuevoEstado", request.NuevoEstado);
+                    parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
 
-                    context.Execute("CambiarEstadoSeccionSP", parametros, commandType: CommandType.StoredProcedure);
+                    context.Execute("CambiarEstadoSeccionSP", parametros);
 
-                    var resultado = parametros.Get<int>("Resultado");
+                    var resultado = parametros.Get<int>("@Resultado");
                     return Ok(resultado);
                 }
             }

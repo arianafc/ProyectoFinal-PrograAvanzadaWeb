@@ -21,6 +21,9 @@ namespace SIGEP_ProyectoFinal.Controllers
         [HttpGet]
         public IActionResult AdministracionGeneral(string tab = "usuarios")
         {
+            ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
+            ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
+            ViewBag.Usuario = HttpContext.Session.GetInt32("IdUsuario");
             ViewBag.Tab = string.IsNullOrWhiteSpace(tab) ? "usuarios" : tab;
             return View();
         }
