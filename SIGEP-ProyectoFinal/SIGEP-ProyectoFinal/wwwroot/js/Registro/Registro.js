@@ -18,6 +18,23 @@
         });
     }
 
+    document.querySelectorAll('.toggle-password').forEach(icon => {
+        icon.addEventListener('click', function () {
+
+            const input = this.parentElement.querySelector('input');
+
+            if (input.type === "password") {
+                input.type = "text";
+                this.classList.remove('fa-eye-slash');
+                this.classList.add('fa-eye');
+            } else {
+                input.type = "password";
+                this.classList.remove('fa-eye');
+                this.classList.add('fa-eye-slash');
+            }
+        });
+    });
+
     const iconoFecha = document.getElementById('IconoFechaNacimiento');
     const inputFecha = document.getElementById('FechaNacimientoRegistro');
 
@@ -36,7 +53,6 @@
         });
     }
 
-
     const form = document.getElementById("RegistroForm");
 
     form.addEventListener("submit", function (e) {
@@ -53,7 +69,29 @@
         let pass = document.getElementById("ContrasennaRegistro").value.trim();
         let passConf = document.getElementById("ContrasennaConfirmar").value.trim();
 
-    
+        if (fechaNac) {
+            let fechaNacimiento = new Date(fechaNac);
+            let hoy = new Date();
+
+            let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
+            let mes = hoy.getMonth() - fechaNacimiento.getMonth();
+
+
+            if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
+                edad--;
+            }
+
+            if (edad < 17) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Edad no válida',
+                    text: 'El estudiante debe tener al menos 17 años cumplidos.',
+                    confirmButtonText: 'Entendido'
+                });
+                return false;
+            }
+        }
+
         if (cedula === "") {
             Swal.fire("Atención", "La cédula es obligatoria.", "warning");
             return;

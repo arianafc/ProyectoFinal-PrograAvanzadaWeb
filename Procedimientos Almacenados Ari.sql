@@ -214,7 +214,7 @@ BEGIN
     -- Verifica si el usuario exist
     -- Actualiza la contraseña encriptada
     UPDATE Usuarios
-    SET Contrasenna = CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', @Contrasenna), 2)
+    SET Contrasenna = @Contrasenna
     WHERE IdUsuario = @IdUsuario;
 END;
 GO
@@ -757,4 +757,36 @@ CREATE TABLE [dbo].[Errores](
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
 
+ALTER TABLE Documentos
+ADD IdComunicado INT
 
+ALTER TABLE Documentos
+ADD FOREIGN KEY (IdComunicado) REFERENCES Comunicados(IdComunicado)
+
+
+CREATE OR ALTER PROCEDURE ObtenerComunicadosSP
+(@Poblacion VARCHAR(255))
+AS
+BEGIN
+    
+    SELECT IdComunicado, Nombre, IdEstado, Informacion, Fecha,
+    Poblacion, FechaLimite, IdUsuario
+    FROM Comunicados
+    WHERE Poblacion = @Poblacion;
+
+END;
+
+GO
+
+CREATE OR ALTER PROCEDURE ObtenerDocumentosComunicadoSP
+(@IdComunicado INT)
+AS
+BEGIN
+    SELECT IdDocumento, Documento, Tipo, IdUsuario, FechaSubida, IdComunicado
+    FROM Documentos
+    WHERE IdComunicado = @IdComunicado;
+
+
+END;
+
+GO

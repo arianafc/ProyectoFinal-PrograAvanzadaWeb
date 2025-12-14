@@ -6,7 +6,12 @@ builder.Services.AddSession();
 
 var app = builder.Build();
 
+
 app.UseExceptionHandler("/Error/MostrarError");
+
+
+app.UseStatusCodePagesWithReExecute("/Error/MostrarError");
+
 
 app.UseHsts();
 

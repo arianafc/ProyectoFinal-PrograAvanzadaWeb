@@ -1,16 +1,18 @@
 ﻿using Dapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
 using SIGEP_API.Models;
+using SIGEP_API.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Mail;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using SIGEP_API.Services;
+using Utiles;
 
 namespace SIGEP_API.Controllers
 {
@@ -30,7 +32,7 @@ namespace SIGEP_API.Controllers
         }
 
         #region Iniciar Sesion
-
+        [AllowAnonymous]
         [HttpPost]
         [Route("IniciarSesion")]
 
@@ -57,7 +59,7 @@ namespace SIGEP_API.Controllers
         #endregion
 
         #region Registro
-
+        [AllowAnonymous]
         [HttpPost]
         [Route("Registro")]
 
@@ -93,7 +95,7 @@ namespace SIGEP_API.Controllers
 
 
         #endregion
-
+        [AllowAnonymous]
         [HttpGet]
         [Route("ObtenerSecciones")]
 
@@ -107,6 +109,7 @@ namespace SIGEP_API.Controllers
 
         }
 
+        [AllowAnonymous]
         [HttpGet]
         [Route("ObtenerEspecialidades")]
 
@@ -123,7 +126,7 @@ namespace SIGEP_API.Controllers
 
         #region Recuperar Acceso
 
-
+        [AllowAnonymous]
         [HttpGet]
         [Route("RecuperarAcceso")]
 
@@ -137,12 +140,16 @@ namespace SIGEP_API.Controllers
 
                 if (resultado != null)
                 {
-                    var contrasennaGenerada = GenerarContrasenna();
+                    var helper = new Helper();
+                  
+                    var contrasennaGenerada = GenerarContrasenna(); 
+                    var almacenarContrasenna = helper.Encrypt(contrasennaGenerada);
+
                     var correo = resultado.Correo;
 
                     var parametrosActualizar = new DynamicParameters();
                     parametrosActualizar.Add("@IdUsuario", resultado.IdUsuario);
-                    parametrosActualizar.Add("@Contrasenna", contrasennaGenerada);
+                    parametrosActualizar.Add("@Contrasenna", almacenarContrasenna);
                     var ejecutar = context.Execute("ActualizarContrasennaSP", parametrosActualizar);
 
                     if (ejecutar > 0)
@@ -222,6 +229,7 @@ namespace SIGEP_API.Controllers
 
         #region CambiarContrasenna
 
+        [Authorize]
         [HttpPost]
         [Route("CambiarContrasenna")]
 

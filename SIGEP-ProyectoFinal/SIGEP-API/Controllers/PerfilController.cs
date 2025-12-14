@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
@@ -8,6 +9,7 @@ using System.Reflection;
 
 namespace SIGEP_API.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class PerfilController : ControllerBase
@@ -215,26 +217,28 @@ namespace SIGEP_API.Controllers
 
         [HttpPost]
         [Route("AgregarEncargado")]
-
         public IActionResult AgregarEncargado(EncargadoRequestModel model)
         {
             using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
             {
-                var validarSiEsEstudiante = new DynamicParameters();
-                validarSiEsEstudiante.Add("@Cedula", model.Cedula);
-                var existeEstudiante = context.QueryFirstOrDefault<UsuarioModelResponse>(
+                var parametrosValidacion = new DynamicParameters();
+                parametrosValidacion.Add("@Cedula", model.Cedula);
+
+                var usuarioExistente = context.QueryFirstOrDefault<UsuarioModelResponse>(
                     "ValidarUsuarioEncargadoSP",
-                    validarSiEsEstudiante,
+                    parametrosValidacion,
                     commandType: CommandType.StoredProcedure
                 );
 
-                if (existeEstudiante != null)
+                if (usuarioExistente != null && usuarioExistente.IdRol == 1)
                 {
-                    return BadRequest("Lo sentimos. La cédula ingresada corresponde a un estudiante registrado en el sistema y no puede ser asignado como encargado.");
+                    return BadRequest(
+                        "Lo sentimos. La cédula ingresada corresponde a un estudiante registrado en el sistema y no puede ser asignado como encargado."
+                    );
                 }
 
+               
                 var parametros = new DynamicParameters();
-
                 parametros.Add("@IdUsuario", model.IdUsuario);
                 parametros.Add("@Nombre", model.Nombre);
                 parametros.Add("@Apellido1", model.Apellido1);
@@ -247,16 +251,17 @@ namespace SIGEP_API.Controllers
                 parametros.Add("@LugarTrabajo", model.LugarTrabajo);
                 parametros.Add("@Encargado", model.IdEncargado);
 
-                var filasAfectadas = context.Execute(
+                context.Execute(
                     "AccionesEncargadoSP",
                     parametros,
                     commandType: CommandType.StoredProcedure
                 );
-                return Ok();
+
+                return Ok("Encargado registrado correctamente");
             }
-
-
         }
+
+
 
         [HttpPost]
         [Route("ActualizarEncargado")]
@@ -274,9 +279,11 @@ namespace SIGEP_API.Controllers
                     commandType: CommandType.StoredProcedure
                 );
 
-                if (existeEstudiante != null)
+                if (existeEstudiante != null && existeEstudiante.IdRol == 1)
                 {
-                    return BadRequest("Lo sentimos. La cédula ingresada corresponde a un estudiante registrado en el sistema y no puede ser asignado como encargado.");
+                    return BadRequest(
+                        "Lo sentimos. La cédula ingresada corresponde a un estudiante registrado en el sistema y no puede ser asignado como encargado."
+                    );
                 }
 
                 var parametros = new DynamicParameters();

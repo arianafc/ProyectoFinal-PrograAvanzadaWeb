@@ -163,6 +163,7 @@ namespace SIGEP_ProyectoFinal.Controllers
             using (var context = _http.CreateClient())
             {
                 var urlApi = _configuration["Valores:UrlAPI"] + "Home/RecuperarAcceso?Cedula="+usuario.Cedula;
+
                 var respuesta = context.GetAsync(urlApi).Result;
 
                 if (respuesta.IsSuccessStatusCode)

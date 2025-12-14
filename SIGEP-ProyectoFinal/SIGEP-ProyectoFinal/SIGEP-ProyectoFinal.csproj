@@ -16,4 +16,8 @@
     <Folder Include="wwwroot\css\Practicas\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Utiles\Utiles.csproj" />
+  </ItemGroup>
+
 </Project>

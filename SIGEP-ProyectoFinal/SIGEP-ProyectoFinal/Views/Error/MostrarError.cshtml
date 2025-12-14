@@ -9,25 +9,39 @@
     }
 }
 
-<div class="container container-primary">
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg border-0 rounded-4">
+            <div class="card-body text-center p-5">
 
-    <div class="row col-12">
-        <div class="col-md-12 text-center text-md-center">
-            <br /><br />
-            <h3>Página no disponible</h3>
+                <div class="mb-4">
+                    <i class="fas fa-exclamation-triangle text-warning" style="font-size: 3.5rem;"></i>
+                </div>
 
-            <p>Lo sentimos, la página no se encuentra disponible en este momento.</p>
-            
-            @if (Context.Session.GetInt32("IdUsuario") == null)
-            {
-                <a href="@Url.Action("IniciarSesion", "Home")" class="btn btn-primary">INICIO</a>
-            }
-            else
-            {
-                <a href="@Url.Action("Index", "Home")" class="btn btn-primary">INICIO</a>
-            }           
+                <h3 class="fw-bold mb-3">Página no disponible</h3>
 
+                <p class="text-muted mb-4">
+                    Lo sentimos, la página que intentas visitar no se encuentra disponible
+                    o no existe en este momento.
+                </p>
+
+                @if (Context.Session.GetInt32("IdUsuario") == null)
+                {
+                    <a href="@Url.Action("IniciarSesion", "Home")"
+                       class="btn btn-primary px-4 py-2 rounded-pill" style="background-color: #2d594d !important">
+                        Volver al inicio
+                    </a>
+                }
+                else
+                {
+                    <a href="@Url.Action("Index", "Home")"
+                       class="btn btn-primary px-4 py-2 rounded-pill" style="background-color: #2d594d !important">
+                        
+                        Volver al inicio
+                    </a>
+                }
+
+            </div>
         </div>
     </div>
-
 </div>

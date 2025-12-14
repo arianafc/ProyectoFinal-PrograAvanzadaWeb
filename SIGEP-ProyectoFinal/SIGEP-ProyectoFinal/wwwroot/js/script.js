@@ -13,6 +13,10 @@
         $("#NombreRegistro").val("");
         $("#Apellido1Registro").val("");
         $("#Apellido2Registro").val("");
+        $("#NombreEncargado").val(""); 
+        $("#PrimerApellidoEncargado").val("");
+        $("#SegundoApellidoEncargado").val("");
+
 
         let identificacion = $("#CedulaRegistro").val();
 
@@ -27,6 +31,7 @@
                         $("#NombreRegistro").val(capitalizeWords(persona.firstname1));
                         $("#Apellido1Registro").val(capitalizeWords(persona.lastname1));
                         $("#Apellido2Registro").val(capitalizeWords(persona.lastname2));
+
                     } else {
                         alert("No se encontró información para esa cédula");
                     }
@@ -37,7 +42,42 @@
             });
         }
     }
+
+    function ConsultarPersonaApiEncargado() {
+       
+        $("#NombreEncargado").val("");
+        $("#PrimerApellidoEncargado").val("");
+        $("#SegundoApellidoEncargado").val("");
+
+
+        let identificacion = $("#CedulaEncargado").val();
+
+        if (identificacion.length >= 9) {
+            $.ajax({
+                type: 'GET',
+                url: 'https://apis.gometa.org/cedulas/' + identificacion,
+                dataType: 'json',
+                success: function (data) {
+                    if (data.resultcount > 0) {
+                        let persona = data.results[0];
+                        $("#NombreEncargado").val(capitalizeWords(persona.firstname1));
+                        $("#PrimerApellidoEncargado").val(capitalizeWords(persona.lastname1));
+                        $("#SegundoApellidoEncargado").val(capitalizeWords(persona.lastname2));
+
+                    } else {
+                        alert("No se encontró información para esa cédula");
+                    }
+                },
+                error: function () {
+                    alert("Error al consultar la API");
+                }
+            });
+        }
+    }
+
     $("#CedulaRegistro").on("keyup", ConsultarPersonaApi);
+
+    $("#CedulaEncargado").on("keyup", ConsultarPersonaApiEncargado);
 
     document.querySelectorAll('.btn-desasignar').forEach(btn => {
         btn.addEventListener('click', function (e) {

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SIGEP_ProyectoFinal.Models;
 using System.Net.Http.Headers;
+using Utiles;
 using static System.Net.WebRequestMethods;
 
 namespace SIGEP_ProyectoFinal.Controllers
@@ -34,6 +35,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                 var IdUsuario = HttpContext.Session.GetInt32("IdUsuario");
                 var urlApi = _configuration["Valores:UrlApi"] + "Perfil/ObtenerPerfil?IdUsuario=" + IdUsuario;
                 var urlApi2 = _configuration["Valores:UrlApi"] + "Perfil/ObtenerEncargados?IdUsuario=" + IdUsuario;
+                context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                 var respuesta = context.GetAsync(urlApi).Result;
                 var respuesta2 = context.GetAsync(urlApi2).Result;
 
@@ -112,6 +114,7 @@ namespace SIGEP_ProyectoFinal.Controllers
             {
                 var urlApi = _configuration["Valores:UrlApi"] + "Perfil/ActualizarPerfil";
                 usuario.IdUsuario = (int)IdUsuario;
+                context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                 var respuesta = context.PutAsJsonAsync(urlApi, usuario).Result;
                 if (respuesta.IsSuccessStatusCode)
                 {
@@ -140,6 +143,9 @@ namespace SIGEP_ProyectoFinal.Controllers
             {
                 var urlApi = _configuration["Valores:UrlApi"] + "Perfil/CambiarContrasenna";
                 usuario.IdUsuario = (int)IdUsuario;
+                var helper = new Helper();
+                usuario.Contrasenna = helper.Encrypt(usuario.Contrasenna);
+                context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                 var respuesta = context.PutAsJsonAsync(urlApi, usuario).Result;
                 if (respuesta.IsSuccessStatusCode)
                 {
@@ -168,6 +174,7 @@ namespace SIGEP_ProyectoFinal.Controllers
             {
                 var urlApi = _configuration["Valores:UrlApi"] + "Perfil/ActualizarInfoAcademica";
                 usuario.IdUsuario = (int)IdUsuario;
+                context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                 var respuesta = context.PutAsJsonAsync(urlApi, usuario).Result;
                 if (respuesta.IsSuccessStatusCode)
                 {
@@ -200,6 +207,7 @@ namespace SIGEP_ProyectoFinal.Controllers
             {
                 var urlApi = _configuration["Valores:UrlApi"] + "Perfil/ActualizarInfoMedica";
                 usuario.IdUsuario = (int)IdUsuario;
+                context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                 var respuesta = context.PutAsJsonAsync(urlApi, usuario).Result;
                 if (respuesta.IsSuccessStatusCode)
                 {
@@ -230,6 +238,7 @@ namespace SIGEP_ProyectoFinal.Controllers
             {
 
                 var consultaCedula = _configuration["Valores:UrlApi"] + "Perfil/ConsultarEncargadoPorCedula?Cedula=" + cedula;
+                context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                 var respuestaCedula = context.GetAsync(consultaCedula).Result;
 
                 if (respuestaCedula.IsSuccessStatusCode)
@@ -262,7 +271,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                     Parentesco = encargado.EstudianteEncargado.Parentesco,
                     IdEncargado = encargado.EstudianteEncargado.IdEncargado
                 };
-
+                context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                 var respuesta = context.PostAsJsonAsync(urlApi, request).Result;
 
                 if (respuesta.IsSuccessStatusCode)
@@ -291,6 +300,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                 var urlApi = _configuration["Valores:UrlApi"]
               + "Perfil/ObtenerEncargado?IdEncargado=" + IdEncargado
               + "&IdUsuario=" + IdUsuario;
+                context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                 var respuesta = context.GetAsync(urlApi).Result;
                 if (respuesta.IsSuccessStatusCode)
                 {
@@ -363,6 +373,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                         Documento = rutaCompleta
                     };
 
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                     var respuesta = client.PostAsJsonAsync(urlApi, request).Result;
 
                     if (respuesta.IsSuccessStatusCode)
@@ -397,7 +408,7 @@ namespace SIGEP_ProyectoFinal.Controllers
             {
                 var urlApi = _configuration["Valores:UrlApi"] +
                              "Perfil/ObtenerDocumentos?IdUsuario=" + IdUsuario;
-
+                context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                 var respuesta = context.GetAsync(urlApi).Result;
 
                 if (respuesta.IsSuccessStatusCode)
@@ -455,7 +466,7 @@ namespace SIGEP_ProyectoFinal.Controllers
         {
             var IdUsuario = HttpContext.Session.GetInt32("IdUsuario");
 
-            // 1. Borrar archivo físico si existe
+          
             try
             {
                 if (!string.IsNullOrEmpty(ruta) && System.IO.File.Exists(ruta))
@@ -473,7 +484,7 @@ namespace SIGEP_ProyectoFinal.Controllers
             {
                 var urlApi = _configuration["Valores:UrlApi"]
                              + $"Perfil/EliminarDocumento?IdDocumento={idDocumento}";
-
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                 var respuesta = client.DeleteAsync(urlApi).Result;
 
                 if (respuesta.IsSuccessStatusCode)

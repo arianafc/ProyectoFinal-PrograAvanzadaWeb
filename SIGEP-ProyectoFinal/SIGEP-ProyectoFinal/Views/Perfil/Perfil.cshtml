@@ -37,7 +37,7 @@
     }
     <div class="info-box">
         <div class="perfil-icon">
-            <img src="@Url.Content("~/Images/logoSIGEP.png")" alt="Perfil" class="perfil-img" width="65">
+            <img src="@Url.Content("~/imagenes/logoSIGEP.png")" alt="Perfil" class="perfil-img" width="65">
         </div>
 
 
@@ -230,53 +230,54 @@
                 <form asp-action="GuardarEncargado"
                       asp-controller="Perfil"
                       method="post"
-                      id="FormEncargado">
+                      id="FormEncargado"
+               >
 
-                    <div class="row mb-3 p-3 rounded">
+                    <div class=" row">
                         <input type="hidden" asp-for="EstudianteEncargado.IdEncargado" />
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Cédula</label>
                             <input type="text"
                                    class="form-control"
-                                   asp-for="EstudianteEncargado.Cedula" />
+                                   asp-for="EstudianteEncargado.Cedula" id="CedulaEncargado"/>
                         </div>
 
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Nombre</label>
                             <input type="text"
                                    class="form-control"
-                                   asp-for="EstudianteEncargado.Nombre" />
+                                   asp-for="EstudianteEncargado.Nombre" readonly id="NombreEncargado"/>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Primer Apellido</label>
                             <input type="text"
-                                   class="form-control"
-                                   asp-for="EstudianteEncargado.Apellido1" />
+                                   class="form-control" id="PrimerApellidoEncargado"
+                                   asp-for="EstudianteEncargado.Apellido1" readonly />
                         </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Segundo Apellido</label>
-                        <input type="text"
+                        <input type="text" id="SegundoApellidoEncargado"
                                class="form-control"
-                               asp-for="EstudianteEncargado.Apellido2" />
+                               asp-for="EstudianteEncargado.Apellido2" readonly />
                     </div>
 
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Teléfono</label>
-                            <input type="text"
+                            <input type="text" id="TelefonoEncargado"
                                    class="form-control"
                                    asp-for="EstudianteEncargado.Telefono" />
                         </div>
 
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Parentesco</label>
-                            <input type="text"
+                            <input type="text" id="ParentescoEncargado"
                                    class="form-control"
                                    asp-for="EstudianteEncargado.Parentesco" />
                         </div>
 
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Residencia o Trabajo</label>
-                            <input type="text"
+                            <input type="text" id="ResidenciaEncargado"
                                    class="form-control"
                                    asp-for="EstudianteEncargado.LugarTrabajo" />
 
@@ -285,14 +286,14 @@
 
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Ocupación</label>
-                            <input type="text"
+                            <input type="text" id="OcupacionEncargado"
                                    class="form-control"
                                    asp-for="EstudianteEncargado.Ocupacion" />
                         </div>
 
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-12 mb-3">
                         <label class="form-label">Correo</label>
-                        <input type="email"
+                        <input type="email" id="CorreoEncargado"
                                class="form-control"
                                asp-for="EstudianteEncargado.Correo" />
                     </div>

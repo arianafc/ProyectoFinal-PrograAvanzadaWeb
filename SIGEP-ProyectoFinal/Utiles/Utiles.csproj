@@ -6,13 +6,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\SIGEP-API\SIGEP-API.csproj">
-      <TreatAsUsed>true</TreatAsUsed>
-    </ProjectReference>
-    <ProjectReference Include="..\SIGEP-ProyectoFinal\SIGEP-ProyectoFinal.csproj">
-      <TreatAsUsed>true</TreatAsUsed>
-    </ProjectReference>
-  </ItemGroup>
-
 </Project>
