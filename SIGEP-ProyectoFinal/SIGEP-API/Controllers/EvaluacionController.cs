@@ -6,7 +6,7 @@ using SIGEP_API.Models;
 
 namespace SIGEP_API.Controllers
 {
-    [Authorize]
+    //[Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class EvaluacionController : ControllerBase

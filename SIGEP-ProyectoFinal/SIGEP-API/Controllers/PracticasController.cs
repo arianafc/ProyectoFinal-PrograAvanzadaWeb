@@ -2,6 +2,7 @@ using Dapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using SIGEP_API.Models;
 using SIGEP_API.Services;
 using System.Data;
@@ -15,27 +16,17 @@ namespace SIGEP_API.Controllers
     {
 
 
-        private readonly IConfiguration _config;
-        private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
+        private readonly IEmailService _emailService;
         private readonly ILogger<PracticasController> _logger;
 
-        public PracticasController(IConfiguration config, IEmailService emailService)
-        {
-            _config = config;
-            _emailService = emailService;
-        }
-
-        public PracticasController(IConfiguration configuration, ILogger<PracticasController> logger)
+        public PracticasController(IConfiguration configuration, IEmailService emailService, ILogger<PracticasController> logger)
         {
             _configuration = configuration;
+            _emailService = emailService;
             _logger = logger;
         }
 
-        // ======================================================
-        // LISTAR VACANTES
-        // GET: api/Practicas/Listar?idEstado=&idEspecialidad=&idModalidad=
-        // ======================================================
         [HttpGet]
         [Route("Listar")]
         public IActionResult Listar(int idEstado = 0, int idEspecialidad = 0, int idModalidad = 0)
@@ -45,11 +36,11 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("IdEstado", idEstado);
-                    parametros.Add("IdEspecialidad", idEspecialidad);
-                    parametros.Add("IdModalidad", idModalidad);
+                    parametros.Add("@IdEstado", idEstado);
+                    parametros.Add("@IdEspecialidad", idEspecialidad);
+                    parametros.Add("@IdModalidad", idModalidad);
 
-                    var resultado = context.Query<VacanteListDto>("GetVacantesSP", parametros, commandType: CommandType.StoredProcedure);
+                    var resultado = context.Query<VacanteListDto>("GetVacantesSP", parametros);
 
                     return Ok(resultado);
                 }
@@ -61,10 +52,6 @@ namespace SIGEP_API.Controllers
             }
         }
 
-        // ======================================================
-        // DETALLE VACANTE
-        // GET: api/Practicas/Detalle?id=1
-        // ======================================================
         [HttpGet]
         [Route("Detalle")]
         public IActionResult Detalle(int id)
@@ -74,9 +61,9 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("IdVacante", id);
+                    parametros.Add("@IdVacante", id);
 
-                    var resultado = context.QueryFirstOrDefault<VacanteDetalleDto>("DetalleVacanteSP", parametros, commandType: CommandType.StoredProcedure);
+                    var resultado = context.QueryFirstOrDefault<VacanteDetalleDto>("DetalleVacanteSP", parametros);
 
                     if (resultado == null)
                         return NotFound("Vacante no encontrada");
@@ -91,10 +78,6 @@ namespace SIGEP_API.Controllers
             }
         }
 
-        // ======================================================
-        // UBICACIÓN EMPRESA
-        // GET: api/Practicas/UbicacionEmpresa/1
-        // ======================================================
         [HttpGet]
         [Route("UbicacionEmpresa/{idEmpresa}")]
         public IActionResult UbicacionEmpresa(int idEmpresa)
@@ -106,14 +89,9 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("IdEmpresa", idEmpresa);
+                    parametros.Add("@IdEmpresa", idEmpresa);
 
-                    // QueryFirstOrDefault retorna el valor de la primera columna del resultado
-                    var resultado = context.QueryFirstOrDefault<string>(
-                        "ObtenerUbicacionEmpresaSP",
-                        parametros,
-                        commandType: CommandType.StoredProcedure
-                    );
+                    var resultado = context.QueryFirstOrDefault<string>("ObtenerUbicacionEmpresaSP",parametros);
 
                     if (string.IsNullOrEmpty(resultado))
                     {
@@ -132,11 +110,6 @@ namespace SIGEP_API.Controllers
             }
         }
 
-        // ======================================================
-        // CREAR VACANTE
-        // POST: api/Practicas/Crear
-        // Body: VacanteCrearEditarDto (JSON)
-        // ======================================================
         [HttpPost]
         [Route("Crear")]
         public IActionResult Crear([FromBody] VacanteCrearEditarDto dto)
@@ -148,20 +121,20 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("Nombre", dto.Nombre);
-                    parametros.Add("IdEmpresa", dto.IdEmpresa);
-                    parametros.Add("IdEspecialidad", dto.IdEspecialidad);
-                    parametros.Add("NumCupos", dto.NumCupos);
-                    parametros.Add("IdModalidad", dto.IdModalidad);
-                    parametros.Add("Requerimientos", dto.Requerimientos);
-                    parametros.Add("Descripcion", dto.Descripcion);
-                    parametros.Add("FechaMaxAplicacion", dto.FechaMaxAplicacion);
-                    parametros.Add("FechaCierre", dto.FechaCierre);
-                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+                    parametros.Add("@Nombre", dto.Nombre);
+                    parametros.Add("@IdEmpresa", dto.IdEmpresa);
+                    parametros.Add("@IdEspecialidad", dto.IdEspecialidad);
+                    parametros.Add("@NumCupos", dto.NumCupos);
+                    parametros.Add("@IdModalidad", dto.IdModalidad);
+                    parametros.Add("@Requerimientos", dto.Requerimientos);
+                    parametros.Add("@Descripcion", dto.Descripcion);
+                    parametros.Add("@FechaMaxAplicacion", dto.FechaMaxAplicacion);
+                    parametros.Add("@FechaCierre", dto.FechaCierre);
+                    parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
 
-                    context.Execute("CrearVacanteSP", parametros, commandType: CommandType.StoredProcedure);
+                    context.Execute("CrearVacanteSP", parametros);
 
-                    var resultado = parametros.Get<int>("Resultado");
+                    var resultado = parametros.Get<int>("@Resultado");
 
                     _logger.LogInformation($"Crear Vacante - Resultado: {resultado}");
 
@@ -175,11 +148,6 @@ namespace SIGEP_API.Controllers
             }
         }
 
-        // ======================================================
-        // EDITAR VACANTE
-        // PUT: api/Practicas/Editar
-        // Body: VacanteCrearEditarDto (JSON)
-        // ======================================================
         [HttpPut]
         [Route("Editar")]
         public IActionResult Editar([FromBody] VacanteCrearEditarDto dto)
@@ -191,21 +159,21 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("IdVacante", dto.IdVacante);
-                    parametros.Add("Nombre", dto.Nombre);
-                    parametros.Add("IdEmpresa", dto.IdEmpresa);
-                    parametros.Add("IdEspecialidad", dto.IdEspecialidad);
-                    parametros.Add("NumCupos", dto.NumCupos);
-                    parametros.Add("IdModalidad", dto.IdModalidad);
-                    parametros.Add("Requerimientos", dto.Requerimientos);
-                    parametros.Add("Descripcion", dto.Descripcion);
-                    parametros.Add("FechaMaxAplicacion", dto.FechaMaxAplicacion);
-                    parametros.Add("FechaCierre", dto.FechaCierre);
-                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+                    parametros.Add("@IdVacante", dto.IdVacante);
+                    parametros.Add("@Nombre", dto.Nombre);
+                    parametros.Add("@IdEmpresa", dto.IdEmpresa);
+                    parametros.Add("@IdEspecialidad", dto.IdEspecialidad);
+                    parametros.Add("@NumCupos", dto.NumCupos);
+                    parametros.Add("@IdModalidad", dto.IdModalidad);
+                    parametros.Add("@Requerimientos", dto.Requerimientos);
+                    parametros.Add("@Descripcion", dto.Descripcion);
+                    parametros.Add("@FechaMaxAplicacion", dto.FechaMaxAplicacion);
+                    parametros.Add("@FechaCierre", dto.FechaCierre);
+                    parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
 
-                    context.Execute("EditarVacanteSP", parametros, commandType: CommandType.StoredProcedure);
+                    context.Execute("EditarVacanteSP", parametros);
 
-                    var resultado = parametros.Get<int>("Resultado");
+                    var resultado = parametros.Get<int>("@Resultado");
 
                     _logger.LogInformation($"Editar Vacante - Resultado: {resultado}");
 
@@ -219,10 +187,6 @@ namespace SIGEP_API.Controllers
             }
         }
 
-        // ======================================================
-        // ELIMINAR VACANTE
-        // DELETE: api/Practicas/Eliminar/1
-        // ======================================================
         [HttpDelete]
         [Route("Eliminar/{id}")]
         public IActionResult Eliminar(int id)
@@ -234,12 +198,12 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("IdVacante", id);
-                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+                    parametros.Add("@IdVacante", id);
+                    parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
 
-                    context.Execute("EliminarVacanteSP", parametros, commandType: CommandType.StoredProcedure);
+                    context.Execute("EliminarVacanteSP", parametros);
 
-                    var resultado = parametros.Get<int>("Resultado");
+                    var resultado = parametros.Get<int>("@Resultado");
 
                     _logger.LogInformation($"Eliminar Vacante - Resultado: {resultado}");
 
@@ -253,10 +217,6 @@ namespace SIGEP_API.Controllers
             }
         }
 
-        // ======================================================
-        // POSTULACIONES POR VACANTE
-        // GET: api/Practicas/Postulaciones?idVacante=
-        // ======================================================
         [HttpGet]
         [Route("Postulaciones")]
         public IActionResult Postulaciones(int idVacante)
@@ -266,9 +226,9 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("IdVacante", idVacante);
+                    parametros.Add("@IdVacante", idVacante);
 
-                    var resultado = context.Query<PostulacionDto>("ObtenerPostulacionesSP", parametros, commandType: CommandType.StoredProcedure);
+                    var resultado = context.Query<PostulacionDto>("ObtenerPostulacionesSP", parametros);
 
                     return Ok(resultado);
                 }
@@ -280,10 +240,6 @@ namespace SIGEP_API.Controllers
             }
         }
 
-        // ======================================================
-        // ESTUDIANTES PARA ASIGNAR
-        // GET: api/Practicas/EstudiantesAsignar?idVacante=&idUsuarioSesion=
-        // ======================================================
         [HttpGet]
         [Route("EstudiantesAsignar")]
         public IActionResult EstudiantesAsignar(int idVacante, int idUsuarioSesion)
@@ -293,10 +249,10 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("IdVacante", idVacante);
-                    parametros.Add("IdUsuarioSesion", idUsuarioSesion);
+                    parametros.Add("@IdVacante", idVacante);
+                    parametros.Add("@IdUsuarioSesion", idUsuarioSesion);
 
-                    var resultado = context.Query<EstAsignarDto>("ObtenerEstudiantesAsignarSP", parametros, commandType: CommandType.StoredProcedure);
+                    var resultado = context.Query<EstAsignarDto>("ObtenerEstudiantesAsignarSP", parametros);
 
                     return Ok(resultado);
                 }
@@ -308,10 +264,6 @@ namespace SIGEP_API.Controllers
             }
         }
 
-        // ======================================================
-        // ASIGNAR ESTUDIANTE
-        // POST: api/Practicas/AsignarEstudiante
-        // ======================================================
         [HttpPost]
         [Route("AsignarEstudiante")]
         public IActionResult AsignarEstudiante(int idVacante, int idUsuario)
@@ -321,13 +273,13 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("IdVacante", idVacante);
-                    parametros.Add("IdUsuario", idUsuario);
-                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+                    parametros.Add("@IdVacante", idVacante);
+                    parametros.Add("@IdUsuario", idUsuario);
+                    parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
 
-                    context.Execute("AsignarEstudianteSP", parametros, commandType: CommandType.StoredProcedure);
+                    context.Execute("AsignarEstudianteSP", parametros);
 
-                    var resultado = parametros.Get<int>("Resultado");
+                    var resultado = parametros.Get<int>("@Resultado");
 
                     return Ok(resultado);
                 }
@@ -339,10 +291,6 @@ namespace SIGEP_API.Controllers
             }
         }
 
-        // ======================================================
-        // RETIRAR ESTUDIANTE
-        // POST: api/Practicas/RetirarEstudiante
-        // ======================================================
         [HttpPost]
         [Route("RetirarEstudiante")]
         public IActionResult RetirarEstudiante(int idVacante, int idUsuario, string comentario)
@@ -352,14 +300,14 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("IdVacante", idVacante);
-                    parametros.Add("IdUsuario", idUsuario);
-                    parametros.Add("Comentario", comentario);
-                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+                    parametros.Add("@IdVacante", idVacante);
+                    parametros.Add("@IdUsuario", idUsuario);
+                    parametros.Add("@Comentario", comentario);
+                    parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
 
-                    context.Execute("RetirarEstudianteSP", parametros, commandType: CommandType.StoredProcedure);
+                    context.Execute("RetirarEstudianteSP", parametros);
 
-                    var resultado = parametros.Get<int>("Resultado");
+                    var resultado = parametros.Get<int>("@Resultado");
 
                     return Ok(resultado);
                 }
@@ -371,10 +319,6 @@ namespace SIGEP_API.Controllers
             }
         }
 
-        // ======================================================
-        // DESASIGNAR PRÁCTICA
-        // POST: api/Practicas/DesasignarPractica
-        // ======================================================
         [HttpPost]
         [Route("DesasignarPractica")]
         public IActionResult DesasignarPractica(int idPractica, string comentario)
@@ -384,13 +328,13 @@ namespace SIGEP_API.Controllers
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
-                    parametros.Add("IdPractica", idPractica);
-                    parametros.Add("Comentario", comentario);
-                    parametros.Add("Resultado", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+                    parametros.Add("@IdPractica", idPractica);
+                    parametros.Add("@Comentario", comentario);
+                    parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
 
-                    context.Execute("DesasignarPracticaSP", parametros, commandType: CommandType.StoredProcedure);
+                    context.Execute("DesasignarPracticaSP", parametros);
 
-                    var resultado = parametros.Get<int>("Resultado");
+                    var resultado = parametros.Get<int>("@Resultado");
 
                     return Ok(resultado);
                 }
@@ -402,18 +346,13 @@ namespace SIGEP_API.Controllers
             }
         }
 
-        // ======================================================
-        // VISUALIZACIÓN DE POSTULACIÓN
-        // GET: api/Practicas/VisualizacionPostulacion?idVacante=&idUsuario=
-        // ======================================================
-
         [HttpGet]
         [Route("ObtenerVisualizacionPractica")]
         public IActionResult ObtenerVisualizacionPractica(int idVacante, int idUsuario)
         {
             try
             {
-                using (var context = new SqlConnection(_config["ConnectionStrings:BDConnection"]))
+                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
                     parametros.Add("@IdVacante", idVacante);
@@ -444,7 +383,7 @@ namespace SIGEP_API.Controllers
         {
             try
             {
-                using (var context = new SqlConnection(_config["ConnectionStrings:BDConnection"]))
+                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
                     parametros.Add("@IdVacante", idVacante);
@@ -470,7 +409,7 @@ namespace SIGEP_API.Controllers
         {
             try
             {
-                using (var context = new SqlConnection(_config["ConnectionStrings:BDConnection"]))
+                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var estados = context.Query<EstadoPracticaResponseModel>(
                         "ObtenerEstadosPracticaSP"
@@ -496,7 +435,7 @@ namespace SIGEP_API.Controllers
                     return BadRequest(new { exito = false, mensaje = "El comentario no puede estar vacío" });
                 }
 
-                using (var context = new SqlConnection(_config["ConnectionStrings:BDConnection"]))
+                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
                     var parametros = new DynamicParameters();
                     parametros.Add("@IdVacante", request.IdVacante);
@@ -529,9 +468,8 @@ namespace SIGEP_API.Controllers
         {
             try
             {
-                using (var context = new SqlConnection(_config["ConnectionStrings:BDConnection"]))
+                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
-                    // ✅ VALIDACIÓN 1: Verificar estado académico del estudiante usando SP
                     var parametrosEstudiante = new DynamicParameters();
                     parametrosEstudiante.Add("@IdPractica", request.IdPractica);
 
@@ -549,7 +487,6 @@ namespace SIGEP_API.Controllers
                         });
                     }
 
-                    // ✅ VALIDACIÓN 2: Obtener descripción del estado usando SP
                     var parametrosEstado = new DynamicParameters();
                     parametrosEstado.Add("@IdEstado", request.IdEstado);
 
@@ -558,7 +495,6 @@ namespace SIGEP_API.Controllers
                         parametrosEstado
                     );
 
-                    // ✅ Si se intenta asignar, verificar que no tenga otra práctica activa usando SP
                     if (estadoNuevo == "Asignada")
                     {
                         var parametrosConflicto = new DynamicParameters();
@@ -579,7 +515,6 @@ namespace SIGEP_API.Controllers
                         }
                     }
 
-                    // ✅ Ejecutar SP para actualizar estado
                     var parametros = new DynamicParameters();
                     parametros.Add("@IdPractica", request.IdPractica);
                     parametros.Add("@IdEstado", request.IdEstado);

@@ -531,7 +531,7 @@ namespace SIGEP_ProyectoFinal.Controllers
 
                     if (respuesta.IsSuccessStatusCode)
                     {
-                        var resultado = respuesta.Content.ReadFromJsonAsync<CedulaSimple>().Result;
+                        var resultado = respuesta.Content.ReadFromJsonAsync<CedulaModel>().Result;
                         return resultado?.Cedula ?? string.Empty;
                     }
 
@@ -544,7 +544,7 @@ namespace SIGEP_ProyectoFinal.Controllers
             }
         }
 
-        private DocumentoInfo? ObtenerInfoDocumento(int idDocumento)
+        private DocumentoVM? ObtenerInfoDocumento(int idDocumento)
         {
             try
             {
@@ -555,7 +555,7 @@ namespace SIGEP_ProyectoFinal.Controllers
 
                     if (respuesta.IsSuccessStatusCode)
                     {
-                        var documento = respuesta.Content.ReadFromJsonAsync<DocumentoInfo>().Result;
+                        var documento = respuesta.Content.ReadFromJsonAsync<DocumentoVM>().Result;
                         return documento;
                     }
 
@@ -566,18 +566,6 @@ namespace SIGEP_ProyectoFinal.Controllers
             {
                 return null;
             }
-        }
-
-        private class CedulaSimple
-        {
-            public string Cedula { get; set; } = string.Empty;
-        }
-
-        private class DocumentoInfo
-        {
-            public int IdDocumento { get; set; }
-            public string Documento { get; set; } = string.Empty;
-            public int IdUsuario { get; set; }
         }
     }
 }
