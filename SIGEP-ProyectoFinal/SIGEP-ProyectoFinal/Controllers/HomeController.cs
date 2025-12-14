@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SIGEP_ProyectoFinal.Models;
+using System.Net.Http.Headers;
+using Utiles;
 
 namespace SIGEP_ProyectoFinal.Controllers
 {
@@ -15,8 +17,9 @@ namespace SIGEP_ProyectoFinal.Controllers
             _configuration = configuration;
         }
 
-        [HttpGet]
         [Seguridad]
+        [HttpGet]
+      
         public IActionResult Index()
         {
             ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
@@ -35,6 +38,10 @@ namespace SIGEP_ProyectoFinal.Controllers
         [HttpPost]
         public IActionResult IniciarSesion(Usuario usuario)
         {
+
+            var helper = new Helper();
+            usuario.Contrasenna = helper.Encrypt(usuario.Contrasenna);
+
             using (var context = _http.CreateClient())
             {
                 var urlApi = _configuration["Valores:UrlApi"] + "Home/IniciarSesion";
@@ -49,10 +56,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                     HttpContext.Session.SetInt32("IdUsuario", usuarioRespuesta.IdUsuario);
                     HttpContext.Session.SetInt32("Rol", usuarioRespuesta.IdRol);
 
-                    //HttpContext.Session.SetString("Rol", usuarioRespuesta.IdRol.ToString());
-                    //HttpContext.Session.SetString("IdRol", usuarioRespuesta.IdRol.ToString());
-
-                    TempData["SwalSuccess"] = "Bienvenido a SIGEP," + usuarioRespuesta.Nombre;
+                    TempData["SwalSuccess"] = "Bienvenido a SIGEP, " + usuarioRespuesta.Nombre;
                     return RedirectToAction("Index");
                 }
                 else
@@ -110,6 +114,9 @@ namespace SIGEP_ProyectoFinal.Controllers
 
         public IActionResult Registro(Usuario usuario)
         {
+
+            var helper = new Helper();
+            usuario.Contrasenna = helper.Encrypt(usuario.Contrasenna);
 
             using (var context = _http.CreateClient())
             {
@@ -187,15 +194,19 @@ namespace SIGEP_ProyectoFinal.Controllers
         }
 
 
+        [Seguridad]
         [HttpPost]
 
         public IActionResult CambiarContrasenna(Usuario usuario)
         {
 
             var IdUsuario = HttpContext.Session.GetInt32("IdUsuario");
+            var helper = new Helper();
+            usuario.Contrasenna = helper.Encrypt(usuario.Contrasenna);
             using (var context = _http.CreateClient())
             {
                 var urlApi = _configuration["Valores:UrlAPI"] + "Home/CambiarContrasenna";
+                context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                 usuario.IdUsuario = (int)IdUsuario;
                 var respuesta = context.PostAsJsonAsync(urlApi, usuario).Result;
                 if (respuesta.IsSuccessStatusCode)
@@ -220,8 +231,10 @@ namespace SIGEP_ProyectoFinal.Controllers
             }
         }
 
+
+        [Seguridad]
         [HttpPost]
-        [ValidateAntiForgeryToken]
+   
         public IActionResult CerrarSesion()
         {
             HttpContext.Session.Clear();

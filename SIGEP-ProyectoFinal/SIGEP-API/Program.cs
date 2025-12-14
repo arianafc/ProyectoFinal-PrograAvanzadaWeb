@@ -37,12 +37,10 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseExceptionHandler("/api/Error/RegistrarError");
+
 app.UseHttpsRedirection();
-
-
-app.UseAuthentication(); 
+app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

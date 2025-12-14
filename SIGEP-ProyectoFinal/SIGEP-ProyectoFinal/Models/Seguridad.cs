@@ -26,9 +26,9 @@ namespace SIGEP_ProyectoFinal.Models
             var httpContext = context.HttpContext;
             var session = httpContext.Session;
 
-            var rol = session.GetString("Rol");
+            var rol = context.HttpContext.Session.GetInt32("Rol");
 
-            if (string.IsNullOrEmpty(rol) || rol != "1")
+            if (rol != 1)
             {
                 if (context.Controller is Controller controller)
                 {
@@ -49,9 +49,9 @@ namespace SIGEP_ProyectoFinal.Models
             var httpContext = context.HttpContext;
             var session = httpContext.Session;
 
-            var rol = session.GetString("Rol");
+            var rol = context.HttpContext.Session.GetInt32("Rol");
 
-            if (string.IsNullOrEmpty(rol) || rol != "2")
+            if (rol != 2)
             {
                 if (context.Controller is Controller controller)
                 {
@@ -62,6 +62,8 @@ namespace SIGEP_ProyectoFinal.Models
             }
 
             base.OnActionExecuting(context);
+
+         
         }
     }
 }

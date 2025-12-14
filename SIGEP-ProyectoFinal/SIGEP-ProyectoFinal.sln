@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIGEP-ProyectoFinal", "SIGE
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIGEP-API", "SIGEP-API\SIGEP-API.csproj", "{083171A9-3DE9-4E36-8995-1519A09C1D3D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utiles", "Utiles\Utiles.csproj", "{C64F2599-5045-46BB-9C37-4F1EF2D732B7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{083171A9-3DE9-4E36-8995-1519A09C1D3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{083171A9-3DE9-4E36-8995-1519A09C1D3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{083171A9-3DE9-4E36-8995-1519A09C1D3D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C64F2599-5045-46BB-9C37-4F1EF2D732B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C64F2599-5045-46BB-9C37-4F1EF2D732B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C64F2599-5045-46BB-9C37-4F1EF2D732B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C64F2599-5045-46BB-9C37-4F1EF2D732B7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

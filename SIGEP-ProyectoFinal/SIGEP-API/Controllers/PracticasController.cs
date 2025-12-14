@@ -17,6 +17,8 @@ namespace SIGEP_API.Controllers
 
         private readonly IConfiguration _config;
         private readonly IEmailService _emailService;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<PracticasController> _logger;
 
         public PracticasController(IConfiguration config, IEmailService emailService)
         {

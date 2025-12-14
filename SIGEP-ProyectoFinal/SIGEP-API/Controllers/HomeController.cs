@@ -50,7 +50,7 @@ namespace SIGEP_API.Controllers
                     return Ok(resultado);
                 }
 
-                return NotFound();  // ⭐ Este estaba después del otro return
+                return NotFound();  
             }
         }
 

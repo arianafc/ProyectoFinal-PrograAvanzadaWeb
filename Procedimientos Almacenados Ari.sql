@@ -33,7 +33,7 @@ BEGIN
     INNER JOIN dbo.Especialidades E
     ON UE.IdEspecialidad = E.IdEspecialidad
     WHERE U.Cedula = @CEDULA
-    AND Contrasenna = CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', @CONTRASENNA), 2);
+    AND Contrasenna = @CONTRASENNA AND U.IdEstado = 1;
 END;
 GO
 
@@ -49,7 +49,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 
-CREATE   PROCEDURE [dbo].[RegistroSP] 
+CREATE  OR ALTER PROCEDURE [dbo].[RegistroSP] 
     @Nombre VARCHAR(20), 
     @Apellido1 VARCHAR(50), 
     @Apellido2 VARCHAR(50), 
@@ -93,7 +93,7 @@ BEGIN
             @Nombre, 
             @Apellido1, 
             @Apellido2, 
-            CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', @Contrasenna), 2), 
+            @Contrasenna, 
             @FechaNacimiento,
             @Cedula, 
             1,
@@ -700,4 +700,61 @@ BEGIN
   FROM [dbo].[Documentos] WHERE IdUsuario = @IdUsuario;
 
 END
+
+CREATE OR ALTER PROCEDURE EliminarDocumentoSP
+(@IdDocumento INT)
+AS
+BEGIN
+
+    DELETE FROM Documentos WHERE IdDocumento = @IdDocumento;
+
+END
+
+
+USE [SIGEP_WEB]
+GO
+
+/****** Object:  StoredProcedure [dbo].[RegistrarError]    Script Date: 12/7/2025 7:36:34 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+CREATE PROCEDURE [dbo].[RegistrarError]
+	@IdUsuario INT,
+    @MensajeError VARCHAR(MAX),
+    @OrigenError VARCHAR(50)
+AS
+BEGIN
+
+    INSERT INTO dbo.Errores (IdUsuario,Mensaje,Origen,FechaHora)
+    VALUES (@IdUsuario, @MensajeError, @OrigenError, GETDATE())
+
+END
+GO
+
+
+
+/****** Object:  Table [dbo].[tbError]    Script Date: 12/7/2025 7:24:39 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[Errores](
+	[IdError] [int] IDENTITY(1,1) NOT NULL,
+	[IdUsuario] [int] NOT NULL,
+	[Mensaje] [varchar](max) NOT NULL,
+	[Origen] [varchar](50) NOT NULL,
+	[FechaHora] [datetime] NOT NULL,
+ CONSTRAINT [PK_tbError] PRIMARY KEY CLUSTERED 
+(
+	[IdError] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
 
