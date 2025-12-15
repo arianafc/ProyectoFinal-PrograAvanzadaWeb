@@ -2,6 +2,9 @@
     Layout = "~/Views/Shared/_LayoutMain.cshtml";
     ViewBag.Title = "Administración General";
 
+    var rol = ViewBag.Rol;
+    var nombre = ViewBag.Nombre as string;
+    var usuario = ViewBag.IdUsuario;
     var tab = (string)(ViewBag.Tab ?? "usuarios");
     var clsUsuarios = tab == "usuarios" ? "" : "d-none";
     var clsEspecialidades = tab == "especialidades" ? "" : "d-none";
@@ -230,5 +233,5 @@
 
 @section Scripts {
     <script>window.__TAB_INICIAL__='@tab';</script>
-    <script src="~/js/admingeneral/admingeneral.js"></script>
+    <script src="~/js/AdminGeneral/AdminGeneral.js"></script>
 }
