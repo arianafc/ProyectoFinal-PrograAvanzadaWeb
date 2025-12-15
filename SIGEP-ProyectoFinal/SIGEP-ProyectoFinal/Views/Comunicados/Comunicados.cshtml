@@ -2,11 +2,18 @@
 @{
     Layout = "~/Views/Shared/_LayoutMain.cshtml";
     var rol = ViewBag.Rol;   
+    var nombre = ViewBag.Nombre as string;
+    var usuario = ViewBag.IdUsuario;
 }
 
 @section Styles {
     <link href="~/css/Comunicados.css" rel="stylesheet" />
 }
+
+
+<input type="hidden" class="TempError" value="@TempData["SwalError"]" />
+<input type="hidden" class="TempSuccess" value="@TempData["SwalSuccess"]" />
+
 
 <div class="comunicados-wrapper">
     <h2 class="titulo-pagina">Comunicados de Prácticas Profesionales</h2>
@@ -24,96 +31,107 @@
         </div>
 
         <div class="row g-4" id="contenedorComunicados">
-            @foreach (var c in Model.AllComunicados)
+
+            @if (Model.AllComunicados != null && Model.AllComunicados.Any())
             {
-                <div class="col-12 col-sm-6 col-lg-3 d-flex justify-content-center" id="comunicado-@c.Id">
-                    <div class="card w-100">
-                        <div class="card-body">
-                            <p><strong>@c.Nombre</strong></p>
-                            <p><strong>Publicado:</strong> @c.Fecha.ToString("dd/MM/yyyy")</p>
-                            <div class="botones-acciones">
-                                <button class="btn-ver btn-abrir-comunicado"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#modalComunicadoUnico"
-                                        data-id="@c.Id"
-                                        data-titulo="@c.Nombre"
-                                        data-descripcion="@c.Informacion"
-                                        data-fecha="@c.Fecha.ToString("dd/MM/yyyy")"
-                                        data-aplicacion="@(c.FechaLimite.HasValue? c.FechaLimite.Value.ToString("yyyy-MM-dd") : "N/A")"
-                                        data-publicado="@c.PublicadoPor"
-                                        data-dirigido="@c.Poblacion">
-                                    Abrir
-                                </button>
+                @foreach (var c in Model.AllComunicados)
+                {
+                    <div class="col-12 col-sm-6 col-lg-3 d-flex" id="comunicado-@c.IdComunicado">
+                        <div class="card w-100 shadow-sm">
+                            <div class="card-body d-flex flex-column">
+
+                                <h6 class="card-title fw-bold">@c.Nombre</h6>
+
+                                <p class="text-muted mb-3">
+                                    <strong>Publicado:</strong> @c.Fecha.ToString("dd/MM/yyyy")
+                                </p>
+
+                                <div class="mt-auto text-center">
+                                    <button type="button"
+                                            class="btn btn-primary btn-sm btn-abrir-comunicado"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalComunicadoUnico"
+                                            data-id="@c.IdComunicado"
+                                            data-titulo="@c.Nombre"
+                                            data-descripcion="@c.Informacion"
+                                            data-fecha="@c.Fecha.ToString("dd/MM/yyyy")"
+                                            data-aplicacion="@(c.FechaLimite.HasValue? c.FechaLimite.Value.ToString("yyyy-MM-dd") : "N/A")"
+                                            data-publicado="@c.PublicadoPor"
+                                            data-dirigido="@c.Poblacion"
+                                            data-estado="@c.IdEstado">
+                                        
+                                        Abrir
+                                    </button>
+                                </div>
+
                             </div>
                         </div>
                     </div>
-                </div>
-
+                }
             }
+            else
+            {
+                <div class="col-12 text-center text-muted">
+                    <p>No hay comunicados disponibles.</p>
+                </div>
+            }
+
         </div>
+
     }
 
     <!--Comunicados estudiante y general-->
     @if (rol == 1)
     {
-        <div class="row g-4" id="contenedorComunicados">
-            @foreach (var c in Model.ComunicadosEstudiantes)
+        <div class="row g-4" id="contenedorComunicadosEstudiantes">
+
+            @if (Model.ComunicadosEstudiantes != null && Model.ComunicadosEstudiantes.Any())
             {
-                <div class="col-12 col-sm-6 col-lg-3 d-flex justify-content-center" id="comunicado-@c.Id">
-                    <div class="card w-100">
-                        <div class="card-body">
-                            <p><strong>@c.Nombre</strong></p>
-                            <p><strong>Publicado:</strong> @c.Fecha.ToString("dd/MM/yyyy")</p>
-                            <div class="botones-acciones">
-                                <button class="btn-ver btn-abrir-comunicado"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#modalComunicadoUnico"
-                                        data-id="@c.Id"
-                                        data-titulo="@c.Nombre"
-                                        data-descripcion="@c.Informacion"
-                                        data-fecha="@c.Fecha.ToString("dd/MM/yyyy")"
-                                        data-aplicacion="@(c.FechaLimite.HasValue? c.FechaLimite.Value.ToString("yyyy-MM-dd") : "N/A")"
-                                        data-publicado="@c.PublicadoPor"
-                                        data-dirigido="@c.Poblacion">
-                                    Abrir
-                                </button>
+                @foreach (var c in Model.ComunicadosEstudiantes)
+                {
+                    <div class="col-12 col-sm-6 col-lg-3 d-flex" id="comunicado-@c.IdComunicado">
+                        <div class="card w-100 shadow-sm">
+                            <div class="card-body d-flex flex-column">
+
+                                <h6 class="card-title fw-bold">@c.Nombre</h6>
+
+                                <p class="text-muted mb-3">
+                                    <strong>Publicado:</strong> @c.Fecha.ToString("dd/MM/yyyy")
+                                </p>
+
+                                <div class="mt-auto text-center">
+                                    <button type="button"
+                                            class="btn btn-primary btn-sm btn-abrir-comunicado"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalComunicadoUnico"
+                                            data-id="@c.IdComunicado"
+                                            data-titulo="@c.Nombre"
+                                            data-descripcion="@c.Informacion"
+                                            data-fecha="@c.Fecha.ToString("dd/MM/yyyy")"
+                                            data-aplicacion="@(c.FechaLimite.HasValue? c.FechaLimite.Value.ToString("yyyy-MM-dd") : "N/A")"
+                                            data-publicado="@c.PublicadoPor"
+                                            data-dirigido="@c.Poblacion"
+                                            data-estado="@c.IdEstado">
+                                        Abrir
+                                    </button>
+                                </div>
+
                             </div>
                         </div>
                     </div>
-                </div>
+                }
             }
-
-            @foreach (var c in Model.AllComunicados)
+            else
             {
-                <div class="col-12 col-sm-6 col-lg-3 d-flex justify-content-center" id="comunicado-@c.Id">
-                    <div class="card w-100">
-                        <div class="card-body">
-                            <p><strong>@c.Nombre</strong></p>
-                            <p><strong>Publicado:</strong> @c.Fecha.ToString("dd/MM/yyyy")</p>
-                            <div class="botones-acciones">
-                                <button class="btn-ver btn-abrir-comunicado"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#modalComunicadoUnico"
-                                        data-id="@c.Id"
-                                        data-titulo="@c.Nombre"
-                                        data-descripcion="@c.Informacion"
-                                        data-fecha="@c.Fecha.ToString("dd/MM/yyyy")"
-                                        data-aplicacion="@(c.FechaLimite.HasValue? c.FechaLimite.Value.ToString("yyyy-MM-dd") : "N/A")"
-                                        data-publicado="@c.PublicadoPor"
-                                        data-dirigido="@c.Poblacion">
-                                    Abrir
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                <div class="col-12 text-center text-muted">
+                    <p>No hay comunicados para estudiantes.</p>
                 </div>
             }
-
 
         </div>
+
     }
-    <!--Comunicados profe y general -->
-  
+
     
    
 </div>
@@ -171,55 +189,63 @@
             </div>
 
             <div class="modal-body">
-                <form id="formComunicado" enctype="multipart/form-data">
+                <form id="formComunicado"
+                      asp-action="AgregarComunicado"
+                      asp-controller="Comunicados"
+                      method="post"
+                      enctype="multipart/form-data">
+
                     @Html.AntiForgeryToken()
 
-                    <div class="row mb-3">
-                        <div class="col-md-12">
-                            <label class="form-label fw-bold">Título</label>
-                            <input type="text" class="form-control" id="TituloComunicado" required>
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Título</label>
+                        <input type="text" class="form-control" name="Nombre" />
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Descripción</label>
-                        <textarea class="form-control" id="DescripcionComunicado" rows="5" required></textarea>
+                        <textarea class="form-control" name="Informacion" rows="5" ></textarea>
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Fecha de Publicación</label>
-                            <input type="text" class="form-control" id="FechaPublicacionComunicado"
-                                   value="@DateTime.Now.ToString("dd-MM-yyyy")" readonly>
+                            <input type="text" class="form-control"
+                                   name="Fecha"
+                                   value="@DateTime.Now.ToString("yyyy-MM-dd")"
+                                   readonly>
                         </div>
+
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Fecha Límite (si aplica)</label>
-                            <input type="date" class="form-control" id="FechaAplicacionComunicado">
+                            <input type="date" class="form-control" name="FechaLimite">
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">¿Quién puede visualizarlo?</label>
-                        <select class="form-control" id="DirigidoAComunicado" required>
+                        <select class="form-control" name="Poblacion" required>
                             <option value="General">General</option>
+                            <option value="Administrativos">Administrativos</option>
                             <option value="Estudiantes">Estudiantes</option>
-                            <option value="Profesores">Profesores</option>
-                            <option value="Egresados">Egresados</option>
                         </select>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold" style="color:#2D594D;">Documento adjunto</label>
-                        <input type="file" class="form-control" id="ArchivoDoc" name="archivo" multiple>
-                        <small class="text-muted">*Solo archivos .xls, .xlsx o .pdf</small>
+                        <label class="form-label fw-bold">Documento adjunto</label>
+                        <input type="file" class="form-control" name="archivos" multiple>
+                    </div>
+
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" id="btnGuardarComunicado" class="btn-ver">Guardar Comunicado</button>
                     </div>
                 </form>
+
             </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" id="btnGuardarComunicado" class="btn-ver">Guardar Comunicado</button>
-            </div>
+         
         </div>
     </div>
 </div>
@@ -235,7 +261,7 @@
             </div>
 
             <div class="modal-body">
-                <form id="formEditarComunicado" enctype="multipart/form-data">
+                <form id="formEditarComunicado" asp-action="EditarComunicado" asp-controller="Comunicados" enctype="multipart/form-data">
                     @Html.AntiForgeryToken()
 
                     <!-- ID oculto -->
@@ -244,33 +270,33 @@
                     <div class="row mb-3">
                         <div class="col-md-12">
                             <label class="form-label fw-bold">Título</label>
-                            <input type="text" class="form-control" id="TituloComunicadoEditar" required>
+                            <input type="text" class="form-control" id="TituloComunicadoEditar" asp-for="Nombre">
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Descripción</label>
-                        <textarea class="form-control" id="DescripcionComunicadoEditar" rows="5" required></textarea>
+                        <textarea class="form-control" id="DescripcionComunicadoEditar" rows="5" asp-for="Informacion"></textarea>
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Fecha de Publicación</label>
-                            <input type="text" class="form-control" id="FechaPublicacionComunicadoEditar" readonly>
+                            <input type="text" class="form-control" id="FechaPublicacionComunicadoEditar" asp-for="Fecha" readonly>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Fecha Límite (si aplica)</label>
-                            <input type="date" class="form-control" id="FechaAplicacionComunicadoEditar">
+                            <input type="date" class="form-control" id="FechaAplicacionComunicadoEditar" asp-for="FechaLimite">
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">¿Quién puede visualizarlo?</label>
-                        <select class="form-control" id="DirigidoAComunicadoEditar" required>
+                        <select class="form-control" id="DirigidoAComunicadoEditar" asp-for="Poblacion">
                             <option value="General">General</option>
                             <option value="Estudiantes">Estudiantes</option>
-                            <option value="Profesores">Profesores</option>
-                            <option value="Egresados">Egresados</option>
+                            <option value="Administrativos">Administrativos</option>
+                           
                         </select>
                     </div>
 
@@ -280,16 +306,18 @@
                             <p class="text-muted small">Cargando documentos...</p>
                         </div>
 
-                        <input type="file" class="form-control" id="ArchivoDocEditar" name="archivo" multiple>
+                        <input type="file" class="form-control" id="ArchivoDocEditar" name="archivos" multiple>
                         <small class="text-muted">*Puedes subir nuevos archivos (.xls, .xlsx o .pdf)</small>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" id="btnActualizarComunicado" class="btn-ver btnActualizarComunicado">Guardar Cambios</button>
                     </div>
                 </form>
             </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" id="btnActualizarComunicado" class="btn-ver btnActualizarComunicado">Guardar Cambios</button>
-            </div>
+           
         </div>
     </div>
 </div>
@@ -303,7 +331,7 @@
             </div>
             <div class="modal-body">
                 <p><strong style="color:#2D594D;">Descripción:</strong><br /><span id="comunicadoDescripcion"></span></p>
-                <p><strong style="color:#2D594D;">Fecha de Aplicación:</strong> <span id="comunicadoAplicacion"></span></p>
+                <p><strong style="color:#2D594D;">Fecha de Límite:</strong> <span id="comunicadoAplicacion"></span></p>
                 <p><strong style="color:#2D594D;">Fecha de Publicación:</strong> <span id="comunicadoFecha"></span></p>
                 <p><strong style="color:#2D594D;">Publicado por:</strong> <span id="comunicadoPublicadoPor"></span></p>
                 <p><strong style="color:#2D594D;">Dirigido a:</strong> <span id="comunicadoDirigido"></span></p>
@@ -318,7 +346,11 @@
                 @if (rol == 2)
                 {
                     <button type="button" class="btn btn-warning btnEditarComunicado" data-bs-toggle="modal" data-bs-target="#modalEditarComunicado">Editar</button>
-                    <button type="button" class="btn btn-danger btnEliminarComunicado" id="BtnEliminarComunicado">Eliminar</button>
+                    <form id="formEstadoComunicado" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="IdComunicado" id="IdComunicadoEstado" />
+                    </form>
+                    <button type="button" class="btn btn-danger btnEliminarComunicado" id="BtnEliminarComunicado">Inactivar</button>
                 }
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
@@ -326,11 +358,11 @@
     </div>
 </div>
 
-@section Scripts {
-@* 
-    <script>
-        const rolUsuario = @HttpContext.Session.GetInt32("Rol");
-    </script> *@
-    <script src="~/Scripts/Comunicados/Comunicados.js"></script>
 
+@section Scripts {
+    <script>
+        let comunicadoActual = null;
+        const ROL_USUARIO = @rol;
+    </script>
+    <script src="~/js/Comunicados/Comunicados.js"></script>
 }

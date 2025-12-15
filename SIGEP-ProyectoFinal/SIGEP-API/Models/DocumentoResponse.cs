@@ -2,6 +2,8 @@
 {
     public class DocumentoResponse
     {
+
+
         public string? Documento { get; set; }
 
         public DateTime FechaSubida { get; set; }

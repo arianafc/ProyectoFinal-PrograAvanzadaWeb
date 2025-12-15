@@ -765,18 +765,57 @@ ADD FOREIGN KEY (IdComunicado) REFERENCES Comunicados(IdComunicado)
 
 
 CREATE OR ALTER PROCEDURE ObtenerComunicadosSP
-(@Poblacion VARCHAR(255))
+(
+    @Poblacion VARCHAR(255)
+)
 AS
 BEGIN
-    
-    SELECT IdComunicado, Nombre, IdEstado, Informacion, Fecha,
-    Poblacion, FechaLimite, IdUsuario
-    FROM Comunicados
-    WHERE Poblacion = @Poblacion;
+    SET NOCOUNT ON;
 
+    -- CASO ADMINISTRATIVOS: VE TODO
+    IF (@Poblacion = 'Administrativos')
+    BEGIN
+        SELECT 
+            C.IdComunicado,
+            C.Nombre,
+            C.IdEstado,
+            C.Informacion,
+            C.Fecha,
+            C.Poblacion,
+            C.FechaLimite,
+            C.IdUsuario,
+            CONCAT(U.Nombre, ' ', U.Apellido1, ' ', U.Apellido2) AS PublicadoPor
+        FROM Comunicados C
+        INNER JOIN Usuarios U
+            ON C.IdUsuario = U.IdUsuario
+
+    END
+    ELSE
+    BEGIN
+        -- RESTO DE POBLACIONES
+        SELECT 
+            C.IdComunicado,
+            C.Nombre,
+            C.IdEstado,
+            C.Informacion,
+            C.Fecha,
+            C.Poblacion,
+            C.FechaLimite,
+            C.IdUsuario,
+            CONCAT(U.Nombre, ' ', U.Apellido1, ' ', U.Apellido2) AS PublicadoPor
+        FROM Comunicados C
+        INNER JOIN Usuarios U
+            ON C.IdUsuario = U.IdUsuario
+        WHERE 
+            C.IdEstado = 1
+            AND (
+                C.Poblacion = @Poblacion
+                OR C.Poblacion = 'General'
+            );
+    END
 END;
-
 GO
+
 
 CREATE OR ALTER PROCEDURE ObtenerDocumentosComunicadoSP
 (@IdComunicado INT)
@@ -790,3 +829,95 @@ BEGIN
 END;
 
 GO
+
+alter table comunicados
+alter Column Informacion VARCHAR(MAX)
+
+GO
+
+CREATE OR ALTER PROCEDURE AgregarComunicadoSP
+(@Nombre VARCHAR(255), @Informacion VARCHAR(MAX), 
+ @Poblacion VARCHAR(255), @FechaLimite DATETIME, @IdUsuario INT)
+AS
+BEGIN
+    
+
+    INSERT INTO Comunicados (Nombre,IdEstado, Informacion, Fecha, Poblacion, FechaLimite, IdUsuario) VALUES
+    (@Nombre, 1, @Informacion, GETDATE(), @Poblacion, @FechaLimite, @IdUsuario)
+      
+      SELECT SCOPE_IDENTITY();
+
+
+
+END;
+
+GO
+
+CREATE OR ALTER PROCEDURE GuardarDocumentosComunicadoSP (  @IdComunicado INT,
+    @NombreArchivo VARCHAR(255),
+    @Tipo VARCHAR(100))
+AS
+BEGIN
+
+    INSERT INTO Documentos (Documento, Tipo, IdComunicado, FechaSubida)
+    VALUES (@NombreArchivo, @Tipo, @IdComunicado, GETDATE());
+
+
+END;
+
+GO;
+
+CREATE OR ALTER PROCEDURE ObtenerDetallesComunicadoSP (@IdComunicado INT)
+AS
+BEGIN
+  SELECT 
+        C.IdComunicado,
+        C.Nombre,
+        C.IdEstado,
+        C.Informacion,
+        C.Fecha,
+        C.Poblacion,
+        C.FechaLimite,
+        C.IdUsuario,
+        CONCAT(U.Nombre, ' ', U.Apellido1, ' ', U.Apellido2) AS PublicadoPor
+    FROM Comunicados C
+    INNER JOIN Usuarios U
+        ON C.IdUsuario = U.IdUsuario
+    WHERE 
+       C.IdComunicado = @IdComunicado
+    
+END;
+
+
+GO
+
+CREATE OR ALTER PROCEDURE EditarComunicadoSP
+(@IdComunicado INT,
+@Nombre VARCHAR(255), 
+@Informacion VARCHAR(MAX),
+@FechaLimite DATETIME,
+@Poblacion VARCHAR(255))
+AS
+BEGIN
+
+    UPDATE Comunicados
+    SET Nombre = @Nombre,
+    Informacion = @Informacion,
+    FechaLimite = @FechaLimite,
+    Poblacion = @Poblacion
+    WHERE IdComunicado = @IdComunicado;
+
+
+
+
+END;
+
+GO
+
+CREATE OR ALTER PROCEDURE CambiarEstadoComunicadoSP(@IdComunicado INT, @IdEstado INT)
+AS
+BEGIN
+
+    UPDATE Comunicados SET IdEstado = @IdEstado WHERE IdComunicado = @IdComunicado;
+
+END;

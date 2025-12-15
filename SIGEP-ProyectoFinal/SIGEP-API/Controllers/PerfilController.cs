@@ -379,7 +379,7 @@ namespace SIGEP_API.Controllers
     
 
 
-    [HttpDelete]
+        [HttpDelete]
         [Route("EliminarDocumento")]
         public IActionResult EliminarDocumento(int IdDocumento)
         {

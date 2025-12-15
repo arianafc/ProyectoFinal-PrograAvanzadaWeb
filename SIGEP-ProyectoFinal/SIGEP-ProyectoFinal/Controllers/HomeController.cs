@@ -24,6 +24,7 @@ namespace SIGEP_ProyectoFinal.Controllers
         {
             ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
             ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
+            ViewBag.Usuario = HttpContext.Session.GetInt32("IdUsuario");
             return View();
         }
 

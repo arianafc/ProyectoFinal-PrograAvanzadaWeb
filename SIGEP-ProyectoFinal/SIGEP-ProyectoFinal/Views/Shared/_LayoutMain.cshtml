@@ -34,6 +34,9 @@
         var nombre = ViewBag.Nombre as string;
     }
 
+    <input type="hidden" class="TempError" value="@TempData["SwalError"]" />
+    <input type="hidden" class="TempSuccess" value="@TempData["SwalSuccess"]" />
+
     <div id="main-wrapper">
         <!-- Topbar -->
         <header class="topbar">

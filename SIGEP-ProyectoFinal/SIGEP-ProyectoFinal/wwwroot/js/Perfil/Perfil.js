@@ -71,6 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const item = document.createElement("div");
                     item.className = "list-group-item d-flex justify-content-between align-items-center";
 
+
                     item.innerHTML = `
                         <div>
                             <strong>${nombreArchivo}</strong><br/>
@@ -82,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             </a>
                             <button type="button"
                                     class="btn btn-sm btn-outline-danger btn-eliminar-doc"
-                                    data-id="${doc.idDocumento}"
+                                    data-id="${doc.IdDocumento}"
                                     data-ruta="${rutaCompleta}">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
