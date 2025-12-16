@@ -923,14 +923,36 @@ BEGIN
 END;
 
 
-CREATE OR ALTER PROCEDURE ObtenerEmailsSP
+CREATE OR ALTER PROCEDURE ObtenerEmailsSP (@Destinatario VARCHAR(255))
 AS
 BEGIN
-    SELECT U.IdUsuario, U.Nombre, U.Apellido1, U.Apellido2, E.Email, E.IdEmail, R.IdRol, R.Descripcion AS Rol
-    FROM Usuarios U
-    LEFT JOIN Emails E
-    ON U.IdUsuario = E.IdUsuario
-    INNER JOIN Roles R
-    ON R.IdRol = U.IdRol
-    WHERE U.IdEstado = 1;
+    IF @Destinatario = 'Estudiantes'
+    BEGIN
+        SELECT U.IdUsuario, U.Nombre, U.Apellido1, U.Apellido2,
+               E.Email, E.IdEmail, R.IdRol, R.Descripcion AS Rol
+        FROM Usuarios U
+        INNER JOIN Emails E ON U.IdUsuario = E.IdUsuario
+        INNER JOIN Roles R ON R.IdRol = U.IdRol
+        WHERE U.IdEstado = 1
+          AND U.IdRol = 1;
+    END
+    ELSE IF @Destinatario = 'Administrativos'
+    BEGIN
+        SELECT U.IdUsuario, U.Nombre, U.Apellido1, U.Apellido2,
+               E.Email, E.IdEmail, R.IdRol, R.Descripcion AS Rol
+        FROM Usuarios U
+        INNER JOIN Emails E ON U.IdUsuario = E.IdUsuario
+        INNER JOIN Roles R ON R.IdRol = U.IdRol
+        WHERE U.IdEstado = 1
+          AND U.IdRol = 2;
+    END
+    ELSE
+    BEGIN
+        SELECT U.IdUsuario, U.Nombre, U.Apellido1, U.Apellido2,
+               E.Email, E.IdEmail, R.IdRol, R.Descripcion AS Rol
+        FROM Usuarios U
+        INNER JOIN Emails E ON U.IdUsuario = E.IdUsuario
+        INNER JOIN Roles R ON R.IdRol = U.IdRol
+        WHERE U.IdEstado = 1;
+    END
 END;
