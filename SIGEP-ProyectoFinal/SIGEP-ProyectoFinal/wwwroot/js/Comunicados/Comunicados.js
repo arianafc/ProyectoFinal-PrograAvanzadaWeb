@@ -26,6 +26,89 @@
     }
 
     /* =============================
+       ENVIAR CORREOS
+    ============================== */
+
+    document.getElementById("btnEnviar").addEventListener("click", function () {
+
+        const poblacion = document.getElementById("correoPoblacion").value;
+        const asunto = document.getElementById("correoAsunto").value;
+        const mensaje = document.getElementById("correoMensaje").value;
+        const archivosInput = document.getElementById("correoArchivo");
+
+        if (!poblacion || !asunto || !mensaje) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Campos obligatorios',
+                text: 'Debe completar población, asunto y mensaje.'
+            });
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("Poblacion", poblacion);
+        formData.append("Asunto", asunto);
+        formData.append("CuerpoCorreo", mensaje);
+
+        if (archivosInput.files.length > 0) {
+            for (let i = 0; i < archivosInput.files.length; i++) {
+                formData.append("archivos", archivosInput.files[i]);
+            }
+        }
+
+        Swal.fire({
+            title: 'Enviando correo...',
+            text: 'Por favor espere',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch("/Comunicados/EnviarCorreoComunicado", {
+            method: "POST",
+            body: formData
+        })
+            .then(response => response.json())
+            .then(result => {
+
+                Swal.close();
+
+                if (result.exito) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Correo enviado',
+                        text: result.mensaje
+                    }).then(() => {
+
+                        document.getElementById("formEnviarCorreo").reset();
+
+                        const modal = bootstrap.Modal.getInstance(
+                            document.getElementById("modalEnviarCorreo")
+                        );
+                        modal.hide();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: result.mensaje
+                    });
+                }
+            })
+            .catch(() => {
+                Swal.close();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al enviar el correo.'
+                });
+            });
+    });
+
+
+
+    /* =============================
        CREAR COMUNICADO
     ============================== */
     const form = document.getElementById('formComunicado');
@@ -91,10 +174,30 @@
             comunicadoActual = this.dataset.id;
             const id = this.dataset.id;
             const estado = this.dataset.estado; 
-          
+
+
+            document.getElementById("modalComunicadoUnicoLabel").innerText = this.dataset.titulo;
+            document.getElementById("comunicadoDescripcion").innerText = this.dataset.descripcion;
+            document.getElementById("comunicadoFecha").innerText = this.dataset.fecha;
+            document.getElementById("comunicadoAplicacion").innerText = this.dataset.aplicacion;
+            document.getElementById("comunicadoPublicadoPor").innerText = this.dataset.publicado;
+            document.getElementById("comunicadoDirigido").innerText = this.dataset.dirigido;
+
             const btnEstado = document.getElementById("BtnEliminarComunicado");
             const form = document.getElementById("formEstadoComunicado");
             const inputId = document.getElementById("IdComunicadoEstado");
+
+            const btnEditar = document.getElementById("BtnEditarComunicado");
+
+            if (btnEditar) {
+                if (estado == 2) {
+                    // INACTIVO → ocultar editar
+                    btnEditar.classList.add("d-none");
+                } else {
+                    // ACTIVO → mostrar editar
+                    btnEditar.classList.remove("d-none");
+                }
+            }
 
             if (!btnEstado || !form || !inputId) return;
 
@@ -114,12 +217,7 @@
                 form.action = "/Comunicados/ActivarComunicado";
             }
 
-            document.getElementById("modalComunicadoUnicoLabel").innerText = this.dataset.titulo;
-            document.getElementById("comunicadoDescripcion").innerText = this.dataset.descripcion;
-            document.getElementById("comunicadoFecha").innerText = this.dataset.fecha;
-            document.getElementById("comunicadoAplicacion").innerText = this.dataset.aplicacion;
-            document.getElementById("comunicadoPublicadoPor").innerText = this.dataset.publicado;
-            document.getElementById("comunicadoDirigido").innerText = this.dataset.dirigido;
+       
 
             const contenedorDocs = document.getElementById("comunicadoDocumentos");
             contenedorDocs.innerHTML = "<p>Cargando documentos...</p>";
@@ -181,8 +279,12 @@
                 document.getElementById("IdComunicadoEditar").value = data.idComunicado;
                 document.getElementById("TituloComunicadoEditar").value = data.nombre;
                 document.getElementById("DescripcionComunicadoEditar").value = data.informacion;
-                document.getElementById("FechaPublicacionComunicadoEditar").value = data.fecha;
-                document.getElementById("FechaAplicacionComunicadoEditar").value = data.fechaLimite || '';
+                document.getElementById("FechaPublicacionComunicadoEditar").value =
+                    data.fecha.split("T")[0];
+
+                document.getElementById("FechaAplicacionComunicadoEditar").value =
+                    data.fechaLimite ? data.fechaLimite.split("T")[0] : '';
+
                 document.getElementById("DirigidoAComunicadoEditar").value = data.poblacion;
 
                 const contenedor = document.getElementById("documentosActuales");

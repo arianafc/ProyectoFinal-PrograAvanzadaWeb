@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using SIGEP_API.Models;
+using SIGEP_API.Services;
 using System.Data;
 
 namespace SIGEP_API.Controllers
@@ -16,10 +17,12 @@ namespace SIGEP_API.Controllers
 
         private readonly IConfiguration _configuration;
         private readonly IHostEnvironment _environment;
-        public ComunicadosController(IConfiguration configuration, IHostEnvironment environment)
+        private readonly IEmailService _emailService;
+        public ComunicadosController(IConfiguration configuration, IHostEnvironment environment, IEmailService emailService)
         {
             _configuration = configuration;
             _environment = environment;
+            _emailService = emailService;
         }
 
         [HttpGet]
@@ -208,6 +211,55 @@ namespace SIGEP_API.Controllers
 
 
         }
+
+        [HttpPost]
+        [Route("EnviarCorreoMasivo")]
+        public IActionResult EnviarCorreoMasivo(EnviarCorreoRequest request)
+        {
+            try
+            {
+                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+                {
+                    var parametros = new DynamicParameters();
+                    parametros.Add("@Destinatario", request.Poblacion);
+
+                    var correos = context.Query<EmailsCorreoResponse>(
+                        "ObtenerEmailsSP",
+                        parametros,
+                        commandType: CommandType.StoredProcedure
+                    ).ToList();
+
+                    if (!correos.Any())
+                        return BadRequest("No hay correos.");
+
+                    int enviados = 0;
+
+                    foreach (var item in correos)
+                    {
+                        if (string.IsNullOrEmpty(item.Email))
+                            continue;
+
+                        bool enviado = _emailService.EnviarCorreoConAdjuntos(
+                            item.Email,
+                            request.Asunto,
+                            request.Mensaje,
+                            request.Archivos
+                        );
+
+                        if (enviado)
+                            enviados++;
+                    }
+
+                    return Ok(new { Total = correos.Count, Enviados = enviados });
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+
 
 
     }

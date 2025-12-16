@@ -11,5 +11,7 @@
 
         public int IdComunicado { get; set; }
 
+        public int IdUsuario { get; set; }  
+
     }
 }

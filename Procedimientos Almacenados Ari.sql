@@ -921,3 +921,16 @@ BEGIN
     UPDATE Comunicados SET IdEstado = @IdEstado WHERE IdComunicado = @IdComunicado;
 
 END;
+
+
+CREATE OR ALTER PROCEDURE ObtenerEmailsSP
+AS
+BEGIN
+    SELECT U.IdUsuario, U.Nombre, U.Apellido1, U.Apellido2, E.Email, E.IdEmail, R.IdRol, R.Descripcion AS Rol
+    FROM Usuarios U
+    LEFT JOIN Emails E
+    ON U.IdUsuario = E.IdUsuario
+    INNER JOIN Roles R
+    ON R.IdRol = U.IdRol
+    WHERE U.IdEstado = 1;
+END;

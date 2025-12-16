@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson.IO;
 using SIGEP_ProyectoFinal.Models;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Text;
 using static System.Net.WebRequestMethods;
 
 namespace SIGEP_ProyectoFinal.Controllers
@@ -499,6 +501,83 @@ namespace SIGEP_ProyectoFinal.Controllers
                 return Json(new { exito = false, mensaje = "Error al eliminar el documento." });
             }
         }
+
+        [HttpPost]
+        public IActionResult EnviarCorreoComunicado(
+          string Poblacion,
+          string CuerpoCorreo,
+          string Asunto,
+          List<IFormFile> archivos
+      )
+        {
+            try
+            {
+                using (var client = _http.CreateClient())
+                {
+                    client.DefaultRequestHeaders.Authorization =
+                        new AuthenticationHeaderValue(
+                            "Bearer",
+                            HttpContext.Session.GetString("Token")
+                        );
+
+                    var urlApi = _configuration["Valores:UrlApi"] +
+                                 "Comunicados/EnviarCorreoMasivo";
+
+                    var formData = new MultipartFormDataContent();
+
+                    formData.Add(new StringContent(Poblacion), "Poblacion");
+                    formData.Add(new StringContent(Asunto), "Asunto");
+                    formData.Add(new StringContent(CuerpoCorreo), "Mensaje");
+
+                    if (archivos != null)
+                    {
+                        foreach (var archivo in archivos)
+                        {
+                            if (archivo.Length > 0)
+                            {
+                                var streamContent = new StreamContent(archivo.OpenReadStream());
+                                streamContent.Headers.ContentType =
+                                    new MediaTypeHeaderValue(archivo.ContentType);
+
+                                formData.Add(streamContent, "Archivos", archivo.FileName);
+                            }
+                        }
+                    }
+
+                    var respuesta = client.PostAsync(urlApi, formData).Result;
+
+                    if (!respuesta.IsSuccessStatusCode)
+                    {
+                        return Json(new
+                        {
+                            exito = false,
+                            mensaje = "No se pudo enviar el correo."
+                        });
+                    }
+
+                    var result = respuesta.Content
+      .ReadFromJsonAsync<ResultadoEnvioCorreoVM>()
+      .Result;
+
+                    return Json(new
+                    {
+                        exito = true,
+                        mensaje = $"Correos enviados: {result.Enviados} de {result.Total}"
+                    });
+                }
+            }
+            catch
+            {
+                return Json(new
+                {
+                    exito = false,
+                    mensaje = "Error al enviar el correo."
+                });
+            }
+        }
+
+
+
 
 
 
