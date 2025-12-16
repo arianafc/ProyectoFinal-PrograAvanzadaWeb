@@ -956,3 +956,54 @@ BEGIN
         WHERE U.IdEstado = 1;
     END
 END;
+
+
+CREATE OR ALTER PROCEDURE IndicadoresDashboard
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+
+              (SELECT COUNT(*)
+         FROM Usuarios
+         WHERE IdRol = 1
+           AND IdEstado = 1) AS EstudiantesActivos,
+
+        -- Estudiantes con práctica asignada
+        (SELECT COUNT(DISTINCT PE.IdUsuario)
+         FROM PracticaEstudiante PE
+         INNER JOIN Usuarios U ON U.IdUsuario = PE.IdUsuario
+         WHERE U.IdRol = 1
+           AND U.IdEstado = 1
+           AND PE.IdEstado = 5) AS EstudiantesConPractica,
+
+        -- Estudiantes sin práctica asignada
+        (SELECT COUNT(*)
+         FROM Usuarios U
+         WHERE U.IdRol = 1
+           AND U.IdEstado = 1
+           AND NOT EXISTS (
+               SELECT 1
+               FROM PracticaEstudiante PE
+               WHERE PE.IdUsuario = U.IdUsuario
+                 AND PE.IdEstado = 5
+           )) AS EstudiantesSinPractica,
+
+        -- Prácticas asignadas
+        (SELECT COUNT(*)
+         FROM PracticaEstudiante
+         WHERE IdEstado = 5) AS PracticasAsignadas,
+
+        -- Prácticas finalizadas
+        (SELECT COUNT(*)
+         FROM PracticaEstudiante
+         WHERE IdEstado = 8) AS PracticasFinalizadas,
+
+        -- Empresas registradas
+        (SELECT COUNT(*)
+         FROM Empresas
+         WHERE IdEstado = 1) AS EmpresasRegistradas;
+
+END;
+
