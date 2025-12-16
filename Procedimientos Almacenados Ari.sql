@@ -1007,3 +1007,26 @@ BEGIN
 
 END;
 
+
+CREATE OR ALTER PROCEDURE UltimasPracticasAsignadasSP
+AS
+BEGIN
+    SELECT TOP 5
+        CONCAT(U.Nombre, ' ', U.Apellido1, ' ', U.Apellido2) AS Estudiante,
+        E.Nombre AS Especialidad, 
+        EM.NombreEmpresa AS NombreEmpresa, 
+        P.FechaAplicacion,
+        ES.Descripcion AS Estado
+    FROM PracticaEstudiante P
+    INNER JOIN Usuarios U ON U.IdUsuario = P.IdUsuario
+    INNER JOIN UsuarioEspecialidad UE ON UE.IdUsuario = U.IdUsuario
+    INNER JOIN Especialidades E ON UE.IdEspecialidad = E.IdEspecialidad
+    INNER JOIN VacantesPractica V ON V.IdVacantePractica = P.IdVacante
+    INNER JOIN Empresas EM ON V.IdEmpresa = EM.IdEmpresa
+    INNER JOIN Estados ES ON P.IdEstado = ES.IdEstado
+    WHERE P.IdEstado = 5
+    ORDER BY P.FechaAplicacion DESC;
+
+END;
+
+INSERT INTO Modalidades VALUES ('Hibrido')
