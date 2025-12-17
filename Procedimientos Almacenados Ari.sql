@@ -1,4 +1,4 @@
-USE [SIGEP_WEB]
+ï»¿USE [SIGEP_WEB]
 GO
 
 /****** Object:  StoredProcedure [dbo].[LoginSP]    Script Date: 10/26/2025 10:55:17 PM ******/
@@ -68,7 +68,7 @@ BEGIN
     -- Validaciones
     IF @IdSeccion IS NULL
     BEGIN
-        RAISERROR('La sección especificada no existe.', 16, 1);
+        RAISERROR('La secciÃ³n especificada no existe.', 16, 1);
         RETURN;
     END
 
@@ -80,7 +80,7 @@ BEGIN
 
     IF EXISTS (SELECT 1 FROM Usuarios WHERE Cedula = @Cedula)
     BEGIN
-        RAISERROR('Imposible completar el registro. Ya existe una cuenta asociada a esa cédula.', 16, 1);
+        RAISERROR('Imposible completar el registro. Ya existe una cuenta asociada a esa cÃ©dula.', 16, 1);
         RETURN;
     END
 
@@ -108,7 +108,7 @@ BEGIN
         INSERT INTO dbo.Emails (IdUsuario, Email) 
         VALUES (@IdUsuario, @Correo);
 
-        -- Relación usuario-especialidad
+        -- RelaciÃ³n usuario-especialidad
         INSERT INTO dbo.UsuarioEspecialidad (IdEspecialidad, IdUsuario, IdEstado) 
         VALUES (@IdEspecialidad, @IdUsuario, 1);
 
@@ -212,7 +212,7 @@ CREATE OR ALTER   PROCEDURE [dbo].[ActualizarContrasennaSP]
 AS
 BEGIN
     -- Verifica si el usuario exist
-    -- Actualiza la contraseña encriptada
+    -- Actualiza la contraseÃ±a encriptada
     UPDATE Usuarios
     SET Contrasenna = @Contrasenna
     WHERE IdUsuario = @IdUsuario;
@@ -311,10 +311,10 @@ BEGIN
     DECLARE @IdProvincia     INT;
     DECLARE @IdCanton        INT;
     DECLARE @IdDistrito      INT;
-    DECLARE @IdDireccion     INT;  -- para la dirección del usuario
+    DECLARE @IdDireccion     INT;  -- para la direcciÃ³n del usuario
 
     ------------------------------------------------------
-    -- 1. Actualizar datos básicos del usuario
+    -- 1. Actualizar datos bÃ¡sicos del usuario
     ------------------------------------------------------
     UPDATE Usuarios
     SET Nombre         = @Nombre,
@@ -346,7 +346,7 @@ BEGIN
     END;
 
     ------------------------------------------------------
-    -- 3. Teléfono: actualizar si existe, si no insertar
+    -- 3. TelÃ©fono: actualizar si existe, si no insertar
     ------------------------------------------------------
     SELECT @ExisteTelefono = COUNT(*)
     FROM Telefonos
@@ -386,7 +386,7 @@ BEGIN
     END;
 
     ------------------------------------------------------
-    -- 5. Cantón: obtener o crear y luego obtener IdCanton
+    -- 5. CantÃ³n: obtener o crear y luego obtener IdCanton
     ------------------------------------------------------
     SELECT @ExisteCanton = COUNT(*)
     FROM Cantones
@@ -432,7 +432,7 @@ BEGIN
     END;
 
     ------------------------------------------------------
-    -- 7. Dirección: actualizar si existe, si no insertar y asociar al usuario
+    -- 7. DirecciÃ³n: actualizar si existe, si no insertar y asociar al usuario
     ------------------------------------------------------
     -- Asumo que Usuarios tiene columna IdDireccion
     SELECT @IdDireccion = IdDireccion
@@ -441,7 +441,7 @@ BEGIN
 
     IF @IdDireccion IS NOT NULL
     BEGIN
-        -- Actualizar dirección existente
+        -- Actualizar direcciÃ³n existente
         UPDATE Direcciones
         SET DireccionExacta = @DireccionExacta,
             IdDistrito      = @IdDistrito
@@ -449,7 +449,7 @@ BEGIN
     END
     ELSE
     BEGIN
-        -- Crear nueva dirección y asociarla al usuario
+        -- Crear nueva direcciÃ³n y asociarla al usuario
         INSERT INTO Direcciones (DireccionExacta, IdDistrito)
         VALUES (@DireccionExacta, @IdDistrito);
 
@@ -520,7 +520,7 @@ CREATE OR ALTER PROCEDURE AccionesEncargadoSP
     @LugarTrabajo VARCHAR(255),
     @Telefono     VARCHAR(30),
     @Cedula       VARCHAR(30),
-    @Encargado    INT    -- IdEncargado cuando es actualización
+    @Encargado    INT    -- IdEncargado cuando es actualizaciÃ³n
 )
 AS
 BEGIN
@@ -529,7 +529,7 @@ BEGIN
     DECLARE @IdEncargado INT;
 
     /* ============================
-       ACCIÓN 1: INSERTAR ENCARGADO
+       ACCIÃ“N 1: INSERTAR ENCARGADO
        ============================ */
     IF (@Encargado = 0)
    
@@ -557,7 +557,7 @@ BEGIN
             1
         );
 
-        -- Obtenemos el ID del encargado recién insertado
+        -- Obtenemos el ID del encargado reciÃ©n insertado
         SET @IdEncargado = SCOPE_IDENTITY();
 
         -- Relacionamos el estudiante con el encargado
@@ -568,13 +568,13 @@ BEGIN
         INSERT INTO Emails (IdEncargado, Email)
         VALUES (@IdEncargado, @Correo);
 
-        -- Insertamos el teléfono
+        -- Insertamos el telÃ©fono
         INSERT INTO Telefonos (IdEncargado, Telefono)
         VALUES (@IdEncargado, @Telefono);
     END
 
     /* =============================
-       ACCIÓN 2: ACTUALIZAR ENCARGADO
+       ACCIÃ“N 2: ACTUALIZAR ENCARGADO
        ============================= */
  
         IF (@Encargado <> 0)
@@ -614,7 +614,7 @@ BEGIN
                 VALUES (@Encargado, @Correo);
             END
 
-            /* ========= TELÉFONO ========= */
+            /* ========= TELÃ‰FONO ========= */
             IF EXISTS (SELECT 1 FROM Telefonos WHERE IdEncargado = @Encargado)
             BEGIN
                 UPDATE Telefonos
@@ -970,7 +970,7 @@ BEGIN
          WHERE IdRol = 1
            AND IdEstado = 1) AS EstudiantesActivos,
 
-        -- Estudiantes con práctica asignada
+        -- Estudiantes con prÃ¡ctica asignada
         (SELECT COUNT(DISTINCT PE.IdUsuario)
          FROM PracticaEstudiante PE
          INNER JOIN Usuarios U ON U.IdUsuario = PE.IdUsuario
@@ -978,7 +978,7 @@ BEGIN
            AND U.IdEstado = 1
            AND PE.IdEstado = 5) AS EstudiantesConPractica,
 
-        -- Estudiantes sin práctica asignada
+        -- Estudiantes sin prÃ¡ctica asignada
         (SELECT COUNT(*)
          FROM Usuarios U
          WHERE U.IdRol = 1
@@ -990,12 +990,12 @@ BEGIN
                  AND PE.IdEstado = 5
            )) AS EstudiantesSinPractica,
 
-        -- Prácticas asignadas
+        -- PrÃ¡cticas asignadas
         (SELECT COUNT(*)
          FROM PracticaEstudiante
          WHERE IdEstado = 5) AS PracticasAsignadas,
 
-        -- Prácticas finalizadas
+        -- PrÃ¡cticas finalizadas
         (SELECT COUNT(*)
          FROM PracticaEstudiante
          WHERE IdEstado = 8) AS PracticasFinalizadas,
@@ -1030,3 +1030,157 @@ BEGIN
 END;
 
 INSERT INTO Modalidades VALUES ('Hibrido')
+
+USE [SIGEP_WEB]
+GO
+
+/****** Object:  StoredProcedure [dbo].[ObtenerPostulacionesSP]    Script Date: 12/16/2025 9:34:11 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE  OR ALTER  PROCEDURE [dbo].[ObtenerPostulacionesPracticasSP]
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        p.IdPractica,
+        p.IdVacante,
+        u.IdUsuario,
+        u.Cedula,
+        NombreCompleto = CONCAT(u.Nombre,' ',u.Apellido1,' ',u.Apellido2),
+        EstadoDescripcion = e.Descripcion,
+        em.NombreEmpresa as Empresa,
+        em.IdEmpresa,
+        es.Nombre as Especialidad, 
+        t.Telefono as Telefono
+    FROM PracticaEstudiante p
+    INNER JOIN Usuarios u ON u.IdUsuario = p.IdUsuario
+    INNER JOIN Estados  e ON e.IdEstado  = p.IdEstado
+    INNER JOIN VacantesPractica v on v.IdVacantePractica = p.IdVacante
+    INNER JOIN Empresas em on em.IdEmpresa = v.IdEmpresa
+    INNER JOIN UsuarioEspecialidad ue on ue.IdUsuario = u.IdUsuario
+    INNER JOIN Especialidades es on es.IdEspecialidad = ue.IdEspecialidad
+    LEFT JOIN Telefonos T on T.IdUsuario = U.IdUsuario
+   WHERE YEAR(p.FechaAplicacion) = YEAR(GETDATE())
+    ORDER BY p.IdPractica DESC;
+END
+GO
+
+
+
+CREATE  OR ALTER  PROCEDURE [dbo].[ObtenerHistoricoSP]
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        p.IdPractica,
+        p.IdVacante,
+        u.IdUsuario,
+        u.Cedula,
+        NombreCompleto = CONCAT(u.Nombre,' ',u.Apellido1,' ',u.Apellido2),
+        EstadoDescripcion = e.Descripcion,
+        em.NombreEmpresa as Empresa,
+        em.IdEmpresa,
+        es.Nombre as Especialidad, 
+        t.Telefono as Telefono
+    FROM PracticaEstudiante p
+    INNER JOIN Usuarios u ON u.IdUsuario = p.IdUsuario
+    INNER JOIN Estados  e ON e.IdEstado  = p.IdEstado
+    INNER JOIN VacantesPractica v on v.IdVacantePractica = p.IdVacante
+    INNER JOIN Empresas em on em.IdEmpresa = v.IdEmpresa
+    INNER JOIN UsuarioEspecialidad ue on ue.IdUsuario = u.IdUsuario
+    INNER JOIN Especialidades es on es.IdEspecialidad = ue.IdEspecialidad
+    LEFT JOIN Telefonos T on T.IdUsuario = U.IdUsuario
+   WHERE YEAR(p.FechaAplicacion) <> YEAR(GETDATE())
+    ORDER BY p.IdPractica DESC;
+END
+GO
+
+
+CREATE OR ALTER PROCEDURE IniciarPracticasSP
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE 
+        @IdAsignada INT,
+        @IdEnCurso INT,
+        @IdRetirada INT;
+
+    SELECT @IdAsignada = IdEstado FROM Estados WHERE Descripcion = 'Asignada';
+    SELECT @IdEnCurso  = IdEstado FROM Estados WHERE Descripcion = 'En Curso';
+    SELECT @IdRetirada = IdEstado FROM Estados WHERE Descripcion = 'Retirada';
+
+    BEGIN TRY
+        BEGIN TRAN;
+
+        -- Asignada + estudiante activo â†’ En Curso
+        UPDATE p
+        SET IdEstado = @IdEnCurso
+        FROM PracticaEstudiante p
+        INNER JOIN Usuarios u ON u.IdUsuario = p.IdUsuario
+        WHERE p.IdEstado = @IdAsignada
+          AND u.EstadoAcademico = 1;
+
+        -- El resto â†’ Retirada
+        UPDATE p
+        SET IdEstado = @IdRetirada
+        FROM PracticaEstudiante p
+        WHERE p.IdEstado <> @IdEnCurso;
+
+        COMMIT TRAN;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRAN;
+        THROW;
+    END CATCH
+END;
+GO
+
+CREATE or alter PROCEDURE FinalizarPracticasSP
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE 
+        @IdAprobada   INT,
+        @IdRezagada   INT,
+        @IdFinalizada INT;
+
+    SELECT @IdAprobada   = IdEstado FROM Estados WHERE Descripcion = 'Aprobada';
+    SELECT @IdRezagada   = IdEstado FROM Estados WHERE Descripcion = 'Rezagada';
+    SELECT @IdFinalizada = IdEstado FROM Estados WHERE Descripcion = 'Finalizada';
+
+    BEGIN TRY
+        BEGIN TRAN;
+
+        -- Aprobadas â†’ Finalizada
+        UPDATE PracticaEstudiante
+        SET IdEstado = @IdFinalizada
+        WHERE IdEstado = @IdAprobada;
+
+        -- Usuarios con prÃ¡ctica finalizada â†’ Inactivo + FechaEgreso
+        UPDATE u
+        SET u.IdEstado = 2,
+            u.FechaEgreso = GETDATE()
+        FROM Usuarios u
+        WHERE EXISTS (
+            SELECT 1
+            FROM PracticaEstudiante p
+            WHERE p.IdUsuario = u.IdUsuario
+              AND p.IdEstado = @IdFinalizada
+        );
+
+        COMMIT TRAN;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRAN;
+        THROW;
+    END CATCH
+END;
+GO

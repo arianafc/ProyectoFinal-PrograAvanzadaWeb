@@ -25,6 +25,7 @@ namespace SIGEP_API.Controllers
         }
 
         [HttpGet("Especialidades")]
+        
         public IActionResult Especialidades()
         {
             using var cn = Conn();

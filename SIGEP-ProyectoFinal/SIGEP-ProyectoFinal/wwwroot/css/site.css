@@ -317,8 +317,8 @@
 .badge-en-progreso {
     background-color: #F5B97A; 
     color: #2D594D; 
-    font-size: 14px;
-    font-weight: bold;
+    font-size: 14px !important;
+    font-weight: bold !important;
 }
 
 /* Archivado (10) */
@@ -400,10 +400,11 @@
     display: inline-block;
     padding: 0.35em 0.65em;
     border-radius: 0.25rem;
-    font-size: 14px;
-    font-weight: bold;
+    font-size: 14px !important;
+    font-weight: bold !important;
     text-align: center;
     min-width: 90px; 
+    border-radius: 3px !important;
 }
 
 .vacantes-egresado,
