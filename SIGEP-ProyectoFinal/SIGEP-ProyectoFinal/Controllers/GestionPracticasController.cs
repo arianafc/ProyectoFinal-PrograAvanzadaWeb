@@ -9,7 +9,7 @@ using static System.Net.WebRequestMethods;
 namespace SIGEP_ProyectoFinal.Controllers
 {
     [Seguridad]
-    [FiltroUsuarioAdmin]
+
     public class GestionPracticasController : Controller
     {
         private readonly IHttpClientFactory _http;
@@ -26,7 +26,7 @@ namespace SIGEP_ProyectoFinal.Controllers
             return _configuration["Valores:UrlAPI"] + ruta;
         }
 
-
+        [FiltroUsuarioAdmin]
         [HttpGet]
         public IActionResult GestionPracticas()
         {
@@ -50,7 +50,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                 PropertyNameCaseInsensitive = true
             };
 
-         
+
             try
             {
                 var postulaciones = client.GetAsync(Api("GestionPracticas/ObtenerPostulaciones")).Result;
@@ -123,7 +123,95 @@ namespace SIGEP_ProyectoFinal.Controllers
             return Json(new { success = false, message = "Acción no válida." });
         }
 
+        [HttpGet]
+        public JsonResult ObtenerVacantesAsignar(int IdUsuario)
+        {
+            try
+            {
+                var client = _http.CreateClient();
+                var token = HttpContext.Session.GetString("Token");
 
+                if (!string.IsNullOrEmpty(token))
+                {
+                    client.DefaultRequestHeaders.Authorization =
+                        new AuthenticationHeaderValue("Bearer", token);
+                }
+
+                var response = client.GetAsync(
+                    Api("GestionPracticas/ObtenerVacantesAsignar?IdUsuario=" + IdUsuario)
+                ).Result;
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var vacantes = response.Content
+                        .ReadFromJsonAsync<List<VacanteModel>>()
+                        .Result;
+
+                    return Json(vacantes ?? new List<VacanteModel>());
+                }
+
+                return Json(new List<VacanteModel>());
+            }
+            catch
+            {
+                return Json(new List<VacanteModel>());
+            }
+        }
+
+   
+
+        [FiltroEstudiante]
+        [HttpGet]
+        public IActionResult PostulacionesEstudiantes()
+        {
+            ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
+            ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
+            ViewBag.Usuario = HttpContext.Session.GetInt32("IdUsuario");
+
+            var vm = new VacantesViewModel();
+
+            try
+            {
+                var client = _http.CreateClient();
+                var token = HttpContext.Session.GetString("Token");
+
+                if (string.IsNullOrEmpty(token))
+                {
+                    TempData["SwalError"] = "Sesión expirada. Inicie sesión nuevamente.";
+                    return RedirectToAction("Login", "Cuenta");
+                }
+
+                client.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", token);
+
+                var response = client
+                    .GetAsync(Api("GestionPracticas/ListarVacantesPorUsuario"))
+                    .Result;
+
+                if (response.IsSuccessStatusCode)
+                {
+                    vm.Postulaciones = response.Content
+                        .ReadFromJsonAsync<List<PostulacionDto>>()
+                        .Result ?? new List<PostulacionDto>();
+
+                    return View(vm);
+                }
+
+   
+            }
+            catch (HttpRequestException)
+            {
+                TempData["SwalError"] = "No se pudo conectar con el servidor.";
+            }
+            catch (Exception ex)
+            {
+              
+                TempData["SwalError"] = "Ocurrió un error inesperado.";
+            }
+
+            return View(vm);
+        }
 
     }
+
 }

@@ -144,11 +144,11 @@
                             </div>
                             <div class="col-md-6 form-group mb-3">
                                 <label>Fecha Límite de Aplicación <span class="text-danger">*</span></label>
-                                <input type="date" name="FechaMaxAplicacion" class="form-control" required />
+                                <input type="date" name="FechaMaxAplicacion" class="form-control" min="@DateTime.Now.ToString("yyyy-MM-dd")" required />
                             </div>
                             <div class="col-md-6 form-group mb-3">
                                 <label>Fecha de Cierre <span class="text-danger">*</span></label>
-                                <input type="date" name="FechaCierre" class="form-control" required />
+                                <input type="date" name="FechaCierre" class="form-control" min="@DateTime.Now.ToString("yyyy-MM-dd")" required />
                             </div>
                             <div class="col-12 form-group mb-3">
                                 <label>Requisitos <span class="text-danger">*</span></label>
@@ -231,11 +231,11 @@
                             </div>
                             <div class="col-md-6 form-group mb-3">
                                 <label>Fecha límite de aplicación <span class="text-danger">*</span></label>
-                                <input type="date" id="edit-FechaMaxAplicacion" name="FechaMaxAplicacion" class="form-control" required />
+                                <input type="date" id="edit-FechaMaxAplicacion" name="FechaMaxAplicacion" class="form-control" min="@DateTime.Now.ToString("yyyy-MM-dd")" required />
                             </div>
                             <div class="col-md-6 form-group mb-3">
                                 <label>Fecha de cierre <span class="text-danger">*</span></label>
-                                <input type="date" id="edit-FechaCierre" name="FechaCierre" class="form-control" required />
+                                <input type="date" id="edit-FechaCierre" name="FechaCierre" class="form-control" min="@DateTime.Now.ToString("yyyy-MM-dd")" required />
                             </div>
                             <div class="col-12 form-group mb-3">
                                 <label>Requisitos <span class="text-danger">*</span></label>

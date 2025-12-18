@@ -12,5 +12,7 @@ namespace SIGEP_ProyectoFinal.Models
         public IEnumerable<SelectListItem> Empresas { get; set; } = new List<SelectListItem>();
 
         public List<PostulacionDto> Postulaciones { get; set; } = new();
+
+        public List<VacanteModel> VacantesParaAsignar { get; set; } = new();
     }
 }

@@ -23,7 +23,7 @@ namespace SIGEP_ProyectoFinal.Controllers
 
         private string Api(string ruta)
         {
-            // Unificar (en tu código estaba mezclado UrlApi vs UrlAPI)
+            
             return _configuration["Valores:UrlAPI"] + ruta;
         }
 
@@ -213,7 +213,18 @@ namespace SIGEP_ProyectoFinal.Controllers
             using (var client = CreateApiClient())
             {
                 var url = Api($"Practicas/Listar?idEstado={idEstado}&idEspecialidad={idEspecialidad}&idModalidad={idModalidad}");
+
+                var token = HttpContext.Session.GetString("Token");
+
+                if (!string.IsNullOrEmpty(token))
+                {
+                    client.DefaultRequestHeaders.Authorization =
+                        new AuthenticationHeaderValue("Bearer", token);
+                }
+
                 var resp = await client.GetAsync(url);
+
+
 
                 if (!resp.IsSuccessStatusCode)
                     return Json(new { data = new List<object>() });
@@ -244,6 +255,7 @@ namespace SIGEP_ProyectoFinal.Controllers
         {
             using (var client = CreateApiClient())
             {
+
                 var url = Api("Practicas/Crear");
                 var content = new StringContent(json.GetRawText(), Encoding.UTF8, "application/json");
 
@@ -390,12 +402,49 @@ namespace SIGEP_ProyectoFinal.Controllers
             ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
             ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
             ViewBag.Usuario = HttpContext.Session.GetInt32("IdUsuario");
-
+            var rol = HttpContext.Session.GetInt32("Rol");
+            var usuario = HttpContext.Session.GetInt32("IdUsuario");
             try
             {
                 using (var client = CreateApiClient())
                 {
-                  
+                    var token = HttpContext.Session.GetString("Token");
+
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        client.DefaultRequestHeaders.Authorization =
+                            new AuthenticationHeaderValue("Bearer", token);
+                    }
+
+                    if (rol == 1)
+                    {
+                        var vacante = _configuration["Valores:UrlApi"] + "GestionPracticas/ObtenerMiPractica";
+                        var respuesta3 = client.GetAsync(vacante).Result;
+
+                        if (respuesta3.IsSuccessStatusCode)
+                        {
+                            var datosApi3 = respuesta3.Content
+                                .ReadFromJsonAsync<PostulacionDto>()
+                                .Result;
+
+                            if (datosApi3 != null && datosApi3.IdVacante != 0)
+                            {
+                                idVacante = datosApi3.IdVacante;
+                                idUsuario = (int)usuario;
+                                ViewBag.MiPractica = datosApi3; 
+                            }
+                            else
+                            {
+                                ViewBag.MiPractica = null;
+                            }
+                        }
+                        else
+                        {
+                            ViewBag.MiPractica = null;
+                        }
+                    }
+
+
                     var urlPractica = Api($"Practicas/ObtenerVisualizacionPractica?idVacante={idVacante}&idUsuario={idUsuario}");
                     var respuestaPractica = await client.GetAsync(urlPractica);
 
@@ -455,7 +504,6 @@ namespace SIGEP_ProyectoFinal.Controllers
             }
         }
 
-
         [HttpGet]
         public IActionResult ObtenerPostulaciones(int idVacante)
         {
@@ -471,8 +519,6 @@ namespace SIGEP_ProyectoFinal.Controllers
                 return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
             }
         }
-
-
 
         [HttpPost]
         public IActionResult AgregarComentario(int idVacante, int idUsuario, string comentario)
@@ -491,9 +537,19 @@ namespace SIGEP_ProyectoFinal.Controllers
                     return Json(new { success = false, message = "El comentario no puede estar vacío" });
                 }
 
+          
+
                 using (var context = _http.CreateClient())
                 {
                     var urlApi = _configuration["Valores:UrlAPI"] + "Practicas/AgregarComentario";
+                    var token = HttpContext.Session.GetString("Token");
+
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        context.DefaultRequestHeaders.Authorization =
+                            new AuthenticationHeaderValue("Bearer", token);
+                    }
+
 
                     var request = new
                     {
@@ -542,6 +598,14 @@ namespace SIGEP_ProyectoFinal.Controllers
                         Comentario = comentario,
                         IdUsuarioSesion = idUsuarioSesion.Value
                     };
+
+                    var token = HttpContext.Session.GetString("Token");
+
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        context.DefaultRequestHeaders.Authorization =
+                            new AuthenticationHeaderValue("Bearer", token);
+                    }
 
                     var respuesta = context.PostAsJsonAsync(urlApi, request).Result;
 

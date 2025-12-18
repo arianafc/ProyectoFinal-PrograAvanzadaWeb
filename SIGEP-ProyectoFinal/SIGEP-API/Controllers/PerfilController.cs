@@ -6,6 +6,7 @@ using Microsoft.Data.SqlClient;
 using SIGEP_API.Models;
 using System.Data;
 using System.Reflection;
+using System.Security.Claims;
 
 namespace SIGEP_API.Controllers
 {
@@ -25,10 +26,11 @@ namespace SIGEP_API.Controllers
         [HttpGet]
         [Route("ObtenerPerfil")]
 
-        public IActionResult ObtenerPerfil(int IdUsuario)
+        public IActionResult ObtenerPerfil()
         {
             using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
             {
+                var IdUsuario = HttpContext.User.FindFirst("id")?.Value;
                 var parametros = new DynamicParameters();
                 parametros.Add("@IdUsuario", IdUsuario);
 
@@ -41,10 +43,11 @@ namespace SIGEP_API.Controllers
         [HttpGet]
         [Route("ObtenerEncargados")]
 
-        public IActionResult ObtenerEncargados(int IdUsuario)
+        public IActionResult ObtenerEncargados()
         {
             using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
             {
+                var IdUsuario = HttpContext.User.FindFirst("id")?.Value;
                 var parametros = new DynamicParameters();
                 parametros.Add("@IdUsuario", IdUsuario);
                 var resultado = context.QueryFirstOrDefault<EncargadoResponseModel>("ObtenerEncargadosSP", parametros);
@@ -358,11 +361,12 @@ namespace SIGEP_API.Controllers
 
         [HttpGet]
         [Route("ObtenerDocumentos")]
-        public IActionResult ObtenerDocumentos(int IdUsuario)
+        public IActionResult ObtenerDocumentos()
 
         {
             using (var connection = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
             {
+                var IdUsuario = HttpContext.User.FindFirst("id")?.Value;
                 var parametros = new DynamicParameters();
                 parametros.Add("@IdUsuario", IdUsuario);
 

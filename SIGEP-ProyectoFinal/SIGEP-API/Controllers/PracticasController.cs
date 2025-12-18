@@ -149,6 +149,21 @@ namespace SIGEP_API.Controllers
                 _logger.LogInformation($"[API] FechaMax Year: {fechaMax.Year}");
                 _logger.LogInformation($"[API] FechaCierre Year: {fechaCierre.Year}");
 
+               
+                var hoy = DateTime.Today;
+
+                if (fechaMax.Date < hoy)
+                {
+                    _logger.LogError($"[API] FechaMaxAplicacion es anterior a hoy: {fechaMax:yyyy-MM-dd}");
+                    return BadRequest("La fecha límite de aplicación no puede ser anterior a la fecha actual.");
+                }
+
+                if (fechaCierre.Date < hoy)
+                {
+                    _logger.LogError($"[API] FechaCierre es anterior a hoy: {fechaCierre:yyyy-MM-dd}");
+                    return BadRequest("La fecha de cierre no puede ser anterior a la fecha actual.");
+                }
+
                 if (fechaMax.Year < 1753 || fechaCierre.Year < 1753 || fechaMax.Year > 9999 || fechaCierre.Year > 9999)
                 {
                     _logger.LogError($"[API] Fechas fuera de rango SQL: FechaMax={fechaMax}, FechaCierre={fechaCierre}");
@@ -226,6 +241,21 @@ namespace SIGEP_API.Controllers
                 _logger.LogInformation($"[API] FechaCierre DateTime: {fechaCierre:yyyy-MM-dd}");
                 _logger.LogInformation($"[API] FechaMax Year: {fechaMax.Year}");
                 _logger.LogInformation($"[API] FechaCierre Year: {fechaCierre.Year}");
+
+               
+                var hoy = DateTime.Today;
+
+                if (fechaMax.Date < hoy)
+                {
+                    _logger.LogError($"[API] FechaMaxAplicacion es anterior a hoy: {fechaMax:yyyy-MM-dd}");
+                    return BadRequest("La fecha límite de aplicación no puede ser anterior a la fecha actual.");
+                }
+
+                if (fechaCierre.Date < hoy)
+                {
+                    _logger.LogError($"[API] FechaCierre es anterior a hoy: {fechaCierre:yyyy-MM-dd}");
+                    return BadRequest("La fecha de cierre no puede ser anterior a la fecha actual.");
+                }
 
                 if (fechaMax.Year < 1753 || fechaCierre.Year < 1753 || fechaMax.Year > 9999 || fechaCierre.Year > 9999)
                 {
@@ -323,7 +353,7 @@ namespace SIGEP_API.Controllers
 
         [HttpPost]
         [Route("AsignarEstudiante")]
-        public IActionResult AsignarEstudiante([FromForm] int idVacante, [FromForm] int idUsuario)  // ✅ AGREGAR [FromForm]
+        public IActionResult AsignarEstudiante([FromForm] int idVacante, [FromForm] int idUsuario)  
         {
             try
             {
@@ -364,7 +394,7 @@ namespace SIGEP_API.Controllers
 
         [HttpPost]
         [Route("RetirarEstudiante")]
-        public IActionResult RetirarEstudiante([FromForm] int idVacante, [FromForm] int idUsuario, [FromForm] string comentario)  // ✅ AGREGAR [FromForm]
+        public IActionResult RetirarEstudiante([FromForm] int idVacante, [FromForm] int idUsuario, [FromForm] string comentario)  
         {
             try
             {
@@ -374,7 +404,7 @@ namespace SIGEP_API.Controllers
                     parametros.Add("@IdVacante", idVacante);
                     parametros.Add("@IdUsuario", idUsuario);
                     parametros.Add("@Comentario", comentario);
-                    parametros.Add("@Resultado", dbType: DbType.Int32, direction: ParameterDirection.Output);  // ✅ Output
+                    parametros.Add("@Resultado", dbType: DbType.Int32, direction: ParameterDirection.Output);  
 
                     context.Execute("RetirarEstudianteSP", parametros, commandType: CommandType.StoredProcedure);
 
@@ -392,7 +422,7 @@ namespace SIGEP_API.Controllers
 
         [HttpPost]
         [Route("DesasignarPractica")]
-        public IActionResult DesasignarPractica([FromForm] int idPractica, [FromForm] string comentario)  // ✅ AGREGAR [FromForm]
+        public IActionResult DesasignarPractica([FromForm] int idPractica, [FromForm] string comentario)  
         {
             try
             {
@@ -401,7 +431,7 @@ namespace SIGEP_API.Controllers
                     var parametros = new DynamicParameters();
                     parametros.Add("@IdPractica", idPractica);
                     parametros.Add("@Comentario", comentario);
-                    parametros.Add("@Resultado", dbType: DbType.Int32, direction: ParameterDirection.Output);  // ✅ CAMBIAR A Output
+                    parametros.Add("@Resultado", dbType: DbType.Int32, direction: ParameterDirection.Output);  
 
                     context.Execute("DesasignarPracticaSP", parametros, commandType: CommandType.StoredProcedure);
 
@@ -416,8 +446,6 @@ namespace SIGEP_API.Controllers
                 return StatusCode(500, "Error interno del servidor");
             }
         }
-
-
 
 
         [HttpGet]

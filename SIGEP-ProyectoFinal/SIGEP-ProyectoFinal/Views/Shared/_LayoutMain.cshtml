@@ -32,6 +32,8 @@
     @{
         var rol = ViewBag.Rol;
         var nombre = ViewBag.Nombre as string;
+        var idUsuario = ViewBag.Usuario;
+        var vacante = ViewBag.MiPractica;
     }
 
     <input type="hidden" class="TempError" value="@TempData["SwalError"]" />
@@ -135,13 +137,17 @@
                         @if (rol == 1)
                         {
                             <li class="sidebar-item">
-                                <a asp-action="PostulacionesEstudiantes" asp-controller="Practicas" class="sidebar-link">
+                                <a asp-action="PostulacionesEstudiantes" asp-controller="GestionPracticas" class="sidebar-link">
                                     <i class="fas fa-briefcase"></i>
                                     <span class="hide-menu">Mis Postulaciones</span>
                                 </a>
                             </li>
                             <li class="sidebar-item">
-                                <a asp-action="VisualizacionPostulacion" asp-controller="Practicas" class="sidebar-link">
+                                <a asp-action="VisualizacionPostulacion"
+                                   asp-controller="Practicas"
+                                 
+                                   class="sidebar-link">
+
                                     <i class="fas fa-briefcase"></i>
                                     <span class="hide-menu">Mi Práctica</span>
                                 </a>

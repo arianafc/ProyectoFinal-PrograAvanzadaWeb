@@ -18,6 +18,9 @@
         public string? Especialidad { get; set; }
 
         public string? NotaFinal { get; set; }
+
+        public string? NombreVacante { get; set; }
+        public DateTime? FechaAplicacion { get; set; }
     }
 }
 
