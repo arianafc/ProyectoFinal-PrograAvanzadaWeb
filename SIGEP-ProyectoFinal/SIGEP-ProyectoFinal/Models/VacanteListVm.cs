@@ -7,7 +7,7 @@
         public int IdEmpresa { get; set; }
         public string EmpresaNombre { get; set; } = "";
         public string EspecialidadNombre { get; set; } = "";
-        public string Requerimientos { get; set; } = "";
+        public string Requisitos { get; set; } = "";
         public int NumCupos { get; set; }
         public int NumPostulados { get; set; }
         public string EstadoNombre { get; set; } = "";

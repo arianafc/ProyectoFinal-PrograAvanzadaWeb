@@ -117,6 +117,43 @@ namespace SIGEP_API.Controllers
             try
             {
                 _logger.LogInformation($"Crear Vacante - Nombre: {dto.Nombre}, IdEmpresa: {dto.IdEmpresa}");
+                _logger.LogInformation($"[API] FechaMaxAplicacion STRING: '{dto.FechaMaxAplicacion}'");
+                _logger.LogInformation($"[API] FechaCierre STRING: '{dto.FechaCierre}'");
+
+                DateTime fechaMax, fechaCierre;
+
+                try
+                {
+                    fechaMax = DateTime.ParseExact(dto.FechaMaxAplicacion, "yyyy-MM-dd",
+                        System.Globalization.CultureInfo.InvariantCulture);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"[API] Error parseando FechaMaxAplicacion: '{dto.FechaMaxAplicacion}' - {ex.Message}");
+                    return BadRequest($"Fecha de aplicación inválida: {dto.FechaMaxAplicacion}");
+                }
+
+                try
+                {
+                    fechaCierre = DateTime.ParseExact(dto.FechaCierre, "yyyy-MM-dd",
+                        System.Globalization.CultureInfo.InvariantCulture);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"[API] Error parseando FechaCierre: '{dto.FechaCierre}' - {ex.Message}");
+                    return BadRequest($"Fecha de cierre inválida: {dto.FechaCierre}");
+                }
+
+                _logger.LogInformation($"[API] FechaMax DateTime: {fechaMax:yyyy-MM-dd}");
+                _logger.LogInformation($"[API] FechaCierre DateTime: {fechaCierre:yyyy-MM-dd}");
+                _logger.LogInformation($"[API] FechaMax Year: {fechaMax.Year}");
+                _logger.LogInformation($"[API] FechaCierre Year: {fechaCierre.Year}");
+
+                if (fechaMax.Year < 1753 || fechaCierre.Year < 1753 || fechaMax.Year > 9999 || fechaCierre.Year > 9999)
+                {
+                    _logger.LogError($"[API] Fechas fuera de rango SQL: FechaMax={fechaMax}, FechaCierre={fechaCierre}");
+                    return BadRequest("Las fechas deben estar entre los años 1753 y 9999");
+                }
 
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
@@ -126,13 +163,15 @@ namespace SIGEP_API.Controllers
                     parametros.Add("@IdEspecialidad", dto.IdEspecialidad);
                     parametros.Add("@NumCupos", dto.NumCupos);
                     parametros.Add("@IdModalidad", dto.IdModalidad);
-                    parametros.Add("@Requerimientos", dto.Requerimientos);
+                    parametros.Add("@Requisitos", dto.Requisitos);
                     parametros.Add("@Descripcion", dto.Descripcion);
-                    parametros.Add("@FechaMaxAplicacion", dto.FechaMaxAplicacion);
-                    parametros.Add("@FechaCierre", dto.FechaCierre);
+                    parametros.Add("@FechaMaxAplicacion", fechaMax);
+                    parametros.Add("@FechaCierre", fechaCierre);
                     parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
 
-                    context.Execute("CrearVacanteSP", parametros);
+                    _logger.LogInformation("[API] Ejecutando CrearVacanteSP...");
+
+                    context.Execute("CrearVacanteSP", parametros, commandType: CommandType.StoredProcedure);
 
                     var resultado = parametros.Get<int>("@Resultado");
 
@@ -144,7 +183,8 @@ namespace SIGEP_API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error en Crear Vacante - Nombre: {dto.Nombre}");
-                return StatusCode(500, "Error interno del servidor");
+                _logger.LogError($"[API] StackTrace: {ex.StackTrace}");
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
             }
         }
 
@@ -154,7 +194,44 @@ namespace SIGEP_API.Controllers
         {
             try
             {
-                _logger.LogInformation($"Editar Vacante - IdVacante: {dto.IdVacante}, Nombre: {dto.Nombre}");
+                _logger.LogInformation($"[API] Editar - IdVacante: {dto.IdVacante}, Nombre: {dto.Nombre}");
+                _logger.LogInformation($"[API] FechaMaxAplicacion STRING: '{dto.FechaMaxAplicacion}'");
+                _logger.LogInformation($"[API] FechaCierre STRING: '{dto.FechaCierre}'");
+
+                DateTime fechaMax, fechaCierre;
+
+                try
+                {
+                    fechaMax = DateTime.ParseExact(dto.FechaMaxAplicacion, "yyyy-MM-dd",
+                        System.Globalization.CultureInfo.InvariantCulture);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"[API] Error parseando FechaMaxAplicacion: '{dto.FechaMaxAplicacion}' - {ex.Message}");
+                    return BadRequest($"Fecha de aplicación inválida: {dto.FechaMaxAplicacion}");
+                }
+
+                try
+                {
+                    fechaCierre = DateTime.ParseExact(dto.FechaCierre, "yyyy-MM-dd",
+                        System.Globalization.CultureInfo.InvariantCulture);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"[API] Error parseando FechaCierre: '{dto.FechaCierre}' - {ex.Message}");
+                    return BadRequest($"Fecha de cierre inválida: {dto.FechaCierre}");
+                }
+
+                _logger.LogInformation($"[API] FechaMax DateTime: {fechaMax:yyyy-MM-dd}");
+                _logger.LogInformation($"[API] FechaCierre DateTime: {fechaCierre:yyyy-MM-dd}");
+                _logger.LogInformation($"[API] FechaMax Year: {fechaMax.Year}");
+                _logger.LogInformation($"[API] FechaCierre Year: {fechaCierre.Year}");
+
+                if (fechaMax.Year < 1753 || fechaCierre.Year < 1753 || fechaMax.Year > 9999 || fechaCierre.Year > 9999)
+                {
+                    _logger.LogError($"[API] Fechas fuera de rango SQL: FechaMax={fechaMax}, FechaCierre={fechaCierre}");
+                    return BadRequest("Las fechas deben estar entre los años 1753 y 9999");
+                }
 
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
@@ -165,25 +242,28 @@ namespace SIGEP_API.Controllers
                     parametros.Add("@IdEspecialidad", dto.IdEspecialidad);
                     parametros.Add("@NumCupos", dto.NumCupos);
                     parametros.Add("@IdModalidad", dto.IdModalidad);
-                    parametros.Add("@Requerimientos", dto.Requerimientos);
+                    parametros.Add("@Requisitos", dto.Requisitos);
                     parametros.Add("@Descripcion", dto.Descripcion);
-                    parametros.Add("@FechaMaxAplicacion", dto.FechaMaxAplicacion);
-                    parametros.Add("@FechaCierre", dto.FechaCierre);
+                    parametros.Add("@FechaMaxAplicacion", fechaMax);
+                    parametros.Add("@FechaCierre", fechaCierre);
                     parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
 
-                    context.Execute("EditarVacanteSP", parametros);
+                    _logger.LogInformation("[API] Editar - Ejecutando SP EditarVacanteSP");
+
+                    context.Execute("EditarVacanteSP", parametros, commandType: CommandType.StoredProcedure);
 
                     var resultado = parametros.Get<int>("@Resultado");
 
-                    _logger.LogInformation($"Editar Vacante - Resultado: {resultado}");
+                    _logger.LogInformation($"[API] Editar - Resultado: {resultado}");
 
                     return Ok(resultado);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error en Editar Vacante - IdVacante: {dto.IdVacante}");
-                return StatusCode(500, "Error interno del servidor");
+                _logger.LogError(ex, $"[API] Error en Editar Vacante - Detalle: {ex.Message}");
+                _logger.LogError($"[API] StackTrace: {ex.StackTrace}");
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
             }
         }
 
@@ -218,29 +298,6 @@ namespace SIGEP_API.Controllers
         }
 
         [HttpGet]
-        [Route("Postulaciones")]
-        public IActionResult Postulaciones(int idVacante)
-        {
-            try
-            {
-                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
-                {
-                    var parametros = new DynamicParameters();
-                    parametros.Add("@IdVacante", idVacante);
-
-                    var resultado = context.Query<PostulacionDto>("ObtenerPostulacionesSP", parametros);
-
-                    return Ok(resultado);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error en Postulaciones - IdVacante: {idVacante}");
-                return StatusCode(500, "Error interno del servidor");
-            }
-        }
-
-        [HttpGet]
         [Route("EstudiantesAsignar")]
         public IActionResult EstudiantesAsignar(int idVacante, int idUsuarioSesion)
         {
@@ -266,34 +323,48 @@ namespace SIGEP_API.Controllers
 
         [HttpPost]
         [Route("AsignarEstudiante")]
-        public IActionResult AsignarEstudiante(int idVacante, int idUsuario)
+        public IActionResult AsignarEstudiante([FromForm] int idVacante, [FromForm] int idUsuario)  // ✅ AGREGAR [FromForm]
         {
             try
             {
+                _logger.LogInformation($"[API] AsignarEstudiante - INICIO - IdVacante: {idVacante}, IdUsuario: {idUsuario}");
+
                 using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
-                    var parametros = new DynamicParameters();
-                    parametros.Add("@IdVacante", idVacante);
-                    parametros.Add("@IdUsuario", idUsuario);
-                    parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
+                    context.Open();
 
-                    context.Execute("AsignarEstudianteSP", parametros);
+                    var parametros = new DynamicParameters();
+                    parametros.Add("@IdVacante", idVacante, DbType.Int32);
+                    parametros.Add("@IdUsuario", idUsuario, DbType.Int32);
+                    parametros.Add("@Resultado", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+                    _logger.LogInformation($"[API] Ejecutando AsignarEstudianteSP...");
+
+                    context.Execute(
+                        "AsignarEstudianteSP",
+                        parametros,
+                        commandType: CommandType.StoredProcedure
+                    );
 
                     var resultado = parametros.Get<int>("@Resultado");
+
+                    _logger.LogInformation($"[API] AsignarEstudiante - Resultado: {resultado}");
 
                     return Ok(resultado);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error en AsignarEstudiante - IdVacante: {idVacante}, IdUsuario: {idUsuario}");
+                _logger.LogError(ex, $"[API] ERROR en AsignarEstudiante - IdVacante: {idVacante}, IdUsuario: {idUsuario}");
+                _logger.LogError($"[API] Exception: {ex.Message}");
+                _logger.LogError($"[API] StackTrace: {ex.StackTrace}");
                 return StatusCode(500, "Error interno del servidor");
             }
         }
 
         [HttpPost]
         [Route("RetirarEstudiante")]
-        public IActionResult RetirarEstudiante(int idVacante, int idUsuario, string comentario)
+        public IActionResult RetirarEstudiante([FromForm] int idVacante, [FromForm] int idUsuario, [FromForm] string comentario)  // ✅ AGREGAR [FromForm]
         {
             try
             {
@@ -303,9 +374,9 @@ namespace SIGEP_API.Controllers
                     parametros.Add("@IdVacante", idVacante);
                     parametros.Add("@IdUsuario", idUsuario);
                     parametros.Add("@Comentario", comentario);
-                    parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
+                    parametros.Add("@Resultado", dbType: DbType.Int32, direction: ParameterDirection.Output);  // ✅ Output
 
-                    context.Execute("RetirarEstudianteSP", parametros);
+                    context.Execute("RetirarEstudianteSP", parametros, commandType: CommandType.StoredProcedure);
 
                     var resultado = parametros.Get<int>("@Resultado");
 
@@ -321,7 +392,7 @@ namespace SIGEP_API.Controllers
 
         [HttpPost]
         [Route("DesasignarPractica")]
-        public IActionResult DesasignarPractica(int idPractica, string comentario)
+        public IActionResult DesasignarPractica([FromForm] int idPractica, [FromForm] string comentario)  // ✅ AGREGAR [FromForm]
         {
             try
             {
@@ -330,9 +401,9 @@ namespace SIGEP_API.Controllers
                     var parametros = new DynamicParameters();
                     parametros.Add("@IdPractica", idPractica);
                     parametros.Add("@Comentario", comentario);
-                    parametros.Add("@Resultado", direction: ParameterDirection.ReturnValue);
+                    parametros.Add("@Resultado", dbType: DbType.Int32, direction: ParameterDirection.Output);  // ✅ CAMBIAR A Output
 
-                    context.Execute("DesasignarPracticaSP", parametros);
+                    context.Execute("DesasignarPracticaSP", parametros, commandType: CommandType.StoredProcedure);
 
                     var resultado = parametros.Get<int>("@Resultado");
 
@@ -342,6 +413,32 @@ namespace SIGEP_API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error en DesasignarPractica - IdPractica: {idPractica}");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+
+
+
+        [HttpGet]
+        [Route("Postulaciones")]
+        public IActionResult Postulaciones(int idVacante)
+        {
+            try
+            {
+                using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+                {
+                    var parametros = new DynamicParameters();
+                    parametros.Add("@IdVacante", idVacante);
+
+                    var resultado = context.Query<PostulacionDto>("ObtenerPostulacionesSP", parametros);
+
+                    return Ok(resultado);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error en Postulaciones - IdVacante: {idVacante}");
                 return StatusCode(500, "Error interno del servidor");
             }
         }

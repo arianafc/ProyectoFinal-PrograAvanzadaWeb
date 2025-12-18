@@ -16,10 +16,8 @@ GO
 
 /* =========================================================
    GET: Listar Vacantes (para DataTable)
-   Controller: GET api/vacantes/listar?idEstado=&idEspecialidad=&idModalidad=
    ========================================================= */
-   --30-11-25
-   CREATE OR ALTER PROCEDURE dbo.GetVacantesSP
+CREATE OR ALTER PROCEDURE dbo.GetVacantesSP
     @IdEstado       INT = 0,
     @IdEspecialidad INT = 0,
     @IdModalidad    INT = 0
@@ -27,7 +25,6 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- Obtener IDs de estados usando función
     DECLARE @IdE_Asig   INT;
     DECLARE @IdE_Curso  INT;
     DECLARE @IdE_Aprob  INT;
@@ -40,7 +37,6 @@ BEGIN
     SELECT @IdE_Fin = IdEstado FROM Estados WHERE LOWER(LTRIM(RTRIM(Descripcion))) = 'finalizada';
     SELECT @IdE_Rezag = IdEstado FROM Estados WHERE LOWER(LTRIM(RTRIM(Descripcion))) = 'rezagado';
 
-    -- CTE para especialidades
     ;WITH Esp AS (
         SELECT ev.IdVacante,
                STRING_AGG(e.Nombre, ', ') AS EspecialidadNombre
@@ -48,7 +44,6 @@ BEGIN
         INNER JOIN Especialidades e ON e.IdEspecialidad = ev.IdEspecialidad
         GROUP BY ev.IdVacante
     ),
-    -- CTE para postulados
     Post AS (
         SELECT p.IdVacante,
                COUNT(*) AS NumPostulados
@@ -56,14 +51,13 @@ BEGIN
         WHERE p.IdEstado IN (@IdE_Asig, @IdE_Curso, @IdE_Aprob, @IdE_Fin, @IdE_Rezag)
         GROUP BY p.IdVacante
     )
-    -- SELECT principal
     SELECT
         v.IdVacantePractica            AS IdVacante,
         v.Nombre                        AS Nombre,
         emp.IdEmpresa                   AS IdEmpresa,
         emp.NombreEmpresa              AS EmpresaNombre,
         ISNULL(esp.EspecialidadNombre, '—') AS EspecialidadNombre,
-        v.Requisitos                   AS Requerimientos,
+        v.Requisitos                   AS Requisitos,  -- ✅ CORREGIDO
         v.NumeroCupos                  AS NumCupos,
         ISNULL(po.NumPostulados, 0)    AS NumPostulados,
         est.Descripcion                AS EstadoNombre,
@@ -86,15 +80,12 @@ BEGIN
       AND (@IdModalidad = 0 OR v.IdModalidad = @IdModalidad)
     ORDER BY v.IdVacantePractica DESC;
 END
-go
+GO
 
 /* =========================================================
    GET: Detalle Vacante
-   Controller: GET api/vacantes/detalle/{id}
    ========================================================= */
-   USE SIGEP_WEB;
-GO
-   CREATE OR ALTER PROCEDURE dbo.DetalleVacanteSP
+CREATE OR ALTER PROCEDURE dbo.DetalleVacanteSP
     @IdVacante INT
 AS
 BEGIN
@@ -135,11 +126,11 @@ BEGIN
         v.IdVacantePractica AS IdVacante,
         v.Nombre,
         v.IdEmpresa,
-        emp.NombreEmpresa AS EmpresaNombre,  -- ✅ CORREGIDO: Ahora trae el nombre
+        emp.NombreEmpresa AS EmpresaNombre,
         ISNULL(esp.IdEspecialidad, 0) AS IdEspecialidad,
         v.IdModalidad,
         v.Descripcion,
-        v.Requisitos AS Requerimientos,
+        v.Requisitos AS Requisitos, 
         v.NumeroCupos AS NumCupos,
         v.FechaMaxAplicacion,
         v.FechaCierre,
@@ -148,7 +139,7 @@ BEGIN
         ISNULL(esp.Especialidades,'—') AS Especialidades,
         ISNULL(u.Ubicacion,'No registrada') AS Ubicacion
     FROM VacantesPractica v
-    INNER JOIN Empresas emp ON emp.IdEmpresa = v.IdEmpresa  -- ✅ INNER JOIN para garantizar nombre
+    INNER JOIN Empresas emp ON emp.IdEmpresa = v.IdEmpresa
     INNER JOIN Estados e    ON e.IdEstado  = v.IdEstado
     LEFT  JOIN Esp esp      ON esp.IdVacante = v.IdVacantePractica
     LEFT  JOIN Ubi u        ON u.IdEmpresa = v.IdEmpresa
@@ -158,7 +149,6 @@ GO
 
 /* =========================================================
    GET: Postulaciones por Vacante
-   Controller: GET api/vacantes/postulaciones?idVacante=
    ========================================================= */
 CREATE OR ALTER PROCEDURE dbo.ObtenerPostulacionesSP
     @IdVacante INT
@@ -183,7 +173,6 @@ GO
 
 /* =========================================================
    GET: Visualización de una Postulación (vacante + usuario)
-   Controller: GET api/vacantes/visualizacion-postulacion?idVacante=&idUsuario=
    ========================================================= */
 CREATE OR ALTER PROCEDURE dbo.VisualizacionPostulacionSP
     @IdVacante INT,
@@ -207,8 +196,7 @@ END
 GO
 
 /* =========================================================
-   GET: Estudiantes para Asignar (sin rol profesor)
-   Controller: GET api/vacantes/estudiantes-asignar?idVacante=&idUsuarioSesion=
+   GET: Estudiantes para Asignar 
    ========================================================= */
 CREATE OR ALTER PROCEDURE dbo.ObtenerEstudiantesAsignarSP
     @IdVacante INT,
@@ -222,7 +210,6 @@ BEGIN
 
     DECLARE @IdE_Activo INT = dbo.fn_IdEstado('Activo');
 
-    -- especialidades que requiere la vacante
     DECLARE @Req TABLE (IdEspecialidad INT);
     INSERT INTO @Req(IdEspecialidad)
     SELECT IdEspecialidad FROM EspecialidadesVacante WHERE IdVacante = @IdVacante;
@@ -247,7 +234,6 @@ BEGIN
         NombreCompleto = CONCAT(u.Nombre,' ',u.Apellido1,' ',u.Apellido2),
         ISNULL(es.Especialidad,'—') AS Especialidad,
         EstadoAcademico = CASE WHEN u.IdEstado = @IdE_Activo THEN 1 ELSE 0 END,
-        -- Estado general (último)
         EstadoPractica = ISNULL((
             SELECT TOP 1 e1.Descripcion
             FROM PracticaEstudiante p1
@@ -255,7 +241,6 @@ BEGIN
             WHERE p1.IdUsuario = u.IdUsuario
             ORDER BY p1.IdPractica DESC
         ), 'Sin proceso activo'),
-        -- Estado con esta vacante (último)
         EstadoVacante = ISNULL((
             SELECT TOP 1 e2.Descripcion
             FROM PracticaEstudiante p2
@@ -263,7 +248,6 @@ BEGIN
             WHERE p2.IdUsuario = u.IdUsuario AND p2.IdVacante = @IdVacante
             ORDER BY p2.IdPractica DESC
         ), 'Sin proceso activo'),
-        -- IdPractica último con esta vacante
         IdPracticaVacante = ISNULL((
             SELECT TOP 1 p3.IdPractica
             FROM PracticaEstudiante p3
@@ -285,964 +269,9 @@ BEGIN
 END
 GO
 
-
---16-11-25
-USE SIGEP_WEB;
-GO
-CREATE OR ALTER PROCEDURE GuardarEmpresaSP
-(
-    @IdEmpresa INT = 0,                -- si es 0 → crear
-    @NombreEmpresa VARCHAR(255),
-    @NombreContacto VARCHAR(255),
-    @Email VARCHAR(255),
-    @Telefono VARCHAR(50),
-    @Provincia VARCHAR(255),
-    @Canton VARCHAR(255),
-    @Distrito VARCHAR(255),
-    @DireccionExacta VARCHAR(MAX),
-    @AreasAfinidad VARCHAR(255),
-
-    @IdEmpresaOut INT OUTPUT
-)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @IdProvincia INT,
-            @IdCanton INT,
-            @IdDistrito INT,
-            @IdDireccion INT;
-
-    ------------------------------------------------------
-    -- 1. PROVINCIA → buscar o crear
-    ------------------------------------------------------
-    SELECT @IdProvincia = IdProvincia
-    FROM Provincias
-    WHERE Nombre = @Provincia;
-
-    IF @IdProvincia IS NULL
-    BEGIN
-        INSERT INTO Provincias (Nombre) VALUES (@Provincia);
-        SET @IdProvincia = SCOPE_IDENTITY();
-    END;
-
-    ------------------------------------------------------
-    -- 2. CANTON → buscar o crear
-    ------------------------------------------------------
-    SELECT @IdCanton = IdCanton
-    FROM Cantones
-    WHERE Nombre = @Canton AND IdProvincia = @IdProvincia;
-
-    IF @IdCanton IS NULL
-    BEGIN
-        INSERT INTO Cantones (Nombre, IdProvincia)
-        VALUES (@Canton, @IdProvincia);
-
-        SET @IdCanton = SCOPE_IDENTITY();
-    END;
-
-    ------------------------------------------------------
-    -- 3. DISTRITO → buscar o crear
-    ------------------------------------------------------
-    SELECT @IdDistrito = IdDistrito
-    FROM Distritos
-    WHERE Nombre = @Distrito AND IdCanton = @IdCanton;
-
-    IF @IdDistrito IS NULL
-    BEGIN
-        INSERT INTO Distritos (Nombre, IdCanton)
-        VALUES (@Distrito, @IdCanton);
-
-        SET @IdDistrito = SCOPE_IDENTITY();
-    END;
-
-    ------------------------------------------------------
-    -- 4. DIRECCIÓN
-    ------------------------------------------------------
-    SELECT @IdDireccion = IdDireccion
-    FROM Empresas
-    WHERE IdEmpresa = @IdEmpresa;
-
-    IF @IdEmpresa = 0
-    BEGIN
-        INSERT INTO Direcciones (IdDistrito, DireccionExacta)
-        VALUES (@IdDistrito, @DireccionExacta);
-
-        SET @IdDireccion = SCOPE_IDENTITY();
-    END
-    ELSE
-    BEGIN
-        IF @IdDireccion IS NULL
-        BEGIN
-            INSERT INTO Direcciones (IdDistrito, DireccionExacta)
-            VALUES (@IdDistrito, @DireccionExacta);
-
-            SET @IdDireccion = SCOPE_IDENTITY();
-
-            UPDATE Empresas
-            SET IdDireccion = @IdDireccion
-            WHERE IdEmpresa = @IdEmpresa;
-        END
-        ELSE
-        BEGIN
-            UPDATE Direcciones
-            SET DireccionExacta = @DireccionExacta,
-                IdDistrito = @IdDistrito
-            WHERE IdDireccion = @IdDireccion;
-        END
-    END;
-
-    ------------------------------------------------------
-    -- 5. CREAR O ACTUALIZAR EMPRESA
-    ------------------------------------------------------
-    IF @IdEmpresa = 0
-    BEGIN
-        INSERT INTO Empresas
-        (NombreEmpresa, NombreContacto, IdDireccion, AreasAfinidad, IdEstado)
-        VALUES (@NombreEmpresa, @NombreContacto, @IdDireccion, @AreasAfinidad, 1);
-
-        SET @IdEmpresaOut = SCOPE_IDENTITY();
-    END
-    ELSE
-    BEGIN
-        UPDATE Empresas
-        SET NombreEmpresa = @NombreEmpresa,
-            NombreContacto = @NombreContacto,
-            AreasAfinidad = @AreasAfinidad
-        WHERE IdEmpresa = @IdEmpresa;
-
-        SET @IdEmpresaOut = @IdEmpresa;
-    END
-
-    ------------------------------------------------------
-    -- 6. EMAIL
-    ------------------------------------------------------
-    IF EXISTS(SELECT 1 FROM Emails WHERE IdEmpresa = @IdEmpresaOut)
-        UPDATE Emails SET Email = @Email WHERE IdEmpresa = @IdEmpresaOut;
-    ELSE
-        INSERT INTO Emails (IdEmpresa, Email) VALUES (@IdEmpresaOut, @Email);
-
-    ------------------------------------------------------
-    -- 7. TELÉFONO
-    ------------------------------------------------------
-    IF EXISTS(SELECT 1 FROM Telefonos WHERE IdEmpresa = @IdEmpresaOut)
-        UPDATE Telefonos SET Telefono = @Telefono WHERE IdEmpresa = @IdEmpresaOut;
-    ELSE
-        INSERT INTO Telefonos (IdEmpresa, Telefono) VALUES (@IdEmpresaOut, @Telefono);
-
-END;
-GO
-
-USE SIGEP_WEB;
-GO
-CREATE OR ALTER PROCEDURE ConsultarEmpresaSP
-(
-    @IdEmpresa INT
-)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SELECT 
-        e.IdEmpresa,
-        e.NombreEmpresa,
-        e.NombreContacto,
-        em.Email,
-        t.Telefono,
-        p.Nombre AS Provincia,
-        c.Nombre AS Canton,
-        d.Nombre AS Distrito,
-        dir.DireccionExacta,
-        e.AreasAfinidad
-    FROM Empresas e
-    LEFT JOIN Direcciones dir       ON e.IdDireccion = dir.IdDireccion
-    LEFT JOIN Distritos d           ON dir.IdDistrito = d.IdDistrito
-    LEFT JOIN Cantones c            ON d.IdCanton = c.IdCanton
-    LEFT JOIN Provincias p          ON c.IdProvincia = p.IdProvincia
-    LEFT JOIN Emails em             ON em.IdEmpresa = e.IdEmpresa
-    LEFT JOIN Telefonos t           ON t.IdEmpresa = e.IdEmpresa
-    WHERE e.IdEmpresa = @IdEmpresa;
-END
-GO
-
-
-USE SIGEP_WEB;
-GO
-CREATE OR ALTER PROCEDURE ListarEmpresasSP
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SELECT 
-        e.IdEmpresa,
-        e.NombreEmpresa,
-        e.AreasAfinidad AS AreasAfinidad,
-        ISNULL(p.Nombre,'') +
-        CASE WHEN c.Nombre IS NOT NULL THEN ', ' + c.Nombre ELSE '' END +
-        CASE WHEN d.Nombre IS NOT NULL THEN ', ' + d.Nombre ELSE '' END AS Ubicacion,
-        (SELECT COUNT(*) 
-         FROM VacantesPractica v 
-         WHERE v.IdEmpresa = e.IdEmpresa) AS HistorialVacantes
-    FROM Empresas e
-    LEFT JOIN Direcciones dir   ON e.IdDireccion = dir.IdDireccion
-    LEFT JOIN Distritos d       ON dir.IdDistrito = d.IdDistrito
-    LEFT JOIN Cantones c        ON d.IdCanton = c.IdCanton
-    LEFT JOIN Provincias p      ON c.IdProvincia = p.IdProvincia
-    WHERE e.IdEstado = 1;  -- Activo
-END
-GO
-
-USE SIGEP_WEB;
-GO
-CREATE OR ALTER PROCEDURE ActualizarEmpresaSP
-(
-    @IdEmpresa INT,
-    @NombreEmpresa VARCHAR(255),
-    @NombreContacto VARCHAR(255),
-    @Email VARCHAR(255),
-    @Telefono VARCHAR(50),
-    @Provincia VARCHAR(255),
-    @Canton VARCHAR(255),
-    @Distrito VARCHAR(255),
-    @DireccionExacta VARCHAR(MAX),
-    @AreasAfinidad VARCHAR(255)
-)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @IdProvincia INT,
-            @IdCanton INT,
-            @IdDistrito INT,
-            @IdDireccion INT;
-
-    ------------------------------------------------------
-    -- 1. Provincia
-    ------------------------------------------------------
-    SELECT @IdProvincia = IdProvincia
-    FROM Provincias
-    WHERE Nombre = @Provincia;
-
-    IF @IdProvincia IS NULL
-    BEGIN
-        INSERT INTO Provincias (Nombre) VALUES (@Provincia);
-        SET @IdProvincia = SCOPE_IDENTITY();
-    END;
-
-    ------------------------------------------------------
-    -- 2. Cantón
-    ------------------------------------------------------
-    SELECT @IdCanton = IdCanton
-    FROM Cantones
-    WHERE Nombre = @Canton AND IdProvincia = @IdProvincia;
-
-    IF @IdCanton IS NULL
-    BEGIN
-        INSERT INTO Cantones (Nombre, IdProvincia)
-        VALUES (@Canton, @IdProvincia);
-
-        SET @IdCanton = SCOPE_IDENTITY();
-    END;
-
-    ------------------------------------------------------
-    -- 3. Distrito
-    ------------------------------------------------------
-    SELECT @IdDistrito = IdDistrito
-    FROM Distritos
-    WHERE Nombre = @Distrito AND IdCanton = @IdCanton;
-
-    IF @IdDistrito IS NULL
-    BEGIN
-        INSERT INTO Distritos (Nombre, IdCanton)
-        VALUES (@Distrito, @IdCanton);
-
-        SET @IdDistrito = SCOPE_IDENTITY();
-    END;
-
-    ------------------------------------------------------
-    -- 4. Dirección
-    ------------------------------------------------------
-    SELECT @IdDireccion = IdDireccion 
-    FROM Empresas 
-    WHERE IdEmpresa = @IdEmpresa;
-
-    IF @IdDireccion IS NULL
-    BEGIN
-        INSERT INTO Direcciones (IdDistrito, DireccionExacta)
-        VALUES (@IdDistrito, @DireccionExacta);
-
-        SET @IdDireccion = SCOPE_IDENTITY();
-
-        UPDATE Empresas
-        SET IdDireccion = @IdDireccion
-        WHERE IdEmpresa = @IdEmpresa;
-    END
-    ELSE
-    BEGIN
-        UPDATE Direcciones
-        SET DireccionExacta = @DireccionExacta,
-            IdDistrito = @IdDistrito
-        WHERE IdDireccion = @IdDireccion;
-    END
-
-    ------------------------------------------------------
-    -- 5. Empresa
-    ------------------------------------------------------
-    UPDATE Empresas
-    SET NombreEmpresa = @NombreEmpresa,
-        NombreContacto = @NombreContacto,
-        AreasAfinidad = @AreasAfinidad
-    WHERE IdEmpresa = @IdEmpresa;
-
-    ------------------------------------------------------
-    -- 6. Email
-    ------------------------------------------------------
-    IF EXISTS(SELECT 1 FROM Emails WHERE IdEmpresa = @IdEmpresa)
-        UPDATE Emails SET Email = @Email WHERE IdEmpresa = @IdEmpresa;
-    ELSE
-        INSERT INTO Emails (IdEmpresa, Email)
-        VALUES (@IdEmpresa, @Email);
-
-    ------------------------------------------------------
-    -- 7. Teléfono
-    ------------------------------------------------------
-    IF EXISTS(SELECT 1 FROM Telefonos WHERE IdEmpresa = @IdEmpresa)
-        UPDATE Telefonos SET Telefono = @Telefono WHERE IdEmpresa = @IdEmpresa;
-    ELSE
-        INSERT INTO Telefonos (IdEmpresa, Telefono)
-        VALUES (@IdEmpresa, @Telefono);
-
-END
-GO
-
-
-USE SIGEP_WEB;
-GO
-CREATE OR ALTER PROCEDURE EliminarEmpresaSP
-(
-    @IdEmpresa INT
-)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @Inactivo INT = 2;
-    DECLARE @Cancelado INT = 3;
-
-    ------------------------------------------------------
-    -- 1. Inactivar empresa
-    ------------------------------------------------------
-    UPDATE Empresas
-    SET IdEstado = @Inactivo
-    WHERE IdEmpresa = @IdEmpresa;
-
-    ------------------------------------------------------
-    -- 2. Cancelar vacantes asociadas
-    ------------------------------------------------------
-    UPDATE VacantesPractica
-    SET IdEstado = @Cancelado
-    WHERE IdEmpresa = @IdEmpresa;
-END
-GO
-
---22-11-25
-
-USE SIGEP_WEB
-GO
-
--- =============================================
--- 1. SP PARA OBTENER ESPECIALIDADES
--- =============================================
-CREATE OR ALTER PROCEDURE ObtenerEspecialidadesSP
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    SELECT 
-        IdEspecialidad,
-        Nombre
-    FROM Especialidades
-    WHERE IdEstado = (SELECT IdEstado FROM Estados WHERE Descripcion = 'Activo')
-    ORDER BY Nombre;
-END
-GO
-
--- =============================================
--- 2. SP PARA ACTUALIZAR ESTADO ACADÉMICO
--- =============================================
-CREATE OR ALTER PROCEDURE ActualizarEstadoAcademicoSP
-    @IdUsuario INT,
-    @NuevoEstado BIT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    BEGIN TRY
-        UPDATE Usuarios
-        SET EstadoAcademico = @NuevoEstado
-        WHERE IdUsuario = @IdUsuario AND IdRol = 1;
-
-        IF @@ROWCOUNT > 0
-            SELECT 1 AS Resultado, 'Estado académico actualizado correctamente' AS Mensaje;
-        ELSE
-            SELECT 0 AS Resultado, 'Estudiante no encontrado' AS Mensaje;
-    END TRY
-    BEGIN CATCH
-        SELECT 0 AS Resultado, ERROR_MESSAGE() AS Mensaje;
-    END CATCH
-END
-GO
-
--- =============================================
--- 3. SP PARA ELIMINAR DOCUMENTO
--- =============================================
-
-CREATE OR ALTER PROCEDURE EliminarDocumentoSP
-    @IdDocumento INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    BEGIN TRY
-        DELETE FROM Documentos WHERE IdDocumento = @IdDocumento;
-        SELECT 1 AS Resultado, 'Documento eliminado correctamente' AS Mensaje;
-    END TRY
-    BEGIN CATCH
-        SELECT 0 AS Resultado, ERROR_MESSAGE() AS Mensaje;
-    END CATCH
-END
-GO
-
--- =============================================
--- 4. SP PARA LISTAR ESTUDIANTES
--- =============================================
-USE SIGEP_WEB
-GO
-
--- =============================================
--- SP LISTAR ESTUDIANTES
--- =============================================
-
-USE SIGEP_WEB
-GO
-
-CREATE OR ALTER PROCEDURE ListarEstudiantesSP
-    @IdCoordinador INT = NULL,
-    @Estado VARCHAR(50) = NULL,
-    @IdEspecialidad INT = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    DECLARE @EstadoClean VARCHAR(50) = NULLIF(LTRIM(RTRIM(@Estado)), '');
-    DECLARE @IdEspecialidadClean INT = NULLIF(@IdEspecialidad, 0);
-
-    SELECT 
-        u.IdUsuario,
-        ISNULL(u.Cedula, '') AS Cedula,
-        u.Nombre + ' ' + u.Apellido1 + ' ' + ISNULL(u.Apellido2, '') AS NombreCompleto,
-        ISNULL((SELECT TOP 1 Telefono FROM Telefonos WHERE IdUsuario = u.IdUsuario ORDER BY IdTelefono DESC), '') AS Telefono,
-        ISNULL((SELECT TOP 1 e.Nombre 
-         FROM UsuarioEspecialidad ue 
-         INNER JOIN Especialidades e ON ue.IdEspecialidad = e.IdEspecialidad
-         WHERE ue.IdUsuario = u.IdUsuario 
-         ORDER BY ue.IdUsuarioEspecialidad DESC), 'Sin Especialidad') AS EspecialidadNombre,
-        
-       
-        CAST(ISNULL(u.EstadoAcademico, 0) AS BIT) AS EstadoAcademico,
-        
-        ISNULL((SELECT TOP 1 est.Descripcion 
-         FROM PracticaEstudiante pe 
-         INNER JOIN Estados est ON pe.IdEstado = est.IdEstado
-         WHERE pe.IdUsuario = u.IdUsuario 
-         ORDER BY pe.IdPractica DESC), 'Sin Procesos Activos') AS EstadoPractica,
-        
-        CASE 
-            WHEN ISNULL(u.EstadoAcademico, 0) = 1 THEN 1
-            ELSE 0
-        END AS IdEstado
-        
-    FROM Usuarios u
-    WHERE u.IdRol = 1 -- Estudiantes
-        AND ISNULL(u.IdEstado, 0) != 0 -- Activos
-        AND (@EstadoClean IS NULL 
-             OR (@EstadoClean = 'Aprobada' AND u.EstadoAcademico = 1)
-             OR (@EstadoClean = 'Rezagado' AND u.EstadoAcademico = 0))
-        AND (@IdEspecialidadClean IS NULL OR @IdEspecialidadClean = 0 OR 
-             EXISTS (SELECT 1 FROM UsuarioEspecialidad ue 
-                     WHERE ue.IdUsuario = u.IdUsuario AND ue.IdEspecialidad = @IdEspecialidadClean))
-    ORDER BY u.Nombre, u.Apellido1;
-END
-GO
-
--- =============================================
--- 5. SP PARA CONSULTAR DETALLE DE ESTUDIANTE
--- =============================================
-CREATE OR ALTER PROCEDURE ConsultarEstudianteSP
-    @IdUsuario INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    -- RESULTSET 1: Información del estudiante
-    SELECT 
-        u.Cedula,
-        u.Nombre,
-        u.Apellido1,
-        u.Apellido2,
-        ISNULL((SELECT TOP 1 Email FROM Emails WHERE IdUsuario = u.IdUsuario ORDER BY IdEmail DESC), '') AS Correo,
-        ISNULL((SELECT TOP 1 Telefono FROM Telefonos WHERE IdUsuario = u.IdUsuario ORDER BY IdTelefono DESC), '') AS Telefono,
-        u.FechaNacimiento,
-        ISNULL(p.Nombre, '') AS Provincia,
-        ISNULL(c.Nombre, '') AS Canton,
-        ISNULL(dist.Nombre, '') AS Distrito,
-        ISNULL(dir.DireccionExacta, '') AS DireccionExacta,
-        ISNULL((SELECT TOP 1 e.Nombre 
-         FROM UsuarioEspecialidad ue 
-         INNER JOIN Especialidades e ON ue.IdEspecialidad = e.IdEspecialidad
-         WHERE ue.IdUsuario = u.IdUsuario 
-         ORDER BY ue.IdUsuarioEspecialidad DESC), '') AS Especialidad,
-        ISNULL(s.Seccion, '') AS Seccion
-    FROM Usuarios u
-    LEFT JOIN Direcciones dir ON u.IdDireccion = dir.IdDireccion
-    LEFT JOIN Distritos dist ON dir.IdDistrito = dist.IdDistrito
-    LEFT JOIN Cantones c ON dist.IdCanton = c.IdCanton
-    LEFT JOIN Provincias p ON c.IdProvincia = p.IdProvincia
-    LEFT JOIN Secciones s ON u.IdSeccion = s.IdSeccion
-    WHERE u.IdUsuario = @IdUsuario;
-
-    -- RESULTSET 2: Encargados
-    SELECT 
-        enc.Nombre + ' ' + enc.Apellido1 + ' ' + ISNULL(enc.Apellido2, '') AS Nombre,
-        ISNULL((SELECT TOP 1 Telefono FROM Telefonos WHERE IdEncargado = enc.IdEncargado ORDER BY IdTelefono DESC), '') AS Telefono,
-        ISNULL(enc.Ocupacion, '') AS Ocupacion
-    FROM EstudianteEncargado ee
-    INNER JOIN Encargados enc ON ee.IdEncargado = enc.IdEncargado
-    WHERE ee.IdUsuario = @IdUsuario;
-
-    -- RESULTSET 3: Documentos
-    SELECT 
-        IdDocumento,
-        Documento
-    FROM Documentos
-    WHERE IdUsuario = @IdUsuario
-    ORDER BY FechaSubida DESC;
-
-    -- RESULTSET 4: Prácticas
-    SELECT 
-        pe.IdPractica AS IdPostulacion,
-        pe.IdVacante,
-        pe.IdUsuario,
-        emp.NombreEmpresa AS Empresa,
-        ISNULL(est.Descripcion, '') AS Estado
-    FROM PracticaEstudiante pe
-    INNER JOIN VacantesPractica vp ON pe.IdVacante = vp.IdVacantePractica
-    LEFT JOIN Estados est ON pe.IdEstado = est.IdEstado
-    INNER JOIN Empresas emp ON vp.IdEmpresa = emp.IdEmpresa
-    WHERE pe.IdUsuario = @IdUsuario
-    ORDER BY pe.IdPractica DESC;
-END
-GO
-
---27-11-25
--- =============================================
--- STORED PROCEDURES PARA ADMINISTRACIÓN GENERAL
--- =============================================
-
-
-USE SIGEP_WEB
-GO
-
--- =============================================
--- 1. ConsultarUsuariosSP: Consulta usuarios con filtro opcional por rol
--- =============================================
-USE SIGEP_WEB
-GO
-
-CREATE OR ALTER PROCEDURE ConsultarUsuariosSP
-    @Rol VARCHAR(50) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    SELECT 
-        u.IdUsuario,
-        (u.Nombre + ' ' + u.Apellido1 + ' ' + ISNULL(u.Apellido2, '')) AS Nombre,
-        u.Cedula,
-        (SELECT TOP 1 Email FROM Emails WHERE IdUsuario = u.IdUsuario) AS Email,
-        r.Descripcion AS Rol,
-       
-        CASE 
-            WHEN u.IdEstado = 1 THEN 'Activo'
-            ELSE 'Inactivo'
-        END AS Estado,
-        u.IdEstado
-    FROM Usuarios u
-    INNER JOIN Roles r ON u.IdRol = r.IdRol
-    INNER JOIN Estados e ON u.IdEstado = e.IdEstado
-    WHERE (@Rol IS NULL OR r.Descripcion = @Rol)
-    ORDER BY u.IdEstado ASC, u.Nombre ASC
-END
-GO
-
-
--- =============================================
--- 2. CambiarEstadoUsuarioSP: Cambia el estado de un usuario
--- =============================================
-CREATE OR ALTER PROCEDURE CambiarEstadoUsuarioSP
-    @IdUsuario INT,
-    @NuevoEstado VARCHAR(20)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    DECLARE @IdEstado INT
-    
-    -- Determinar IdEstado según el valor del parámetro
-    IF @NuevoEstado = 'Activo'
-        SET @IdEstado = 1
-    ELSE IF @NuevoEstado = 'Inactivo'
-        SET @IdEstado = 2
-    ELSE
-    BEGIN
-        -- Estado no válido
-        RETURN 0
-    END
-    
-    -- Verificar que el usuario existe
-    IF NOT EXISTS (SELECT 1 FROM Usuarios WHERE IdUsuario = @IdUsuario)
-    BEGIN
-        RETURN 0
-    END
-    
-    -- Actualizar estado
-    UPDATE Usuarios
-    SET IdEstado = @IdEstado
-    WHERE IdUsuario = @IdUsuario
-    
-    RETURN @@ROWCOUNT
-END
-GO
-
--- =============================================
--- 3. CambiarRolUsuarioSP: Cambia el rol de un usuario
--- =============================================
-CREATE OR ALTER PROCEDURE CambiarRolUsuarioSP
-    @IdUsuario INT,
-    @Rol VARCHAR(50)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    DECLARE @IdRol INT
-    
-    -- Obtener IdRol según descripción
-    SELECT @IdRol = IdRol
-    FROM Roles
-    WHERE Descripcion = @Rol
-    
-    IF @IdRol IS NULL
-    BEGIN
-        RETURN 0
-    END
-    
-    -- Verificar que el usuario existe
-    IF NOT EXISTS (SELECT 1 FROM Usuarios WHERE IdUsuario = @IdUsuario)
-    BEGIN
-        RETURN 0
-    END
-    
-    -- Actualizar rol
-    UPDATE Usuarios
-    SET IdRol = @IdRol
-    WHERE IdUsuario = @IdUsuario
-    
-    RETURN @@ROWCOUNT
-END
-GO
-
--- =============================================
--- 4. ConsultarEspecialidadesSP: Consulta todas las especialidades
--- =============================================
-CREATE OR ALTER PROCEDURE ConsultarEspecialidadesSP
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    SELECT 
-        IdEspecialidad,
-        Nombre,
-        IdEstado
-    FROM Especialidades
-    ORDER BY IdEstado ASC, Nombre ASC
-END
-GO
-
--- =============================================
--- 5. CrearEspecialidadSP: Crea una nueva especialidad
--- =============================================
-CREATE OR ALTER PROCEDURE CrearEspecialidadSP
-    @Nombre VARCHAR(100)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    -- Verificar si ya existe una especialidad con ese nombre
-    IF EXISTS (SELECT 1 FROM Especialidades WHERE Nombre = @Nombre)
-    BEGIN
-        DECLARE @EstadoExistente INT
-        SELECT @EstadoExistente = IdEstado
-        FROM Especialidades
-        WHERE Nombre = @Nombre
-        
-      
-        IF @EstadoExistente = 2
-            RETURN -1 
-        ELSE
-            RETURN 0   
-    END
-    
-    -- Insertar nueva especialidad
-    INSERT INTO Especialidades (Nombre, IdEstado)
-    VALUES (@Nombre, 1)
-    
-    RETURN @@ROWCOUNT
-END
-GO
-
--- =============================================
--- 6. EditarEspecialidadSP: Edita una especialidad existente
--- =============================================
-CREATE OR ALTER PROCEDURE EditarEspecialidadSP
-    @Id INT,
-    @Nombre VARCHAR(100)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    -- Verificar que la especialidad existe
-    IF NOT EXISTS (SELECT 1 FROM Especialidades WHERE IdEspecialidad = @Id)
-    BEGIN
-        RETURN 0
-    END
-    
-    -- Verificar duplicados (excluyendo el mismo registro)
-    IF EXISTS (SELECT 1 FROM Especialidades WHERE Nombre = @Nombre AND IdEspecialidad <> @Id)
-    BEGIN
-        DECLARE @EstadoDuplicado INT
-        SELECT @EstadoDuplicado = IdEstado
-        FROM Especialidades
-        WHERE Nombre = @Nombre AND IdEspecialidad <> @Id
-        
-        IF @EstadoDuplicado = 2
-            RETURN -1  
-        ELSE
-            RETURN 0   
-    END
-    
-    -- Actualizar especialidad
-    UPDATE Especialidades
-    SET Nombre = @Nombre
-    WHERE IdEspecialidad = @Id
-    
-    RETURN @@ROWCOUNT
-END
-GO
-
--- =============================================
--- 7. CambiarEstadoEspecialidadSP: Cambia el estado de una especialidad
--- =============================================
-CREATE OR ALTER PROCEDURE CambiarEstadoEspecialidadSP
-    @Id INT,
-    @NuevoEstado VARCHAR(20)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    DECLARE @IdEstado INT
-    
-    IF @NuevoEstado = 'Activo'
-        SET @IdEstado = 1
-    ELSE IF @NuevoEstado = 'Inactivo'
-        SET @IdEstado = 2
-    ELSE
-    BEGIN
-        RETURN 0
-    END
-    
-    -- Si se va a desactivar, verificar que no haya usuarios activos relacionados
-    IF @IdEstado = 2
-    BEGIN
-        IF EXISTS (
-            SELECT 1
-            FROM UsuarioEspecialidad ue
-            INNER JOIN Usuarios u ON ue.IdUsuario = u.IdUsuario
-            WHERE ue.IdEspecialidad = @Id AND u.IdEstado = 1
-        )
-        BEGIN
-            RETURN -1  
-        END
-    END
-    
-    -- Verificar que la especialidad existe
-    IF NOT EXISTS (SELECT 1 FROM Especialidades WHERE IdEspecialidad = @Id)
-    BEGIN
-        RETURN 0
-    END
-    
-    -- Actualizar estado
-    UPDATE Especialidades
-    SET IdEstado = @IdEstado
-    WHERE IdEspecialidad = @Id
-    
-    RETURN @@ROWCOUNT
-END
-GO
-
--- =============================================
--- 8. ConsultarSeccionesSP: Consulta todas las secciones
--- =============================================
-CREATE OR ALTER PROCEDURE ConsultarSeccionesSP
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    SELECT 
-        IdSeccion,
-        Seccion,
-        IdEstado
-    FROM Secciones
-    ORDER BY IdEstado ASC, Seccion ASC
-END
-GO
-
--- =============================================
--- 9. CrearSeccionSP: Crea una nueva sección
--- =============================================
-CREATE OR ALTER PROCEDURE CrearSeccionSP
-    @NombreSeccion VARCHAR(50)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    -- Verificar si ya existe una sección con ese nombre
-    IF EXISTS (SELECT 1 FROM Secciones WHERE Seccion = @NombreSeccion)
-    BEGIN
-        DECLARE @EstadoExistente INT
-        SELECT @EstadoExistente = IdEstado
-        FROM Secciones
-        WHERE Seccion = @NombreSeccion
-        
-        IF @EstadoExistente = 2
-            RETURN -1  
-        ELSE
-            RETURN 0   
-    END
-    
-    -- Insertar nueva sección
-    INSERT INTO Secciones (Seccion, IdEstado)
-    VALUES (@NombreSeccion, 1)  -- 1 = Activo
-    
-    RETURN @@ROWCOUNT
-END
-GO
-
--- =============================================
--- 10. EditarSeccionSP: Edita una sección existente
--- =============================================
-CREATE OR ALTER PROCEDURE EditarSeccionSP
-    @Id INT,
-    @NombreSeccion VARCHAR(50)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    -- Verificar que la sección existe
-    IF NOT EXISTS (SELECT 1 FROM Secciones WHERE IdSeccion = @Id)
-    BEGIN
-        RETURN 0
-    END
-    
-    -- Verificar duplicados (excluyendo el mismo registro)
-    IF EXISTS (SELECT 1 FROM Secciones WHERE Seccion = @NombreSeccion AND IdSeccion <> @Id)
-    BEGIN
-        DECLARE @EstadoDuplicado INT
-        SELECT @EstadoDuplicado = IdEstado
-        FROM Secciones
-        WHERE Seccion = @NombreSeccion AND IdSeccion <> @Id
-        
-        IF @EstadoDuplicado = 2
-            RETURN -1 
-        ELSE
-            RETURN 0  
-    END
-    
-    -- Actualizar sección
-    UPDATE Secciones
-    SET Seccion = @NombreSeccion
-    WHERE IdSeccion = @Id
-    
-    RETURN @@ROWCOUNT
-END
-GO
-
--- =============================================
--- 11. CambiarEstadoSeccionSP: Cambia el estado de una sección
--- =============================================
-CREATE OR ALTER PROCEDURE CambiarEstadoSeccionSP
-    @Id INT,
-    @NuevoEstado VARCHAR(20)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    DECLARE @IdEstado INT
-    
-    IF @NuevoEstado = 'Activo'
-        SET @IdEstado = 1
-    ELSE IF @NuevoEstado = 'Inactivo'
-        SET @IdEstado = 2
-    ELSE
-    BEGIN
-        RETURN 0
-    END
-    
-    -- Si se va a desactivar, verificar que no haya usuarios activos relacionados
-    IF @IdEstado = 2
-    BEGIN
-        IF EXISTS (
-            SELECT 1
-            FROM Usuarios
-            WHERE IdSeccion = @Id AND IdEstado = 1
-        )
-        BEGIN
-            RETURN -1  -- Código especial: hay usuarios activos relacionados
-        END
-    END
-    
-    -- Verificar que la sección existe
-    IF NOT EXISTS (SELECT 1 FROM Secciones WHERE IdSeccion = @Id)
-    BEGIN
-        RETURN 0
-    END
-    
-    -- Actualizar estado
-    UPDATE Secciones
-    SET IdEstado = @IdEstado
-    WHERE IdSeccion = @Id
-    
-    RETURN @@ROWCOUNT
-END
-GO
-
---28-11-25
-
-USE SIGEP_WEB;
-GO
-
--- =============================================
--- SP 1: Obtener Ubicación de Empresa
--- =============================================
+/* =========================================================
+   SP: Obtener Ubicación de Empresa
+   ========================================================= */
 CREATE OR ALTER PROCEDURE dbo.ObtenerUbicacionEmpresaSP
     @IdEmpresa INT
 AS
@@ -1271,21 +300,16 @@ BEGIN
 END
 GO
 
-PRINT '✅ ObtenerUbicacionEmpresaSP creado';
-GO
-
--- =============================================
--- SP 2: Crear Vacante de Práctica
--- CRÍTICO: Tu BD usa "Requisitos", NO "Requerimientos"
--- =============================================
-
+/* =========================================================
+   POST: Crear Vacante
+   ========================================================= */
 CREATE OR ALTER PROCEDURE dbo.CrearVacanteSP
     @Nombre NVARCHAR(255),
     @IdEmpresa INT,
     @IdEspecialidad INT,
     @NumCupos INT,
     @IdModalidad INT,
-    @Requerimientos NVARCHAR(MAX),
+    @Requisitos NVARCHAR(MAX), 
     @Descripcion NVARCHAR(255),
     @FechaMaxAplicacion DATE,
     @FechaCierre DATE
@@ -1293,7 +317,6 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- Obtener IdEstado "Activo"
     DECLARE @IdEstadoActivo INT;
     SELECT TOP 1 @IdEstadoActivo = IdEstado 
     FROM Estados 
@@ -1303,24 +326,21 @@ BEGIN
     IF @IdEstadoActivo IS NULL
         SET @IdEstadoActivo = 1;
 
-    -- Validaciones
     IF @NumCupos <= 0 RETURN 0;
     IF @FechaCierre < @FechaMaxAplicacion RETURN 0;
 
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        -- Insertar vacante
         INSERT INTO VacantesPractica 
         (Nombre, IdEstado, IdEmpresa, Requisitos, FechaMaxAplicacion, 
          NumeroCupos, FechaCierre, IdModalidad, Descripcion, Tipo)
         VALUES 
-        (@Nombre, @IdEstadoActivo, @IdEmpresa, @Requerimientos, @FechaMaxAplicacion, 
+        (@Nombre, @IdEstadoActivo, @IdEmpresa, @Requisitos, @FechaMaxAplicacion,  -- ✅ CORREGIDO
          @NumCupos, @FechaCierre, @IdModalidad, @Descripcion, NULL);
 
         DECLARE @NewId INT = SCOPE_IDENTITY();
 
-        -- Insertar especialidad
         IF @IdEspecialidad > 0
         BEGIN
             INSERT INTO EspecialidadesVacante (IdVacante, IdEspecialidad)
@@ -1339,13 +359,9 @@ BEGIN
 END
 GO
 
-PRINT '✅ CrearVacanteSP creado';
-GO
-
--- =============================================
--- SP 3: Editar Vacante
--- =============================================
-
+/* =========================================================
+   POST: Editar Vacante
+   ========================================================= */
 CREATE OR ALTER PROCEDURE dbo.EditarVacanteSP
     @IdVacante INT,
     @Nombre NVARCHAR(255),
@@ -1353,7 +369,7 @@ CREATE OR ALTER PROCEDURE dbo.EditarVacanteSP
     @IdEspecialidad INT,
     @NumCupos INT,
     @IdModalidad INT,
-    @Requerimientos NVARCHAR(MAX),
+    @Requisitos NVARCHAR(MAX), 
     @Descripcion NVARCHAR(255),
     @FechaMaxAplicacion DATE,
     @FechaCierre DATE
@@ -1373,7 +389,7 @@ BEGIN
         UPDATE VacantesPractica
         SET Nombre = @Nombre,
             IdEmpresa = @IdEmpresa,
-            Requisitos = @Requerimientos,
+            Requisitos = @Requisitos,
             FechaMaxAplicacion = @FechaMaxAplicacion,
             NumeroCupos = @NumCupos,
             FechaCierre = @FechaCierre,
@@ -1381,7 +397,6 @@ BEGIN
             Descripcion = @Descripcion
         WHERE IdVacantePractica = @IdVacante;
 
-        -- Actualizar especialidad
         IF EXISTS (SELECT 1 FROM EspecialidadesVacante WHERE IdVacante = @IdVacante)
         BEGIN
             UPDATE EspecialidadesVacante
@@ -1406,11 +421,9 @@ BEGIN
 END
 GO
 
-PRINT '✅ EditarVacanteSP creado';
-GO
--- =============================================
--- SP 4: Eliminar Vacante
--- =============================================
+/* =========================================================
+   POST: Eliminar Vacante
+   ========================================================= */
 CREATE OR ALTER PROCEDURE dbo.EliminarVacanteSP
     @IdVacante INT
 AS
@@ -1420,7 +433,6 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM VacantesPractica WHERE IdVacantePractica = @IdVacante)
         RETURN 0;
 
-    -- Verificar dependencias
     IF EXISTS (SELECT 1 FROM PracticaEstudiante WHERE IdVacante = @IdVacante)
         RETURN -1;
 
@@ -1442,12 +454,16 @@ BEGIN
 END
 GO
 
--- =============================================
--- SP 5: Asignar Estudiante
--- =============================================
-CREATE OR ALTER PROCEDURE dbo.AsignarEstudianteSP
+USE SIGEP_WEB;
+GO
+
+DROP PROCEDURE IF EXISTS dbo.AsignarEstudianteSP;
+GO
+
+CREATE PROCEDURE dbo.AsignarEstudianteSP
     @IdVacante INT,
-    @IdUsuario INT
+    @IdUsuario INT,
+    @Resultado INT OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -1456,26 +472,59 @@ BEGIN
     PRINT '@IdVacante: ' + CAST(@IdVacante AS VARCHAR);
     PRINT '@IdUsuario: ' + CAST(@IdUsuario AS VARCHAR);
 
-    -- Validar vacante
+    -- Variables para IDs de estados
+    DECLARE @IdEstadoEnProceso   INT;
+    DECLARE @IdEstadoAsignada    INT;
+    DECLARE @IdEstadoRetirada    INT;
+    DECLARE @IdEstadoAprobada    INT;
+    DECLARE @IdEstadoEnCurso     INT;
+    DECLARE @IdEstadoFinalizada  INT;
+    DECLARE @IdEstadoRezagado    INT;
+
+    -- Obtener IDs de estados
+    SELECT @IdEstadoEnProceso  = IdEstado FROM Estados WHERE LOWER(LTRIM(RTRIM(Descripcion))) = 'en proceso de aplicacion';
+    SELECT @IdEstadoAsignada   = IdEstado FROM Estados WHERE LOWER(LTRIM(RTRIM(Descripcion))) = 'asignada';
+    SELECT @IdEstadoRetirada   = IdEstado FROM Estados WHERE LOWER(LTRIM(RTRIM(Descripcion))) = 'retirada';
+    SELECT @IdEstadoAprobada   = IdEstado FROM Estados WHERE LOWER(LTRIM(RTRIM(Descripcion))) = 'aprobada';
+    SELECT @IdEstadoEnCurso    = IdEstado FROM Estados WHERE LOWER(LTRIM(RTRIM(Descripcion))) = 'en curso';
+    SELECT @IdEstadoFinalizada = IdEstado FROM Estados WHERE LOWER(LTRIM(RTRIM(Descripcion))) = 'finalizada';
+    SELECT @IdEstadoRezagado   = IdEstado FROM Estados WHERE LOWER(LTRIM(RTRIM(Descripcion))) = 'rezagado';
+
+    PRINT 'Estados cargados: EnProceso=' + CAST(@IdEstadoEnProceso AS VARCHAR) +
+          ', Asignada=' + CAST(@IdEstadoAsignada AS VARCHAR);
+
+    /* =========================================================
+       VALIDACIÓN: Estudiante debe estar "aprobado" académicamente
+       ========================================================= */
+    DECLARE @EstadoAcademico BIT = NULL;
+
+    SELECT @EstadoAcademico = EstadoAcademico
+    FROM dbo.Usuarios
+    WHERE IdUsuario = @IdUsuario;
+
+    IF @EstadoAcademico IS NULL
+    BEGIN
+        PRINT 'ERROR: Usuario no existe';
+        SET @Resultado = -6;   -- usuario no encontrado
+        RETURN;
+    END
+
+    IF @EstadoAcademico = 0
+    BEGIN
+        PRINT 'ERROR: Estudiante rezagado (EstadoAcademico=0). No se permite asignar.';
+        SET @Resultado = -5;   -- rezagado / no permitido
+        RETURN;
+    END
+
+    -- Verificar que la vacante existe
     IF NOT EXISTS (SELECT 1 FROM VacantesPractica WHERE IdVacantePractica = @IdVacante)
     BEGIN
         PRINT 'ERROR: Vacante no existe';
-        RETURN 0;
+        SET @Resultado = 0;
+        RETURN;
     END
 
-    -- Verificar si ya tiene práctica activa
-    IF EXISTS (
-        SELECT 1 
-        FROM PracticaEstudiante 
-        WHERE IdUsuario = @IdUsuario 
-        AND IdEstado IN (SELECT IdEstado FROM Estados WHERE LOWER(Descripcion) IN ('activo', 'activa', 'aprobada', 'asignada'))
-    )
-    BEGIN
-        PRINT 'ERROR: Estudiante ya tiene práctica activa';
-        RETURN -1;
-    END
-
-    -- Verificar cupos
+    -- Verificar cupos disponibles
     DECLARE @CuposOcupados INT;
     DECLARE @NumeroCupos INT;
 
@@ -1486,7 +535,7 @@ BEGIN
     SELECT @CuposOcupados = COUNT(*)
     FROM PracticaEstudiante
     WHERE IdVacante = @IdVacante
-    AND IdEstado IN (SELECT IdEstado FROM Estados WHERE LOWER(Descripcion) IN ('activo', 'activa', 'aprobada', 'asignada'));
+      AND IdEstado IN (@IdEstadoAsignada, @IdEstadoAprobada, 8, 9, @IdEstadoEnCurso);
 
     PRINT 'Cupos totales: ' + CAST(@NumeroCupos AS VARCHAR);
     PRINT 'Cupos ocupados: ' + CAST(@CuposOcupados AS VARCHAR);
@@ -1494,46 +543,122 @@ BEGIN
     IF @CuposOcupados >= @NumeroCupos
     BEGIN
         PRINT 'ERROR: No hay cupos disponibles';
-        RETURN -2;
+        SET @Resultado = -2;
+        RETURN;
+    END
+
+    -- Verificar si tiene práctica activa EN OTRA VACANTE
+    IF EXISTS (
+        SELECT 1
+        FROM PracticaEstudiante
+        WHERE IdUsuario = @IdUsuario
+          AND IdVacante <> @IdVacante
+          AND IdEstado IN (@IdEstadoAsignada, @IdEstadoAprobada, @IdEstadoEnCurso)
+    )
+    BEGIN
+        PRINT 'ERROR: Estudiante ya tiene práctica activa en otra vacante';
+        SET @Resultado = -1;
+        RETURN;
     END
 
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        -- Obtener IdEstado "Activo" o "Asignada"
-        DECLARE @IdEstadoActivo INT;
-        SELECT TOP 1 @IdEstadoActivo = IdEstado 
-        FROM Estados 
-        WHERE LOWER(LTRIM(RTRIM(Descripcion))) IN ('activo', 'activa', 'asignada', 'aprobada')
-        ORDER BY IdEstado;
+        DECLARE @IdPracticaExistente INT = NULL;
+        DECLARE @EstadoActual INT = NULL;
 
-        IF @IdEstadoActivo IS NULL
-            SET @IdEstadoActivo = 1;
+        SELECT TOP 1
+            @IdPracticaExistente = IdPractica,
+            @EstadoActual = IdEstado
+        FROM PracticaEstudiante WITH (UPDLOCK, ROWLOCK)
+        WHERE IdUsuario = @IdUsuario
+          AND IdVacante = @IdVacante
+        ORDER BY IdPractica DESC;
 
-        PRINT 'Insertando práctica con IdEstado: ' + CAST(@IdEstadoActivo AS VARCHAR);
+        PRINT 'Práctica existente: ' + ISNULL(CAST(@IdPracticaExistente AS VARCHAR), 'NULL');
+        PRINT 'Estado actual: ' + ISNULL(CAST(@EstadoActual AS VARCHAR), 'NULL');
 
-        INSERT INTO PracticaEstudiante (IdVacante, IdEstado, IdUsuario, FechaAplicacion)
-        VALUES (@IdVacante, @IdEstadoActivo, @IdUsuario, GETDATE());
+        IF @IdPracticaExistente IS NULL
+        BEGIN
+            PRINT 'INSERTANDO nuevo registro en estado "En Proceso"';
+
+            INSERT INTO PracticaEstudiante (IdVacante, IdEstado, IdUsuario, FechaAplicacion)
+            VALUES (@IdVacante, @IdEstadoEnProceso, @IdUsuario, GETDATE());
+
+            SET @Resultado = 1;
+            PRINT '=== ÉXITO: Registro creado ===';
+        END
+        ELSE
+        BEGIN
+            IF @EstadoActual = @IdEstadoEnProceso
+            BEGIN
+                PRINT 'ACTUALIZANDO de "En Proceso" a "Asignada"';
+
+                UPDATE PracticaEstudiante
+                SET IdEstado = @IdEstadoAsignada,
+                    FechaAplicacion = GETDATE()
+                WHERE IdPractica = @IdPracticaExistente;
+
+                SET @Resultado = 1;
+                PRINT '=== ÉXITO: Actualizado a Asignada ===';
+            END
+            ELSE IF @EstadoActual = @IdEstadoRetirada
+            BEGIN
+                PRINT 'ACTUALIZANDO de "Retirada" a "En Proceso"';
+
+                UPDATE PracticaEstudiante
+                SET IdEstado = @IdEstadoEnProceso,
+                    FechaAplicacion = GETDATE()
+                WHERE IdPractica = @IdPracticaExistente;
+
+                SET @Resultado = 1;
+                PRINT '=== ÉXITO: Reactivado a En Proceso ===';
+            END
+            ELSE IF @EstadoActual = @IdEstadoAsignada
+            BEGIN
+                PRINT 'AVISO: Ya está asignado';
+                SET @Resultado = -3;
+            END
+            ELSE IF @EstadoActual IN (@IdEstadoAprobada, @IdEstadoEnCurso)
+            BEGIN
+                PRINT 'ERROR: No se puede modificar (Aprobada/En Curso)';
+                SET @Resultado = -4;
+            END
+            ELSE IF @EstadoActual IN (@IdEstadoFinalizada, @IdEstadoRezagado)
+            BEGIN
+                PRINT 'INSERTANDO nueva práctica (la anterior queda como historial)';
+
+                INSERT INTO PracticaEstudiante (IdVacante, IdEstado, IdUsuario, FechaAplicacion)
+                VALUES (@IdVacante, @IdEstadoEnProceso, @IdUsuario, GETDATE());
+
+                SET @Resultado = 1;
+                PRINT '=== ÉXITO: Nueva práctica creada ===';
+            END
+            ELSE
+            BEGIN
+                PRINT 'ERROR: Estado no válido: ' + CAST(@EstadoActual AS VARCHAR);
+                SET @Resultado = 0;
+            END
+        END
 
         COMMIT TRANSACTION;
-
-        PRINT '=== ÉXITO: Estudiante asignado ===';
-        RETURN 1;
+        PRINT '=== COMMIT EXITOSO ===';
 
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
             ROLLBACK TRANSACTION;
 
-        PRINT 'ERROR: ' + ERROR_MESSAGE();
-        RETURN 0;
+        PRINT 'ERROR EN CATCH: ' + ERROR_MESSAGE();
+        PRINT 'ERROR NUMBER: ' + CAST(ERROR_NUMBER() AS VARCHAR);
+        PRINT 'ERROR LINE: ' + CAST(ERROR_LINE() AS VARCHAR);
+        SET @Resultado = 0;
     END CATCH
 END
 GO
-
--- =============================================
--- SP 6: Retirar Estudiante
--- =============================================
+/* =========================================================
+   POST: Retirar Estudiante
+   ========================================================= */
 CREATE OR ALTER PROCEDURE dbo.RetirarEstudianteSP
     @IdVacante INT,
     @IdUsuario INT,
@@ -1590,207 +715,928 @@ BEGIN
 END
 GO
 
--- =============================================
--- SP 7: Desasignar Práctica
--- =============================================
-CREATE OR ALTER PROCEDURE dbo.DesasignarPracticaSP
+/* =========================================================
+   POST: Desasignar Práctica
+   ========================================================= */
+USE SIGEP_WEB;
+GO
+
+/* =========================================================
+   POST: Desasignar Práctica
+   ========================================================= */
+DROP PROCEDURE IF EXISTS dbo.DesasignarPracticaSP;
+GO
+
+CREATE PROCEDURE dbo.DesasignarPracticaSP
     @IdPractica INT,
-    @Comentario NVARCHAR(MAX)
+    @Comentario NVARCHAR(MAX),
+    @Resultado INT OUTPUT 
 AS
 BEGIN
     SET NOCOUNT ON;
 
+    PRINT '========================================';
+    PRINT '=== INICIO DesasignarPracticaSP ===';
+    PRINT '========================================';
+    PRINT '@IdPractica: ' + CAST(@IdPractica AS VARCHAR);
+    PRINT '@Comentario: ' + ISNULL(@Comentario, '(NULL)');
+    PRINT '';
+
     IF NOT EXISTS (SELECT 1 FROM PracticaEstudiante WHERE IdPractica = @IdPractica)
     BEGIN
-        RETURN 0;
+        PRINT '❌ ERROR: La práctica con IdPractica=' + CAST(@IdPractica AS VARCHAR) + ' NO EXISTE';
+        SET @Resultado = 0;
+        RETURN;
     END
+
+    PRINT '✅ Práctica encontrada';
 
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        DECLARE @IdEstadoInactivo INT;
-        SELECT TOP 1 @IdEstadoInactivo = IdEstado 
+        DECLARE @IdEstadoRetirada INT = NULL;
+        
+        SELECT @IdEstadoRetirada = IdEstado 
         FROM Estados 
-        WHERE LOWER(LTRIM(RTRIM(Descripcion))) IN ('inactivo', 'inactiva', 'retirado', 'retirada')
-        ORDER BY IdEstado;
+        WHERE LOWER(LTRIM(RTRIM(Descripcion))) = 'retirada';
 
-        IF @IdEstadoInactivo IS NULL
-            SET @IdEstadoInactivo = 2;
+        PRINT 'Estado "Retirada": ' + ISNULL(CAST(@IdEstadoRetirada AS VARCHAR), '(NULL)');
+
+        IF @IdEstadoRetirada IS NULL
+        BEGIN
+            SELECT @IdEstadoRetirada = IdEstado 
+            FROM Estados 
+            WHERE LOWER(LTRIM(RTRIM(Descripcion))) IN ('inactivo', 'inactiva');
+
+            PRINT 'Usando estado "Inactivo": ' + ISNULL(CAST(@IdEstadoRetirada AS VARCHAR), '(NULL)');
+        END
+
+        IF @IdEstadoRetirada IS NULL
+        BEGIN
+            PRINT '❌ ERROR CRÍTICO: No existe ningún estado válido (Retirada/Inactivo)';
+            PRINT 'Estados disponibles en la tabla:';
+            
+            DECLARE @EstadosDisponibles NVARCHAR(MAX);
+            SELECT @EstadosDisponibles = STRING_AGG(CAST(IdEstado AS VARCHAR) + '=' + Descripcion, ', ')
+            FROM Estados;
+            
+            PRINT @EstadosDisponibles;
+
+            ROLLBACK TRANSACTION;
+            SET @Resultado = -2;  -- Código especial: estado no encontrado
+            RETURN;
+        END
+
+        PRINT '✅ Estado a usar: IdEstado=' + CAST(@IdEstadoRetirada AS VARCHAR);
 
         DECLARE @IdUsuario INT;
         SELECT @IdUsuario = IdUsuario
         FROM PracticaEstudiante
         WHERE IdPractica = @IdPractica;
 
+        PRINT 'IdUsuario: ' + CAST(@IdUsuario AS VARCHAR);
+
         UPDATE PracticaEstudiante
-        SET IdEstado = @IdEstadoInactivo
+        SET IdEstado = @IdEstadoRetirada
         WHERE IdPractica = @IdPractica;
 
-        IF @Comentario IS NOT NULL AND LEN(@Comentario) > 0
+        PRINT '✅ Estado de práctica actualizado';
+
+        DECLARE @ComentarioLimpio NVARCHAR(MAX) = LTRIM(RTRIM(@Comentario));
+
+        IF @ComentarioLimpio IS NOT NULL AND LEN(@ComentarioLimpio) > 0
         BEGIN
             INSERT INTO ComentariosPractica (Comentario, Fecha, IdUsuario, IdPractica, Tipo)
-            VALUES (@Comentario, GETDATE(), @IdUsuario, @IdPractica, 'Desasignación');
+            VALUES (@ComentarioLimpio, GETDATE(), @IdUsuario, @IdPractica, 'Desasignación');
+
+            PRINT '✅ Comentario insertado: "' + LEFT(@ComentarioLimpio, 50) + '..."';
+        END
+        ELSE
+        BEGIN
+            PRINT '⚠️ AVISO: No se insertó comentario (vacío o NULL)';
         END
 
         COMMIT TRANSACTION;
+        
+        PRINT '';
+        PRINT '========================================';
+        PRINT '=== ✅ COMMIT EXITOSO ===';
+        PRINT '========================================';
 
-        RETURN 1;
+        SET @Resultado = 1;
 
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0
             ROLLBACK TRANSACTION;
 
-        RETURN 0;
+        PRINT '';
+        PRINT '========================================';
+        PRINT '=== ❌ ERROR EN CATCH ===';
+        PRINT '========================================';
+        PRINT 'ERROR_MESSAGE: ' + ERROR_MESSAGE();
+        PRINT 'ERROR_NUMBER: ' + CAST(ERROR_NUMBER() AS VARCHAR);
+        PRINT 'ERROR_LINE: ' + CAST(ERROR_LINE() AS VARCHAR);
+        PRINT 'ERROR_SEVERITY: ' + CAST(ERROR_SEVERITY() AS VARCHAR);
+        PRINT 'ERROR_STATE: ' + CAST(ERROR_STATE() AS VARCHAR);
+        
+        SET @Resultado = 0;
     END CATCH
 END
 GO
 
--- =============================================
--- PRUEBAS DIAGNÓSTICAS
--- =============================================
-
-PRINT '========================================';
-PRINT 'PRUEBAS DE DIAGNÓSTICO';
-PRINT '========================================';
-
--- Ver estados disponibles
 PRINT '';
-PRINT 'Estados disponibles:';
-SELECT IdEstado, Descripcion FROM Estados;
+PRINT '✅ SP DesasignarPracticaSP creado exitosamente';
+GO
 
--- Ver empresas disponibles
-PRINT '';
-PRINT 'Empresas disponibles:';
-SELECT IdEmpresa, NombreEmpresa, IdDireccion FROM Empresas;
+/* =========================================================
+   STORED PROCEDURES DE EMPRESAS
+   ========================================================= */
 
--- Ver especialidades disponibles
-PRINT '';
-PRINT 'Especialidades disponibles:';
-SELECT IdEspecialidad, Nombre FROM Especialidades;
-
--- Ver modalidades disponibles
-PRINT '';
-PRINT 'Modalidades disponibles:';
-SELECT IdModalidad, Descripcion FROM Modalidades;
-
-PRINT '';
-PRINT '========================================';
-PRINT 'PRUEBA 1: Obtener ubicación empresa';
-PRINT '========================================';
-EXEC ObtenerUbicacionEmpresaSP @IdEmpresa = 1;
-
-PRINT '';
-PRINT '========================================';
-PRINT 'PRUEBA 2: Crear vacante';
-PRINT '========================================';
-DECLARE @ResultadoCrear INT;
-EXEC @ResultadoCrear = CrearVacanteSP 
-    @Nombre = 'Práctica de Prueba DIAGNÓSTICO',
-    @IdEmpresa = 1,
-    @IdEspecialidad = 1,
-    @NumCupos = 5,
-    @IdModalidad = 1,
-    @Requerimientos = 'Prueba de requisitos',
-    @Descripcion = 'Prueba de descripción',
-    @FechaMaxAplicacion = '2025-12-31',
-    @FechaCierre = '2026-01-15';
-
-PRINT 'Resultado CrearVacanteSP: ' + CAST(@ResultadoCrear AS VARCHAR);
-
-IF @ResultadoCrear > 0
+CREATE OR ALTER PROCEDURE GuardarEmpresaSP
+(
+    @IdEmpresa INT = 0,
+    @NombreEmpresa VARCHAR(255),
+    @NombreContacto VARCHAR(255),
+    @Email VARCHAR(255),
+    @Telefono VARCHAR(50),
+    @Provincia VARCHAR(255),
+    @Canton VARCHAR(255),
+    @Distrito VARCHAR(255),
+    @DireccionExacta VARCHAR(MAX),
+    @AreasAfinidad VARCHAR(255),
+    @IdEmpresaOut INT OUTPUT
+)
+AS
 BEGIN
-    PRINT 'ÉXITO: Vacante creada con ID ' + CAST(@ResultadoCrear AS VARCHAR);
-    
-    -- Verificar que se guardó
-    SELECT * FROM VacantesPractica WHERE IdVacantePractica = @ResultadoCrear;
-    SELECT * FROM EspecialidadesVacante WHERE IdVacante = @ResultadoCrear;
-END
-ELSE
-BEGIN
-    PRINT 'ERROR: No se pudo crear la vacante';
-END
+    SET NOCOUNT ON;
 
-PRINT '';
-PRINT '========================================';
-PRINT 'FIN DE PRUEBAS';
-PRINT '========================================';
+    DECLARE @IdProvincia INT,
+            @IdCanton INT,
+            @IdDistrito INT,
+            @IdDireccion INT;
 
-SELECT * FROM Empresas;
+    SELECT @IdProvincia = IdProvincia
+    FROM Provincias
+    WHERE Nombre = @Provincia;
 
-PRINT '';
-PRINT '3. Verificando empresa con IdEmpresa = 1...';
-DECLARE @IdEstadoActivo INT;
-
-IF NOT EXISTS (SELECT 1 FROM Empresas WHERE IdEmpresa = 1)
-BEGIN
-    -- Verificar si existe al menos 1 dirección
-    DECLARE @IdDireccionPrueba INT;
-    SELECT TOP 1 @IdDireccionPrueba = IdDireccion FROM Direcciones;
-    
-    IF @IdDireccionPrueba IS NULL
+    IF @IdProvincia IS NULL
     BEGIN
-        -- Crear dirección de prueba si no existe ninguna
-        DECLARE @IdDistritoPrueba INT;
-        SELECT TOP 1 @IdDistritoPrueba = IdDistrito FROM Distritos;
-        
-        IF @IdDistritoPrueba IS NOT NULL
+        INSERT INTO Provincias (Nombre) VALUES (@Provincia);
+        SET @IdProvincia = SCOPE_IDENTITY();
+    END;
+
+    SELECT @IdCanton = IdCanton
+    FROM Cantones
+    WHERE Nombre = @Canton AND IdProvincia = @IdProvincia;
+
+    IF @IdCanton IS NULL
+    BEGIN
+        INSERT INTO Cantones (Nombre, IdProvincia)
+        VALUES (@Canton, @IdProvincia);
+        SET @IdCanton = SCOPE_IDENTITY();
+    END;
+
+    SELECT @IdDistrito = IdDistrito
+    FROM Distritos
+    WHERE Nombre = @Distrito AND IdCanton = @IdCanton;
+
+    IF @IdDistrito IS NULL
+    BEGIN
+        INSERT INTO Distritos (Nombre, IdCanton)
+        VALUES (@Distrito, @IdCanton);
+        SET @IdDistrito = SCOPE_IDENTITY();
+    END;
+
+    SELECT @IdDireccion = IdDireccion
+    FROM Empresas
+    WHERE IdEmpresa = @IdEmpresa;
+
+    IF @IdEmpresa = 0
+    BEGIN
+        INSERT INTO Direcciones (IdDistrito, DireccionExacta)
+        VALUES (@IdDistrito, @DireccionExacta);
+        SET @IdDireccion = SCOPE_IDENTITY();
+    END
+    ELSE
+    BEGIN
+        IF @IdDireccion IS NULL
         BEGIN
             INSERT INTO Direcciones (IdDistrito, DireccionExacta)
-            VALUES (@IdDistritoPrueba, 'Dirección de prueba');
-            
-            SET @IdDireccionPrueba = SCOPE_IDENTITY();
-            PRINT '   ✅ Dirección de prueba creada';
+            VALUES (@IdDistrito, @DireccionExacta);
+            SET @IdDireccion = SCOPE_IDENTITY();
+
+            UPDATE Empresas
+            SET IdDireccion = @IdDireccion
+            WHERE IdEmpresa = @IdEmpresa;
+        END
+        ELSE
+        BEGIN
+            UPDATE Direcciones
+            SET DireccionExacta = @DireccionExacta,
+                IdDistrito = @IdDistrito
+            WHERE IdDireccion = @IdDireccion;
+        END
+    END;
+
+    IF @IdEmpresa = 0
+    BEGIN
+        INSERT INTO Empresas
+        (NombreEmpresa, NombreContacto, IdDireccion, AreasAfinidad, IdEstado)
+        VALUES (@NombreEmpresa, @NombreContacto, @IdDireccion, @AreasAfinidad, 1);
+        SET @IdEmpresaOut = SCOPE_IDENTITY();
+    END
+    ELSE
+    BEGIN
+        UPDATE Empresas
+        SET NombreEmpresa = @NombreEmpresa,
+            NombreContacto = @NombreContacto,
+            AreasAfinidad = @AreasAfinidad
+        WHERE IdEmpresa = @IdEmpresa;
+        SET @IdEmpresaOut = @IdEmpresa;
+    END
+
+    IF EXISTS(SELECT 1 FROM Emails WHERE IdEmpresa = @IdEmpresaOut)
+        UPDATE Emails SET Email = @Email WHERE IdEmpresa = @IdEmpresaOut;
+    ELSE
+        INSERT INTO Emails (IdEmpresa, Email) VALUES (@IdEmpresaOut, @Email);
+
+    IF EXISTS(SELECT 1 FROM Telefonos WHERE IdEmpresa = @IdEmpresaOut)
+        UPDATE Telefonos SET Telefono = @Telefono WHERE IdEmpresa = @IdEmpresaOut;
+    ELSE
+        INSERT INTO Telefonos (IdEmpresa, Telefono) VALUES (@IdEmpresaOut, @Telefono);
+END;
+GO
+
+CREATE OR ALTER PROCEDURE ConsultarEmpresaSP
+(
+    @IdEmpresa INT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT 
+        e.IdEmpresa,
+        e.NombreEmpresa,
+        e.NombreContacto,
+        em.Email,
+        t.Telefono,
+        p.Nombre AS Provincia,
+        c.Nombre AS Canton,
+        d.Nombre AS Distrito,
+        dir.DireccionExacta,
+        e.AreasAfinidad
+    FROM Empresas e
+    LEFT JOIN Direcciones dir       ON e.IdDireccion = dir.IdDireccion
+    LEFT JOIN Distritos d           ON dir.IdDistrito = d.IdDistrito
+    LEFT JOIN Cantones c            ON d.IdCanton = c.IdCanton
+    LEFT JOIN Provincias p          ON c.IdProvincia = p.IdProvincia
+    LEFT JOIN Emails em             ON em.IdEmpresa = e.IdEmpresa
+    LEFT JOIN Telefonos t           ON t.IdEmpresa = e.IdEmpresa
+    WHERE e.IdEmpresa = @IdEmpresa;
+END
+GO
+
+CREATE OR ALTER PROCEDURE ListarEmpresasSP
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT 
+        e.IdEmpresa,
+        e.NombreEmpresa,
+        e.AreasAfinidad AS AreasAfinidad,
+        ISNULL(p.Nombre,'') +
+        CASE WHEN c.Nombre IS NOT NULL THEN ', ' + c.Nombre ELSE '' END +
+        CASE WHEN d.Nombre IS NOT NULL THEN ', ' + d.Nombre ELSE '' END AS Ubicacion,
+        (SELECT COUNT(*) 
+         FROM VacantesPractica v 
+         WHERE v.IdEmpresa = e.IdEmpresa) AS HistorialVacantes
+    FROM Empresas e
+    LEFT JOIN Direcciones dir   ON e.IdDireccion = dir.IdDireccion
+    LEFT JOIN Distritos d       ON dir.IdDistrito = d.IdDistrito
+    LEFT JOIN Cantones c        ON d.IdCanton = c.IdCanton
+    LEFT JOIN Provincias p      ON c.IdProvincia = p.IdProvincia
+    WHERE e.IdEstado = 1;
+END
+GO
+
+CREATE OR ALTER PROCEDURE ActualizarEmpresaSP
+(
+    @IdEmpresa INT,
+    @NombreEmpresa VARCHAR(255),
+    @NombreContacto VARCHAR(255),
+    @Email VARCHAR(255),
+    @Telefono VARCHAR(50),
+    @Provincia VARCHAR(255),
+    @Canton VARCHAR(255),
+    @Distrito VARCHAR(255),
+    @DireccionExacta VARCHAR(MAX),
+    @AreasAfinidad VARCHAR(255)
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @IdProvincia INT,
+            @IdCanton INT,
+            @IdDistrito INT,
+            @IdDireccion INT;
+
+    SELECT @IdProvincia = IdProvincia
+    FROM Provincias
+    WHERE Nombre = @Provincia;
+
+    IF @IdProvincia IS NULL
+    BEGIN
+        INSERT INTO Provincias (Nombre) VALUES (@Provincia);
+        SET @IdProvincia = SCOPE_IDENTITY();
+    END;
+
+    SELECT @IdCanton = IdCanton
+    FROM Cantones
+    WHERE Nombre = @Canton AND IdProvincia = @IdProvincia;
+
+    IF @IdCanton IS NULL
+    BEGIN
+        INSERT INTO Cantones (Nombre, IdProvincia)
+        VALUES (@Canton, @IdProvincia);
+        SET @IdCanton = SCOPE_IDENTITY();
+    END;
+
+    SELECT @IdDistrito = IdDistrito
+    FROM Distritos
+    WHERE Nombre = @Distrito AND IdCanton = @IdCanton;
+
+    IF @IdDistrito IS NULL
+    BEGIN
+        INSERT INTO Distritos (Nombre, IdCanton)
+        VALUES (@Distrito, @IdCanton);
+        SET @IdDistrito = SCOPE_IDENTITY();
+    END;
+
+    SELECT @IdDireccion = IdDireccion 
+    FROM Empresas 
+    WHERE IdEmpresa = @IdEmpresa;
+
+    IF @IdDireccion IS NULL
+    BEGIN
+        INSERT INTO Direcciones (IdDistrito, DireccionExacta)
+        VALUES (@IdDistrito, @DireccionExacta);
+        SET @IdDireccion = SCOPE_IDENTITY();
+
+        UPDATE Empresas
+        SET IdDireccion = @IdDireccion
+        WHERE IdEmpresa = @IdEmpresa;
+    END
+    ELSE
+    BEGIN
+        UPDATE Direcciones
+        SET DireccionExacta = @DireccionExacta,
+            IdDistrito = @IdDistrito
+        WHERE IdDireccion = @IdDireccion;
+    END
+
+    UPDATE Empresas
+    SET NombreEmpresa = @NombreEmpresa,
+        NombreContacto = @NombreContacto,
+        AreasAfinidad = @AreasAfinidad
+    WHERE IdEmpresa = @IdEmpresa;
+
+    IF EXISTS(SELECT 1 FROM Emails WHERE IdEmpresa = @IdEmpresa)
+        UPDATE Emails SET Email = @Email WHERE IdEmpresa = @IdEmpresa;
+    ELSE
+        INSERT INTO Emails (IdEmpresa, Email)
+        VALUES (@IdEmpresa, @Email);
+
+    IF EXISTS(SELECT 1 FROM Telefonos WHERE IdEmpresa = @IdEmpresa)
+        UPDATE Telefonos SET Telefono = @Telefono WHERE IdEmpresa = @IdEmpresa;
+    ELSE
+        INSERT INTO Telefonos (IdEmpresa, Telefono)
+        VALUES (@IdEmpresa, @Telefono);
+END
+GO
+
+CREATE OR ALTER PROCEDURE EliminarEmpresaSP
+(
+    @IdEmpresa INT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @Inactivo INT = 2;
+    DECLARE @Cancelado INT = 3;
+
+    UPDATE Empresas
+    SET IdEstado = @Inactivo
+    WHERE IdEmpresa = @IdEmpresa;
+
+    UPDATE VacantesPractica
+    SET IdEstado = @Cancelado
+    WHERE IdEmpresa = @IdEmpresa;
+END
+GO
+
+/* =========================================================
+   STORED PROCEDURES ADMINISTRATIVOS
+   ========================================================= */
+
+CREATE OR ALTER PROCEDURE ObtenerEspecialidadesSP
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        IdEspecialidad,
+        Nombre
+    FROM Especialidades
+    WHERE IdEstado = (SELECT IdEstado FROM Estados WHERE Descripcion = 'Activo')
+    ORDER BY Nombre;
+END
+GO
+
+CREATE OR ALTER PROCEDURE ActualizarEstadoAcademicoSP
+    @IdUsuario INT,
+    @NuevoEstado BIT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    BEGIN TRY
+        UPDATE Usuarios
+        SET EstadoAcademico = @NuevoEstado
+        WHERE IdUsuario = @IdUsuario AND IdRol = 1;
+
+        IF @@ROWCOUNT > 0
+            SELECT 1 AS Resultado, 'Estado académico actualizado correctamente' AS Mensaje;
+        ELSE
+            SELECT 0 AS Resultado, 'Estudiante no encontrado' AS Mensaje;
+    END TRY
+    BEGIN CATCH
+        SELECT 0 AS Resultado, ERROR_MESSAGE() AS Mensaje;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE EliminarDocumentoSP
+    @IdDocumento INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    BEGIN TRY
+        DELETE FROM Documentos WHERE IdDocumento = @IdDocumento;
+        SELECT 1 AS Resultado, 'Documento eliminado correctamente' AS Mensaje;
+    END TRY
+    BEGIN CATCH
+        SELECT 0 AS Resultado, ERROR_MESSAGE() AS Mensaje;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE ListarEstudiantesSP
+    @IdCoordinador INT = NULL,
+    @Estado VARCHAR(50) = NULL,
+    @IdEspecialidad INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DECLARE @EstadoClean VARCHAR(50) = NULLIF(LTRIM(RTRIM(@Estado)), '');
+    DECLARE @IdEspecialidadClean INT = NULLIF(@IdEspecialidad, 0);
+
+    SELECT 
+        u.IdUsuario,
+        ISNULL(u.Cedula, '') AS Cedula,
+        u.Nombre + ' ' + u.Apellido1 + ' ' + ISNULL(u.Apellido2, '') AS NombreCompleto,
+        ISNULL((SELECT TOP 1 Telefono FROM Telefonos WHERE IdUsuario = u.IdUsuario ORDER BY IdTelefono DESC), '') AS Telefono,
+        ISNULL((SELECT TOP 1 e.Nombre 
+         FROM UsuarioEspecialidad ue 
+         INNER JOIN Especialidades e ON ue.IdEspecialidad = e.IdEspecialidad
+         WHERE ue.IdUsuario = u.IdUsuario 
+         ORDER BY ue.IdUsuarioEspecialidad DESC), 'Sin Especialidad') AS EspecialidadNombre,
+        CAST(ISNULL(u.EstadoAcademico, 0) AS BIT) AS EstadoAcademico,
+        ISNULL((SELECT TOP 1 est.Descripcion 
+         FROM PracticaEstudiante pe 
+         INNER JOIN Estados est ON pe.IdEstado = est.IdEstado
+         WHERE pe.IdUsuario = u.IdUsuario 
+         ORDER BY pe.IdPractica DESC), 'Sin Procesos Activos') AS EstadoPractica,
+        CASE 
+            WHEN ISNULL(u.EstadoAcademico, 0) = 1 THEN 1
+            ELSE 0
+        END AS IdEstado
+    FROM Usuarios u
+    WHERE u.IdRol = 1
+        AND ISNULL(u.IdEstado, 0) != 0
+        AND (@EstadoClean IS NULL 
+             OR (@EstadoClean = 'Aprobada' AND u.EstadoAcademico = 1)
+             OR (@EstadoClean = 'Rezagado' AND u.EstadoAcademico = 0))
+        AND (@IdEspecialidadClean IS NULL OR @IdEspecialidadClean = 0 OR 
+             EXISTS (SELECT 1 FROM UsuarioEspecialidad ue 
+                     WHERE ue.IdUsuario = u.IdUsuario AND ue.IdEspecialidad = @IdEspecialidadClean))
+    ORDER BY u.Nombre, u.Apellido1;
+END
+GO
+
+CREATE OR ALTER PROCEDURE ConsultarEstudianteSP
+    @IdUsuario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT 
+        u.Cedula,
+        u.Nombre,
+        u.Apellido1,
+        u.Apellido2,
+        ISNULL((SELECT TOP 1 Email FROM Emails WHERE IdUsuario = u.IdUsuario ORDER BY IdEmail DESC), '') AS Correo,
+        ISNULL((SELECT TOP 1 Telefono FROM Telefonos WHERE IdUsuario = u.IdUsuario ORDER BY IdTelefono DESC), '') AS Telefono,
+        u.FechaNacimiento,
+        ISNULL(p.Nombre, '') AS Provincia,
+        ISNULL(c.Nombre, '') AS Canton,
+        ISNULL(dist.Nombre, '') AS Distrito,
+        ISNULL(dir.DireccionExacta, '') AS DireccionExacta,
+        ISNULL((SELECT TOP 1 e.Nombre 
+         FROM UsuarioEspecialidad ue 
+         INNER JOIN Especialidades e ON ue.IdEspecialidad = e.IdEspecialidad
+         WHERE ue.IdUsuario = u.IdUsuario 
+         ORDER BY ue.IdUsuarioEspecialidad DESC), '') AS Especialidad,
+        ISNULL(s.Seccion, '') AS Seccion
+    FROM Usuarios u
+    LEFT JOIN Direcciones dir ON u.IdDireccion = dir.IdDireccion
+    LEFT JOIN Distritos dist ON dir.IdDistrito = dist.IdDistrito
+    LEFT JOIN Cantones c ON dist.IdCanton = c.IdCanton
+    LEFT JOIN Provincias p ON c.IdProvincia = p.IdProvincia
+    LEFT JOIN Secciones s ON u.IdSeccion = s.IdSeccion
+    WHERE u.IdUsuario = @IdUsuario;
+
+    SELECT 
+        enc.Nombre + ' ' + enc.Apellido1 + ' ' + ISNULL(enc.Apellido2, '') AS Nombre,
+        ISNULL((SELECT TOP 1 Telefono FROM Telefonos WHERE IdEncargado = enc.IdEncargado ORDER BY IdTelefono DESC), '') AS Telefono,
+        ISNULL(enc.Ocupacion, '') AS Ocupacion
+    FROM EstudianteEncargado ee
+    INNER JOIN Encargados enc ON ee.IdEncargado = enc.IdEncargado
+    WHERE ee.IdUsuario = @IdUsuario;
+
+    SELECT 
+        IdDocumento,
+        Documento
+    FROM Documentos
+    WHERE IdUsuario = @IdUsuario
+    ORDER BY FechaSubida DESC;
+
+    SELECT 
+        pe.IdPractica AS IdPostulacion,
+        pe.IdVacante,
+        pe.IdUsuario,
+        emp.NombreEmpresa AS Empresa,
+        ISNULL(est.Descripcion, '') AS Estado
+    FROM PracticaEstudiante pe
+    INNER JOIN VacantesPractica vp ON pe.IdVacante = vp.IdVacantePractica
+    LEFT JOIN Estados est ON pe.IdEstado = est.IdEstado
+    INNER JOIN Empresas emp ON vp.IdEmpresa = emp.IdEmpresa
+    WHERE pe.IdUsuario = @IdUsuario
+    ORDER BY pe.IdPractica DESC;
+END
+GO
+
+CREATE OR ALTER PROCEDURE ConsultarUsuariosSP
+    @Rol VARCHAR(50) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        u.IdUsuario,
+        (u.Nombre + ' ' + u.Apellido1 + ' ' + ISNULL(u.Apellido2, '')) AS Nombre,
+        u.Cedula,
+        (SELECT TOP 1 Email FROM Emails WHERE IdUsuario = u.IdUsuario) AS Email,
+        r.Descripcion AS Rol,
+        CASE 
+            WHEN u.IdEstado = 1 THEN 'Activo'
+            ELSE 'Inactivo'
+        END AS Estado,
+        u.IdEstado
+    FROM Usuarios u
+    INNER JOIN Roles r ON u.IdRol = r.IdRol
+    INNER JOIN Estados e ON u.IdEstado = e.IdEstado
+    WHERE (@Rol IS NULL OR r.Descripcion = @Rol)
+    ORDER BY u.IdEstado ASC, u.Nombre ASC
+END
+GO
+
+CREATE OR ALTER PROCEDURE CambiarEstadoUsuarioSP
+    @IdUsuario INT,
+    @NuevoEstado VARCHAR(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DECLARE @IdEstado INT
+    
+    IF @NuevoEstado = 'Activo'
+        SET @IdEstado = 1
+    ELSE IF @NuevoEstado = 'Inactivo'
+        SET @IdEstado = 2
+    ELSE
+    BEGIN
+        RETURN 0
+    END
+    
+    IF NOT EXISTS (SELECT 1 FROM Usuarios WHERE IdUsuario = @IdUsuario)
+    BEGIN
+        RETURN 0
+    END
+    
+    UPDATE Usuarios
+    SET IdEstado = @IdEstado
+    WHERE IdUsuario = @IdUsuario
+    
+    RETURN @@ROWCOUNT
+END
+GO
+
+CREATE OR ALTER PROCEDURE CambiarRolUsuarioSP
+    @IdUsuario INT,
+    @Rol VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DECLARE @IdRol INT
+    
+    SELECT @IdRol = IdRol
+    FROM Roles
+    WHERE Descripcion = @Rol
+    
+    IF @IdRol IS NULL
+    BEGIN
+        RETURN 0
+    END
+    
+    IF NOT EXISTS (SELECT 1 FROM Usuarios WHERE IdUsuario = @IdUsuario)
+    BEGIN
+        RETURN 0
+    END
+    
+    UPDATE Usuarios
+    SET IdRol = @IdRol
+    WHERE IdUsuario = @IdUsuario
+    
+    RETURN @@ROWCOUNT
+END
+GO
+
+CREATE OR ALTER PROCEDURE ConsultarEspecialidadesSP
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        IdEspecialidad,
+        Nombre,
+        IdEstado
+    FROM Especialidades
+    ORDER BY IdEstado ASC, Nombre ASC
+END
+GO
+
+CREATE OR ALTER PROCEDURE CrearEspecialidadSP
+    @Nombre VARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    IF EXISTS (SELECT 1 FROM Especialidades WHERE Nombre = @Nombre)
+    BEGIN
+        DECLARE @EstadoExistente INT
+        SELECT @EstadoExistente = IdEstado
+        FROM Especialidades
+        WHERE Nombre = @Nombre
+        
+        IF @EstadoExistente = 2
+            RETURN -1 
+        ELSE
+            RETURN 0   
+    END
+    
+    INSERT INTO Especialidades (Nombre, IdEstado)
+    VALUES (@Nombre, 1)
+    
+    RETURN @@ROWCOUNT
+END
+GO
+
+CREATE OR ALTER PROCEDURE EditarEspecialidadSP
+    @Id INT,
+    @Nombre VARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    IF NOT EXISTS (SELECT 1 FROM Especialidades WHERE IdEspecialidad = @Id)
+    BEGIN
+        RETURN 0
+    END
+    
+    IF EXISTS (SELECT 1 FROM Especialidades WHERE Nombre = @Nombre AND IdEspecialidad <> @Id)
+    BEGIN
+        DECLARE @EstadoDuplicado INT
+        SELECT @EstadoDuplicado = IdEstado
+        FROM Especialidades
+        WHERE Nombre = @Nombre AND IdEspecialidad <> @Id
+        
+        IF @EstadoDuplicado = 2
+            RETURN -1  
+        ELSE
+            RETURN 0   
+    END
+    
+    UPDATE Especialidades
+    SET Nombre = @Nombre
+    WHERE IdEspecialidad = @Id
+    
+    RETURN @@ROWCOUNT
+END
+GO
+
+CREATE OR ALTER PROCEDURE CambiarEstadoEspecialidadSP
+    @Id INT,
+    @NuevoEstado VARCHAR(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DECLARE @IdEstado INT
+    
+    IF @NuevoEstado = 'Activo'
+        SET @IdEstado = 1
+    ELSE IF @NuevoEstado = 'Inactivo'
+        SET @IdEstado = 2
+    ELSE
+    BEGIN
+        RETURN 0
+    END
+    
+    IF @IdEstado = 2
+    BEGIN
+        IF EXISTS (
+            SELECT 1
+            FROM UsuarioEspecialidad ue
+            INNER JOIN Usuarios u ON ue.IdUsuario = u.IdUsuario
+            WHERE ue.IdEspecialidad = @Id AND u.IdEstado = 1
+        )
+        BEGIN
+            RETURN -1  
         END
     END
     
-    -- Ahora sí, crear la empresa
-    SET IDENTITY_INSERT Empresas ON;
+    IF NOT EXISTS (SELECT 1 FROM Especialidades WHERE IdEspecialidad = @Id)
+    BEGIN
+        RETURN 0
+    END
     
-    INSERT INTO Empresas (IdEmpresa, NombreEmpresa, IdEstado, NombreContacto, IdDireccion, AreasAfinidad)
-    VALUES (1, 'Tech Solutions Principal', @IdEstadoActivo, 'Pablo Quiros', @IdDireccionPrueba, 'Informatica');
+    UPDATE Especialidades
+    SET IdEstado = @IdEstado
+    WHERE IdEspecialidad = @Id
     
-    SET IDENTITY_INSERT Empresas OFF;
-    
-    PRINT '   ✅ Empresa con IdEmpresa = 1 creada';
+    RETURN @@ROWCOUNT
 END
-ELSE
-BEGIN
-    -- Si existe, asegurarse que esté activa
-    UPDATE Empresas 
-    SET IdEstado = @IdEstadoActivo 
-    WHERE IdEmpresa = 1;
-    
-    PRINT '   ℹ️ Empresa con IdEmpresa = 1 ya existe (actualizada a activa)';
-END
-
-USE SIGEP_WEB;
 GO
 
-SELECT COLUMN_NAME, DATA_TYPE 
-FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_NAME = 'VacantesPractica';
-SELECT TOP 5 * FROM VacantesPractica;
-EXEC GetVacantesSP @IdEstado = 0, @IdEspecialidad = 0, @IdModalidad = 0;
+CREATE OR ALTER PROCEDURE ConsultarSeccionesSP
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        IdSeccion,
+        Seccion,
+        IdEstado
+    FROM Secciones
+    ORDER BY IdEstado ASC, Seccion ASC
+END
+GO
 
-SELECT OBJECT_ID('dbo.CrearVacanteSP');
+CREATE OR ALTER PROCEDURE CrearSeccionSP
+    @NombreSeccion VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    IF EXISTS (SELECT 1 FROM Secciones WHERE Seccion = @NombreSeccion)
+    BEGIN
+        DECLARE @EstadoExistente INT
+        SELECT @EstadoExistente = IdEstado
+        FROM Secciones
+        WHERE Seccion = @NombreSeccion
+        
+        IF @EstadoExistente = 2
+            RETURN -1  
+        ELSE
+            RETURN 0   
+    END
+    
+    INSERT INTO Secciones (Seccion, IdEstado)
+    VALUES (@NombreSeccion, 1)
+    
+    RETURN @@ROWCOUNT
+END
+GO
 
-SELECT COLUMN_NAME 
-FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_NAME = 'VacantesPractica';
+CREATE OR ALTER PROCEDURE EditarSeccionSP
+    @Id INT,
+    @NombreSeccion VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    IF NOT EXISTS (SELECT 1 FROM Secciones WHERE IdSeccion = @Id)
+    BEGIN
+        RETURN 0
+    END
+    
+    IF EXISTS (SELECT 1 FROM Secciones WHERE Seccion = @NombreSeccion AND IdSeccion <> @Id)
+    BEGIN
+        DECLARE @EstadoDuplicado INT
+        SELECT @EstadoDuplicado = IdEstado
+        FROM Secciones
+        WHERE Seccion = @NombreSeccion AND IdSeccion <> @Id
+        
+        IF @EstadoDuplicado = 2
+            RETURN -1 
+        ELSE
+            RETURN 0  
+    END
+    
+    UPDATE Secciones
+    SET Seccion = @NombreSeccion
+    WHERE IdSeccion = @Id
+    
+    RETURN @@ROWCOUNT
+END
+GO
 
-DECLARE @Resultado INT;
+CREATE OR ALTER PROCEDURE CambiarEstadoSeccionSP
+    @Id INT,
+    @NuevoEstado VARCHAR(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    DECLARE @IdEstado INT
+    
+    IF @NuevoEstado = 'Activo'
+        SET @IdEstado = 1
+    ELSE IF @NuevoEstado = 'Inactivo'
+        SET @IdEstado = 2
+    ELSE
+    BEGIN
+        RETURN 0
+    END
+    
+    IF @IdEstado = 2
+    BEGIN
+        IF EXISTS (
+            SELECT 1
+            FROM Usuarios
+            WHERE IdSeccion = @Id AND IdEstado = 1
+        )
+        BEGIN
+            RETURN -1
+        END
+    END
+    
+    IF NOT EXISTS (SELECT 1 FROM Secciones WHERE IdSeccion = @Id)
+    BEGIN
+        RETURN 0
+    END
+    
+    UPDATE Secciones
+    SET IdEstado = @IdEstado
+    WHERE IdSeccion = @Id
+    
+    RETURN @@ROWCOUNT
+END
+GO
 
-EXEC @Resultado = CrearVacanteSP 
-    @Nombre = 'PRUEBA DESDE SQL',
-    @IdEmpresa = 1,
-    @IdEspecialidad = 1,
-    @NumCupos = 3,
-    @IdModalidad = 1,
-    @Requerimientos = 'Prueba de requisitos',
-    @Descripcion = 'Prueba de descripción',
-    @FechaMaxAplicacion = '2025-12-31',
-    @FechaCierre = '2026-01-15';
-
-SELECT @Resultado AS IdVacanteCreada;
-EXEC DetalleVacanteSP @IdVacante = 5;
+PRINT '========================================';
+PRINT '✅ TODOS LOS SPs ACTUALIZADOS CORRECTAMENTE';
+PRINT '========================================';
+PRINT '';
+PRINT 'CAMBIOS PRINCIPALES:';
+PRINT '1. ✅ @Requerimientos → @Requisitos en CrearVacanteSP';
+PRINT '2. ✅ @Requerimientos → @Requisitos en EditarVacanteSP';
+PRINT '3. ✅ Alias Requerimientos → Requisitos en GetVacantesSP';
+PRINT '4. ✅ Alias Requerimientos → Requisitos en DetalleVacanteSP';
+PRINT '';
+PRINT 'ALINEACIÓN COMPLETA:';
+PRINT '- Base de Datos: VacantesPractica.Requisitos';
+PRINT '- SPs (Parámetros): @Requisitos';
+PRINT '- SPs (SELECTs): Devuelven columna "Requisitos"';
+PRINT '- API DTOs: Propiedad "Requisitos"';
+PRINT '- Web ViewModels: Propiedad "Requisitos"';
+PRINT '';
+PRINT '========================================';

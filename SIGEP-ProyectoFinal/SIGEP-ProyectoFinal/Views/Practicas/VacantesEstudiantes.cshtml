@@ -4,6 +4,17 @@
 @{
     Layout = "_LayoutMain";
     ViewBag.Title = "Vacantes - Prácticas";
+    var idRol = Context.Session.GetInt32("Rol") ?? 0;
+
+    var estadosFiltrados = Model.Estados
+        .Where(e => e.Text.Equals("Activo", StringComparison.OrdinalIgnoreCase) ||
+                    e.Text.Equals("Archivado", StringComparison.OrdinalIgnoreCase))
+        .ToList();
+}
+
+@section styles {
+  
+    <link href="~/css/Site.css" rel="stylesheet" />
 }
 
 <h2 class="vacantes-titulo titulo-principal d-flex justify-content-center align-items-center">
@@ -11,34 +22,30 @@
 </h2>
 
 <div class="vacantes-titulo titulo-principal d-flex justify-content-between mb-0 align-items-center">
-
-    <!-- SIEMPRE VISIBLE: esta vista solo la usa el coordinador -->
-    <button type="button" class="btn-cta btn-nuevo mb-0"
-            data-bs-toggle="modal" data-bs-target="#modalCrearVacante">
-        + Registrar
-    </button>
+    @if (idRol == 2)
+    {
+        <button type="button" class="btn-cta btn-nuevo mb-3" data-bs-toggle="modal" data-bs-target="#modalCrearVacante">
+            + Registrar
+        </button>
+    }
 
     <div class="dropdown">
-        <button class="btn btn-outline-secondary dropdown-toggle" type="button"
-                id="filtroDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+        <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="filtroDropdown" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="fas fa-filter"></i>
         </button>
-
         <div class="dropdown-menu p-3" style="min-width: 300px;">
-
             <div class="mb-2">
-                <label for="filtroPractica">Estado de vacante</label>
+                <label>Estado de vacante</label>
                 <select id="filtroPractica" class="form-control">
                     <option value="">Todos</option>
-                    @foreach (var s in Model.Estados)
+                    @foreach (var s in estadosFiltrados)
                     {
                         <option value="@s.Value">@s.Text</option>
                     }
                 </select>
             </div>
-
             <div class="mb-2">
-                <label for="filtroModalidad">Modalidad</label>
+                <label>Modalidad</label>
                 <select id="filtroModalidad" class="form-control">
                     <option value="">Todas</option>
                     @foreach (var m in Model.Modalidades)
@@ -47,9 +54,8 @@
                     }
                 </select>
             </div>
-
             <div>
-                <label for="filtroEspecialidad">Especialidad</label>
+                <label>Especialidad</label>
                 <select id="filtroEspecialidad" class="form-control">
                     <option value="">Todas</option>
                     @foreach (var e in Model.Especialidades)
@@ -58,13 +64,10 @@
                     }
                 </select>
             </div>
-
         </div>
     </div>
 </div>
 
-
-<!-- TABLA -->
 <div class="card rounded-5 p-3">
     <table id="miTabla" class="display responsive nowrap w-100">
         <thead>
@@ -82,168 +85,207 @@
     </table>
 </div>
 
-
-
 <!-- ===========================================================
      ======================= MODAL CREAR ========================
      =========================================================== -->
-<div class="modal fade" id="modalCrearVacante" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="modalCrearVacante" tabindex="-1" aria-labelledby="modalCrearVacanteLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content"
-             style="border-radius: 12px; background-color: #F2F2F2; color: #2D594D;">
-
+        <div class="modal-content" style="border-radius: 12px; background-color: #F2F2F2; color: #2D594D;">
             <div class="modal-header" style="background-color: #2D594D; color: white;">
                 <h5 class="modal-title">Nueva Vacante para Práctica</h5>
-                <button type="button" class="btn-close btn-close-white"
-                        data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-
             <div class="modal-body px-4">
-                <form id="formCrearVacante">
-                    <div class="row">
-
-                        <div class="col-md-6 mb-3">
-                            <label>Nombre de la Vacante <span class="text-danger">*</span></label>
-                            <input asp-for="Vacante.Nombre" class="form-control" />
+                <div class="mb-4">
+                    <h5 class="section-title">Información General</h5>
+                    <form id="formCrearVacante">
+                        <div class="row">
+                            <div class="col-md-6 form-group mb-3">
+                                <label>Nombre de la Vacante <span class="text-danger">*</span></label>
+                                <input type="text" name="Nombre" class="form-control" placeholder="Ejemplo: Asistente bancario" required />
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label>Empresa <span class="text-danger">*</span></label>
+                                <select id="IdEmpresa" name="IdEmpresa" class="form-control" required>
+                                    <option value="">-- Seleccione Empresa --</option>
+                                    @foreach (var e in Model.Empresas)
+                                    {
+                                        <option value="@e.Value">@e.Text</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label for="ubicacionEmpresa">Ubicación</label>
+                                <input type="text" id="ubicacionEmpresa" class="form-control" readonly />
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label>Especialidad <span class="text-danger">*</span></label>
+                                <select name="IdEspecialidad" class="form-select OpcionesVacantes w-100" style="font-size:14px" required>
+                                    <option value="">-- Seleccione especialidad --</option>
+                                    @foreach (var e in Model.Especialidades)
+                                    {
+                                        <option value="@e.Value">@e.Text</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label>Cantidad de Cupos <span class="text-danger">*</span></label>
+                                <input type="number" name="NumCupos" min="1" class="form-control" placeholder="Ejemplo: 3" required />
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label>Modalidad <span class="text-danger">*</span></label>
+                                <select name="IdModalidad" class="form-select OpcionesVacantes w-100" style="font-size:14px" required>
+                                    <option value="">-- Seleccione modalidad --</option>
+                                    @foreach (var m in Model.Modalidades)
+                                    {
+                                        <option value="@m.Value">@m.Text</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label>Fecha Límite de Aplicación <span class="text-danger">*</span></label>
+                                <input type="date" name="FechaMaxAplicacion" class="form-control" required />
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label>Fecha de Cierre <span class="text-danger">*</span></label>
+                                <input type="date" name="FechaCierre" class="form-control" required />
+                            </div>
+                            <div class="col-12 form-group mb-3">
+                                <label>Requisitos <span class="text-danger">*</span></label>
+                                <textarea name="Requisitos" rows="3" class="form-control" placeholder="Habilidades y conocimientos requeridos" required></textarea>
+                            </div>
+                            <div class="col-12 form-group mb-3">
+                                <label>Descripción <span class="text-danger">*</span></label>
+                                <textarea name="Descripcion" rows="3" class="form-control" placeholder="Detalles de la vacante..." required></textarea>
+                            </div>
                         </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label>Empresa <span class="text-danger">*</span></label>
-                            <select id="IdEmpresa" asp-for="Vacante.IdEmpresa" class="form-control">
-                                <option value="">-- Seleccione Empresa --</option>
-                                @foreach (var e in Model.Empresas)
-                                {
-                                    <option value="@e.Value">@e.Text</option>
-                                }
-                            </select>
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label>Ubicación</label>
-                            <input id="ubicacionEmpresa"
-                                   name="Vacante.Ubicacion"
-                                   class="form-control"
-                                   readonly />
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label>Especialidad <span class="text-danger">*</span></label>
-                            <select id="IdEspecialidad" asp-for="Vacante.IdEspecialidad" class="form-select">
-                                <option value="">-- Seleccione especialidad --</option>
-                                @foreach (var e in Model.Especialidades)
-                                {
-                                    <option value="@e.Value">@e.Text</option>
-                                }
-                            </select>
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label>Cantidad de Cupos <span class="text-danger">*</span></label>
-                            <input id="NumCupos" asp-for="Vacante.NumCupos" type="number"
-                                   min="1" class="form-control" />
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label>Modalidad <span class="text-danger">*</span></label>
-                            <select id="IdModalidad" asp-for="Vacante.IdModalidad" class="form-select">
-                                <option value="">-- Seleccione modalidad --</option>
-                                @foreach (var m in Model.Modalidades)
-                                {
-                                    <option value="@m.Value">@m.Text</option>
-                                }
-                            </select>
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label>Fecha Límite aplicación <span class="text-danger">*</span></label>
-                            <input asp-for="Vacante.FechaMaxAplicacion" type="date"
-                                   class="form-control" />
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label>Fecha de Cierre <span class="text-danger">*</span></label>
-                            <input asp-for="Vacante.FechaCierre" type="date"
-                                   class="form-control" />
-                        </div>
-
-                        <div class="col-12 mb-3">
-                            <label>Requisitos <span class="text-danger">*</span></label>
-                            <textarea id="Requerimientos" asp-for="Vacante.Requerimientos" rows="3"
-                                      class="form-control"></textarea>
-                        </div>
-
-                        <div class="col-12 mb-3">
-                            <label>Descripción <span class="text-danger">*</span></label>
-                            <textarea id="Descripcion" asp-for="Vacante.Descripcion" rows="3"
-                                      class="form-control"></textarea>
-                        </div>
-
-                        <input type="hidden" asp-for="Vacante.IdVacante" value="0" />
-                    </div>
-                </form>
+                        <input type="hidden" name="IdVacante" id="IdVacante" value="0" />
+                    </form>
+                </div>
             </div>
-
             <div class="modal-footer px-4">
-                <button id="btnGuardarVacante" form="formCrearVacante"
-                        type="submit" class="btn CerrarModal">
-                    Guardar y Publicar
-                </button>
-                <button type="button" class="btn btn-secondary"
-                        data-bs-dismiss="modal">
-                    Cancelar
-                </button>
+                <button id="btnGuardarVacante" type="submit" form="formCrearVacante" class="btn CerrarModal">Guardar y Publicar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
             </div>
-
         </div>
     </div>
 </div>
-
-
-
 
 <!-- ===========================================================
      ======================= MODAL EDITAR =======================
      =========================================================== -->
 <div class="modal fade" id="modalEditarVacante" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content"
-             style="border-radius: 12px; background-color: #F2F2F2; color: #2D594D;">
-
-            <div class="modal-header" style="background-color:#2D594D; color:white;">
+        <div class="modal-content" style="border-radius: 12px; background-color: #F2F2F2; color: #2D594D;">
+            <div class="modal-header" style="background-color: #2D594D; color: white;">
                 <h5 class="modal-title">Edición de Vacante</h5>
-                <button type="button" class="btn-close btn-close-white"
-                        data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-
             <div class="modal-body px-4">
-                <form id="formEditarVacante">
+                <div class="mb-4">
+                    <h5 class="section-title">Información General</h5>
+                    <form id="formEditarVacante">
+                        <input type="hidden" name="IdVacante" id="edit-IdVacante" />
+                        <div class="row">
+                            <div class="col-md-6 form-group mb-3">
+                                <label>Nombre de la Vacante <span class="text-danger">*</span></label>
+                                <input type="text" id="edit-Nombre" name="Nombre" class="form-control" placeholder="Ejemplo: Asistente bancario" required />
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label for="edit-IdEmpresa">Empresa</label>
+                                <select id="edit-IdEmpresa" name="IdEmpresa" class="form-control" required>
+                                    <option value="">-- Seleccione una empresa --</option>
+                                    @foreach (var emp in Model.Empresas)
+                                    {
+                                        <option value="@emp.Value">@emp.Text</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label for="edit-Ubicacion">Ubicación</label>
+                                <input type="text" id="edit-Ubicacion" class="form-control" readonly />
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label>Especialidad <span class="text-danger">*</span></label>
+                                <select id="edit-IdEspecialidad" name="IdEspecialidad" class="form-select OpcionesVacantes w-100" style="font-size:14px" required>
+                                    <option value="">-- Seleccione especialidad --</option>
+                                    @foreach (var e in Model.Especialidades)
+                                    {
+                                        <option value="@e.Value">@e.Text</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label>Cantidad de Cupos <span class="text-danger">*</span></label>
+                                <input type="number" id="edit-NumCupos" name="NumCupos" class="form-control" min="1" placeholder="Ejemplo: 3" required />
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label>Modalidad <span class="text-danger">*</span></label>
+                                <select id="edit-IdModalidad" name="IdModalidad" class="form-select OpcionesVacantes w-100" style="font-size:14px" required>
+                                    <option value="">-- Seleccione modalidad --</option>
+                                    @foreach (var m in Model.Modalidades)
+                                    {
+                                        <option value="@m.Value">@m.Text</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label>Fecha límite de aplicación <span class="text-danger">*</span></label>
+                                <input type="date" id="edit-FechaMaxAplicacion" name="FechaMaxAplicacion" class="form-control" required />
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label>Fecha de cierre <span class="text-danger">*</span></label>
+                                <input type="date" id="edit-FechaCierre" name="FechaCierre" class="form-control" required />
+                            </div>
+                            <div class="col-12 form-group mb-3">
+                                <label>Requisitos <span class="text-danger">*</span></label>
+                                <textarea id="edit-Requisitos" name="Requisitos" rows="3" class="form-control" placeholder="Habilidades y conocimientos requeridos" required></textarea>
+                            </div>
+                            <div class="col-12 form-group mb-3">
+                                <label>Descripción <span class="text-danger">*</span></label>
+                                <textarea id="edit-Descripcion" name="Descripcion" rows="3" class="form-control" placeholder="Detalles de la vacante..." required></textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="modal-footer px-4">
+                <button id="btnActualizarVacante" type="submit" form="formEditarVacante" class="btn CerrarModal">Actualizar Vacante</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===========================================================
+     ==================== MODAL VISUALIZAR ======================
+     =========================================================== -->
+<div class="modal fade" id="modalVisualizarVacante" tabindex="-1" aria-labelledby="modalVisualizarVacanteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius: 12px; background-color: #F2F2F2; color: #2D594D;">
+            <div class="modal-header" style="background-color: #2D594D; color: white;">
+                <h5 class="modal-title">Visualizar Vacante</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body px-4">
+                <div class="mb-4">
+                    <h5 class="section-title">Información General</h5>
                     <div class="row">
-                        <input type="hidden" id="edit-IdVacante" />
-
-                        <div class="col-md-6 mb-3">
-                            <label>Nombre de la Vacante</label>
-                            <input id="edit-Nombre" class="form-control" />
+                        <div class="col-md-6 form-group mb-3">
+                            <label>Nombre de la Vacante <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="vis-Nombre" readonly>
                         </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label>Empresa</label>
-                            <select id="edit-IdEmpresa" class="form-control">
-                                <option value="">-- Seleccione empresa --</option>
-                                @foreach (var emp in Model.Empresas)
-                                {
-                                    <option value="@emp.Value">@emp.Text</option>
-                                }
-                            </select>
+                        <div class="col-md-6 form-group mb-3">
+                            <label>Empresa <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="vis-Empresa" readonly>
                         </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label>Ubicación</label>
-                            <input id="edit-Ubicacion" class="form-control" readonly />
+                        <div class="col-md-6 form-group mb-3">
+                            <label>Lugar / Ubicación <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="vis-Ubicacion" readonly>
                         </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label>Especialidad</label>
-                            <select id="edit-IdEspecialidad" class="form-select">
+                        <div class="col-md-6 form-group mb-3">
+                            <label>Especialidad <span class="text-danger">*</span></label>
+                            <select class="form-select OpcionesVacantes w-100" style="font-size:14px" id="vis-Especialidad" disabled>
                                 <option value="">-- Seleccione especialidad --</option>
                                 @foreach (var e in Model.Especialidades)
                                 {
@@ -251,15 +293,13 @@
                                 }
                             </select>
                         </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label>Cantidad de Cupos</label>
-                            <input id="edit-NumCupos" type="number" class="form-control" />
+                        <div class="col-md-6 form-group mb-3">
+                            <label>Cantidad de Cupos <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="vis-NumCupos" readonly>
                         </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label>Modalidad</label>
-                            <select id="edit-IdModalidad" class="form-select">
+                        <div class="col-md-6 form-group mb-3">
+                            <label>Modalidad <span class="text-danger">*</span></label>
+                            <select class="form-select OpcionesVacantes w-100" style="font-size:14px" id="vis-Modalidad" disabled>
                                 <option value="">-- Seleccione modalidad --</option>
                                 @foreach (var m in Model.Modalidades)
                                 {
@@ -267,167 +307,52 @@
                                 }
                             </select>
                         </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label>Fecha límite de aplicación</label>
-                            <input id="edit-FechaMaxAplicacion" type="date" class="form-control" />
+                        <div class="col-md-6 form-group mb-3">
+                            <label>Fecha Límite de Aplicación <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="vis-FechaAplicacion" readonly>
                         </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label>Fecha cierre</label>
-                            <input id="edit-FechaCierre" type="date" class="form-control" />
+                        <div class="col-md-6 form-group mb-3">
+                            <label>Fecha de Cierre <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="vis-FechaCierre" readonly>
                         </div>
-
-                        <div class="col-12 mb-3">
-                            <label>Requisitos</label>
-                            <textarea id="edit-Requerimientos" rows="3" class="form-control"></textarea>
+                        <div class="col-12 form-group mb-3">
+                            <label>Requisitos <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="vis-Requisitos" rows="3" readonly></textarea>
                         </div>
-
-                        <div class="col-12 mb-3">
-                            <label>Descripción</label>
-                            <textarea id="edit-Descripcion" rows="3" class="form-control"></textarea>
+                        <div class="col-12 form-group mb-3">
+                            <label>Descripción <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="vis-Descripcion" rows="3" readonly></textarea>
                         </div>
                     </div>
-                </form>
-            </div>
-
-            <div class="modal-footer px-4">
-                <button id="btnActualizarVacante" form="formEditarVacante"
-                        type="submit" class="btn CerrarModal">
-                    Actualizar Vacante
-                </button>
-                <button type="button" class="btn btn-secondary"
-                        data-bs-dismiss="modal">
-                    Cancelar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-
-
-<!-- ===========================================================
-     ===================== MODAL VISUALIZAR =====================
-     =========================================================== -->
-<div class="modal fade" id="modalVisualizarVacante" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content"
-             style="border-radius: 12px; background-color: #F2F2F2; color: #2D594D;">
-
-            <div class="modal-header" style="background-color:#2D594D; color:white;">
-                <h5 class="modal-title">Visualizar Vacante</h5>
-                <button type="button" class="btn-close btn-close-white"
-                        data-bs-dismiss="modal"></button>
-            </div>
-
-            <div class="modal-body px-4">
-
-                <div class="row">
-
-                    <div class="col-md-6 mb-3">
-                        <label>Nombre</label>
-                        <input id="vis-Nombre" class="form-control" readonly />
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label>Empresa</label>
-                        <select id="vis-Empresa" class="form-select" disabled>
-                            @foreach (var emp in Model.Empresas)
-                            {
-                                <option value="@emp.Value">@emp.Text</option>
-                            }
-                        </select>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label>Ubicación</label>
-                        <input id="vis-Ubicacion" class="form-control" readonly />
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label>Especialidad</label>
-                        <select id="vis-Especialidad" class="form-select" disabled>
-                            @foreach (var e in Model.Especialidades)
-                            {
-                                <option value="@e.Value">@e.Text</option>
-                            }
-                        </select>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label>Cupos</label>
-                        <input id="vis-NumCupos" class="form-control" readonly />
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label>Modalidad</label>
-                        <select id="vis-Modalidad" class="form-select" disabled>
-                            @foreach (var m in Model.Modalidades)
-                            {
-                                <option value="@m.Value">@m.Text</option>
-                            }
-                        </select>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label>Fecha Aplicación</label>
-                        <input id="vis-FechaAplicacion" type="date" class="form-control" readonly />
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label>Fecha Cierre</label>
-                        <input id="vis-FechaCierre" type="date" class="form-control" readonly />
-                    </div>
-
-                    <div class="col-12 mb-3">
-                        <label>Requisitos</label>
-                        <textarea id="vis-Requerimientos" class="form-control" rows="3" readonly></textarea>
-                    </div>
-
-                    <div class="col-12 mb-3">
-                        <label>Descripción</label>
-                        <textarea id="vis-Descripcion" class="form-control" rows="3" readonly></textarea>
-                    </div>
-
                 </div>
 
-                <div class="mt-4">
+                <!-- LISTADO DE POSTULACIONES -->
+                <div class="mb-4">
                     <h5 class="section-title mb-3">Postulaciones</h5>
-                    <ul id="listaPostulaciones" class="list-group"></ul>
+                    <ul id="listaPostulaciones" class="list-group mb-3"></ul>
                     <p id="mensajeSinPostulaciones" class="text-muted">No hay postulaciones registradas.</p>
                 </div>
-
             </div>
         </div>
     </div>
 </div>
-
-
-
 
 <!-- ===========================================================
      ====================== MODAL ASIGNAR =======================
      =========================================================== -->
-<div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="modalAsignar" tabindex="-1" aria-labelledby="modalAsignarLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content"
-             style="border-radius: 12px; background-color: #F2F2F2; color: #2D594D;">
-
-            <div class="modal-header" style="background-color:#2D594D; color:white;">
+        <div class="modal-content" style="border-radius: 12px; background-color: #F2F2F2; color: #2D594D;">
+            <div class="modal-header" style="background-color: #2D594D; color: white;">
                 <h5 class="modal-title">Asignar Vacante</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-
             <div class="modal-body px-4">
-
-                <div class="card rounded-5 p-3">
-                    <h5 class="section-title">Seleccionar Estudiante</h5>
-
-                    <table id="miTablaAsignar" class="display nowrap w-100">
-                        <thead class="table-light">
-                            <tr class="text-center">
+                <div class="mb-4 card rounded-5 p-3">
+                    <h5 class="section-title">Seleccionar Estudiante para Asignar</h5>
+                    <table id="miTablaAsignar" class="display responsive nowrap w-100">
+                        <thead>
+                            <tr>
                                 <th>Nombre</th>
                                 <th>Cédula</th>
                                 <th>Especialidad</th>
@@ -438,23 +363,17 @@
                         <tbody></tbody>
                     </table>
                 </div>
-
             </div>
         </div>
     </div>
 </div>
-
-
-
-
-
 
 @section Scripts {
     <script>
         window.VacantesCfg = {
             urls: {
                 getVacantes: '@Url.Action("GetVacantes", "Practicas")',
-                login: '@Url.Action("Login", "Home")',
+                login: '@Url.Action("IniciarSesion", "Home")',
                 detalle: '@Url.Action("Detalle", "Practicas")',
                 getUbicacionEmpresa: '@Url.Action("GetUbicacionEmpresa", "Practicas")',
                 crear: '@Url.Action("Crear", "Practicas")',
@@ -466,10 +385,9 @@
                 desasignarPractica: '@Url.Action("DesasignarPractica", "Practicas")',
                 obtenerEstudiantesAsignar: '@Url.Action("ObtenerEstudiantesAsignar", "Practicas")',
                 visualizacionPostulacion: '@Url.Action("VisualizacionPostulacion", "Practicas")',
-                actualizarEstado: '@Url.Action("ActualizarEstado", "Estudiante")'
+                actualizarEstado: '@Url.Action("ActualizarEstado", "Estudiante")',
             },
-
-            rol: 2,
+            rol: @idRol,
             idUsuarioSesion: @(Context.Session.GetInt32("IdUsuario") ?? 0)
         };
     </script>

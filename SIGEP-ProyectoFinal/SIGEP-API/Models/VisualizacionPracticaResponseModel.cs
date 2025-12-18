@@ -5,7 +5,7 @@
         public int IdVacante { get; set; }
         public string Nombre { get; set; } = string.Empty;
         public string EmpresaNombre { get; set; } = string.Empty;
-        public string Requerimientos { get; set; } = string.Empty;
+        public string Requisitos { get; set; } = string.Empty;
         public DateTime? FechaMaxAplicacion { get; set; }
         public string ModalidadNombre { get; set; } = string.Empty;
         public int IdUsuario { get; set; }

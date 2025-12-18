@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using SIGEP_ProyectoFinal.Models;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using static SIGEP_ProyectoFinal.Models.VacantePracticaModel;
 
@@ -22,151 +23,142 @@ namespace SIGEP_ProyectoFinal.Controllers
 
         private string Api(string ruta)
         {
+            // Unificar (en tu código estaba mezclado UrlApi vs UrlAPI)
             return _configuration["Valores:UrlAPI"] + ruta;
         }
 
+        private HttpClient CreateApiClient()
+        {
+            var client = _http.CreateClient();
+            var token = HttpContext.Session.GetString("Token");
+
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                client.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", token);
+            }
+
+            return client;
+        }
+
+        private JsonSerializerOptions JsonOptions() => new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
         /* ======================================================
-         * 1. VISTA: VACANTES ESTUDIANTES
+         VISTA: VACANTES ESTUDIANTES
          * ====================================================== */
         [HttpGet]
-        public IActionResult VacantesEstudiantes()
+        public async Task<IActionResult> VacantesEstudiantes()
         {
             ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
             ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
             ViewBag.Usuario = HttpContext.Session.GetInt32("IdUsuario");
 
             var vm = new VacantesViewModel();
+            var options = JsonOptions();
 
-            var client = _http.CreateClient();
-            var token = HttpContext.Session.GetString("Token");
-
-            if (!string.IsNullOrEmpty(token))
+            using (var client = CreateApiClient())
             {
-                client.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", token);
-            }
-
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            };
-
-            // 1️⃣ ESTADOS
-            try
-            {
-                var resEstados = client.GetStringAsync(Api("Auxiliar/Estados")).Result;
-                var estados = JsonSerializer.Deserialize<List<ComboVm>>(resEstados, options);
-                vm.Estados = estados?.Select(x => new SelectListItem
+                try
                 {
-                    Value = x.value,
-                    Text = x.text
-                }).ToList() ?? new List<SelectListItem>();
-            }
-            catch { vm.Estados = new List<SelectListItem>(); }
+                    var resEstados = await client.GetStringAsync(Api("Auxiliar/Estados"));
+                    var estados = JsonSerializer.Deserialize<List<ComboVm>>(resEstados, options);
+                    vm.Estados = estados?.Select(x => new SelectListItem
+                    {
+                        Value = x.value,
+                        Text = x.text
+                    }).ToList() ?? new List<SelectListItem>();
+                }
+                catch { vm.Estados = new List<SelectListItem>(); }
 
-            // 2️⃣ MODALIDADES
-            try
-            {
-                var resMod = client.GetStringAsync(Api("Auxiliar/Modalidades")).Result;
-                var modalidades = JsonSerializer.Deserialize<List<ComboVm>>(resMod, options);
-                vm.Modalidades = modalidades?.Select(x => new SelectListItem
+                try
                 {
-                    Value = x.value,
-                    Text = x.text
-                }).ToList() ?? new List<SelectListItem>();
-            }
-            catch { vm.Modalidades = new List<SelectListItem>(); }
+                    var resMod = await client.GetStringAsync(Api("Auxiliar/Modalidades"));
+                    var modalidades = JsonSerializer.Deserialize<List<ComboVm>>(resMod, options);
+                    vm.Modalidades = modalidades?.Select(x => new SelectListItem
+                    {
+                        Value = x.value,
+                        Text = x.text
+                    }).ToList() ?? new List<SelectListItem>();
+                }
+                catch { vm.Modalidades = new List<SelectListItem>(); }
 
-            // 3️⃣ ESPECIALIDADES
-            try
-            {
-                var resEsp = client.GetStringAsync(Api("Auxiliar/Especialidades")).Result;
-                var especialidades = JsonSerializer.Deserialize<List<ComboVm>>(resEsp, options);
-                vm.Especialidades = especialidades?.Select(x => new SelectListItem
+                try
                 {
-                    Value = x.value,
-                    Text = x.text
-                }).ToList() ?? new List<SelectListItem>();
-            }
-            catch { vm.Especialidades = new List<SelectListItem>(); }
+                    var resEsp = await client.GetStringAsync(Api("Auxiliar/Especialidades"));
+                    var especialidades = JsonSerializer.Deserialize<List<ComboVm>>(resEsp, options);
+                    vm.Especialidades = especialidades?.Select(x => new SelectListItem
+                    {
+                        Value = x.value,
+                        Text = x.text
+                    }).ToList() ?? new List<SelectListItem>();
+                }
+                catch { vm.Especialidades = new List<SelectListItem>(); }
 
-            // 4️⃣ EMPRESAS
-            try
-            {
-                var resEmp = client.GetStringAsync(Api("Auxiliar/Empresas")).Result;
-                var empresas = JsonSerializer.Deserialize<List<ComboVm>>(resEmp, options);
-                vm.Empresas = empresas?.Select(x => new SelectListItem
+                try
                 {
-                    Value = x.value,
-                    Text = x.text
-                }).ToList() ?? new List<SelectListItem>();
+                    var resEmp = await client.GetStringAsync(Api("Auxiliar/Empresas"));
+                    var empresas = JsonSerializer.Deserialize<List<ComboVm>>(resEmp, options);
+                    vm.Empresas = empresas?.Select(x => new SelectListItem
+                    {
+                        Value = x.value,
+                        Text = x.text
+                    }).ToList() ?? new List<SelectListItem>();
+                }
+                catch { vm.Empresas = new List<SelectListItem>(); }
             }
-            catch { vm.Empresas = new List<SelectListItem>(); }
 
             return View("VacantesEstudiantes", vm);
         }
 
         /* ======================================================
-         * 2. VISTA: PRÁCTICAS COORDINADOR (NUEVO)
+         VISTA: PRÁCTICAS COORDINADOR 
          * ====================================================== */
         [HttpGet]
-        public IActionResult PracticasCoordinador()
+        public async Task<IActionResult> PracticasCoordinador()
         {
             ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
             ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
             ViewBag.Usuario = HttpContext.Session.GetInt32("IdUsuario");
 
             var vm = new VacantesViewModel();
+            var options = JsonOptions();
 
-            var client = _http.CreateClient();
-            var token = HttpContext.Session.GetString("Token");
-
-            if (!string.IsNullOrEmpty(token))
+            using (var client = CreateApiClient())
             {
-                client.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", token);
-            }
-
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            };
-
-            // ESPECIALIDADES
-            try
-            {
-                var resEsp = client.GetStringAsync(Api("Auxiliar/Especialidades")).Result;
-                var especialidades = JsonSerializer.Deserialize<List<ComboVm>>(resEsp, options);
-                vm.Especialidades = especialidades?.Select(x => new SelectListItem
+                try
                 {
-                    Value = x.value,
-                    Text = x.text
-                }).ToList() ?? new List<SelectListItem>();
+                    var resEsp = await client.GetStringAsync(Api("Auxiliar/Especialidades"));
+                    var especialidades = JsonSerializer.Deserialize<List<ComboVm>>(resEsp, options);
+                    vm.Especialidades = especialidades?.Select(x => new SelectListItem
+                    {
+                        Value = x.value,
+                        Text = x.text
+                    }).ToList() ?? new List<SelectListItem>();
+                }
+                catch { vm.Especialidades = new List<SelectListItem>(); }
             }
-            catch { vm.Especialidades = new List<SelectListItem>(); }
 
             return View("PracticasCoordinador", vm);
         }
 
         /* ======================================================
-         * 3. LISTAR ESTUDIANTES JSON (PARA DATATABLE)
+         LISTAR ESTUDIANTES JSON (PARA DATATABLE)
          * ====================================================== */
         [HttpGet]
-        public IActionResult ListarEstudiantesJson()
+        public async Task<IActionResult> ListarEstudiantesJson()
         {
-            using (var context = _http.CreateClient())
+            using (var client = CreateApiClient())
             {
                 var url = Api("Estudiante/ListarEstudiantesConPracticas");
-
-                context.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
-
-                var resp = context.GetAsync(url).Result;
+                var resp = await client.GetAsync(url);
 
                 if (!resp.IsSuccessStatusCode)
                     return Json(new { data = new List<object>() });
 
-                var json = resp.Content.ReadAsStringAsync().Result;
+                var json = await resp.Content.ReadAsStringAsync();
 
                 var parsed = JsonSerializer.Deserialize<ApiResponse<List<dynamic>>>(
                     json,
@@ -178,36 +170,28 @@ namespace SIGEP_ProyectoFinal.Controllers
         }
 
         /* ======================================================
-         * 4. OBTENER VACANTES PARA ASIGNAR
+         OBTENER VACANTES PARA ASIGNAR
          * ====================================================== */
         [HttpGet]
-        public IActionResult ObtenerVacantesAsignar(int idUsuario)
+        public async Task<IActionResult> ObtenerVacantesAsignar(int idUsuario)
         {
-            using (var context = _http.CreateClient())
+            using (var client = CreateApiClient())
             {
                 var url = Api($"Practicas/VacantesParaAsignar?idUsuario={idUsuario}");
-
-                context.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
-
-                var resp = context.GetAsync(url).Result;
-
-                return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
+                var resp = await client.GetAsync(url);
+                return Content(await resp.Content.ReadAsStringAsync(), "application/json");
             }
         }
 
         /* ======================================================
-         * 5. CAMBIAR ESTADO ACADÉMICO
+         CAMBIAR ESTADO ACADÉMICO
          * ====================================================== */
         [HttpPost]
-        public IActionResult CambiarEstadoAcademico(int idUsuario, string nuevoEstado)
+        public async Task<IActionResult> CambiarEstadoAcademico(int idUsuario, string nuevoEstado)
         {
-            using (var context = _http.CreateClient())
+            using (var client = CreateApiClient())
             {
                 var url = Api("Estudiante/CambiarEstadoAcademico");
-
-                context.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
 
                 var form = new Dictionary<string, string>
                 {
@@ -215,42 +199,34 @@ namespace SIGEP_ProyectoFinal.Controllers
                     ["nuevoEstado"] = nuevoEstado
                 };
 
-                var resp = context.PostAsync(url, new FormUrlEncodedContent(form)).Result;
-
-                return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
+                var resp = await client.PostAsync(url, new FormUrlEncodedContent(form));
+                return Content(await resp.Content.ReadAsStringAsync(), "application/json");
             }
         }
 
         /* ======================================================
-         * 6. LLENAR TABLA VACANTES - CORREGIDO
+         LLENAR TABLA VACANTES
          * ====================================================== */
         [HttpGet]
-        public IActionResult GetVacantes(int idEstado = 0, int idEspecialidad = 0, int idModalidad = 0)
+        public async Task<IActionResult> GetVacantes(int idEstado = 0, int idEspecialidad = 0, int idModalidad = 0)
         {
-            using (var context = _http.CreateClient())
+            using (var client = CreateApiClient())
             {
                 var url = Api($"Practicas/Listar?idEstado={idEstado}&idEspecialidad={idEspecialidad}&idModalidad={idModalidad}");
-
-                context.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
-
-                var resp = context.GetAsync(url).Result;
+                var resp = await client.GetAsync(url);
 
                 if (!resp.IsSuccessStatusCode)
                     return Json(new { data = new List<object>() });
 
-                var json = resp.Content.ReadAsStringAsync().Result;
+                var json = await resp.Content.ReadAsStringAsync();
 
                 try
                 {
-                    // ✅ CORRECTO: El API retorna List<VacanteListDto> directamente
-                    // NO está envuelto en ApiResponse
                     var vacantes = JsonSerializer.Deserialize<List<VacanteListVm>>(
                         json,
                         new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
                     );
 
-                    // DataTable espera { data: [...] }
                     return Json(new { data = vacantes ?? new List<VacanteListVm>() });
                 }
                 catch
@@ -261,112 +237,225 @@ namespace SIGEP_ProyectoFinal.Controllers
         }
 
         /* ======================================================
-         * 7. CREAR VACANTE
+         CREAR VACANTE
          * ====================================================== */
         [HttpPost]
-        public IActionResult Crear([FromBody] VacanteCrearEditarVm model)
+        public async Task<IActionResult> Crear([FromBody] JsonElement json)
         {
-            using (var context = _http.CreateClient())
+            using (var client = CreateApiClient())
             {
                 var url = Api("Practicas/Crear");
+                var content = new StringContent(json.GetRawText(), Encoding.UTF8, "application/json");
 
-                // ✅ VERIFICAR QUE ESTO EXISTA:
-                context.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
-
-                var resp = context.PostAsJsonAsync(url, model).Result;
-
-                return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
+                var resp = await client.PostAsync(url, content);
+                return Content(await resp.Content.ReadAsStringAsync(), "application/json");
             }
         }
 
         /* ======================================================
-         * 8. EDITAR VACANTE
-         * ✅ CORREGIDO: Usa PutAsJsonAsync en lugar de PostAsJsonAsync
+         EDITAR VACANTE
          * ====================================================== */
         [HttpPost]
-        public IActionResult Editar([FromBody] VacanteCrearEditarVm model)
+        public async Task<IActionResult> Editar([FromBody] JsonElement json)
         {
-            using (var context = _http.CreateClient())
+            using (var client = CreateApiClient())
             {
                 var url = Api("Practicas/Editar");
+                var content = new StringContent(json.GetRawText(), Encoding.UTF8, "application/json");
 
-                context.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
-
-                // CRÍTICO: El API usa [HttpPut], así que debemos usar PutAsJsonAsync
-                var resp = context.PutAsJsonAsync(url, model).Result;
-
-                return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
+                var resp = await client.PutAsync(url, content);
+                return Content(await resp.Content.ReadAsStringAsync(), "application/json");
             }
         }
 
         /* ======================================================
-         * 9. ELIMINAR / ARCHIVAR
-         * ✅ CORREGIDO: Usa DeleteAsync en lugar de PostAsync
+         ELIMINAR / ARCHIVAR
          * ====================================================== */
         [HttpPost]
-        public IActionResult Eliminar(int id)
+        public async Task<IActionResult> Eliminar(int id)
         {
-            using (var context = _http.CreateClient())
+            using (var client = CreateApiClient())
             {
-                // CRÍTICO: El API usa [HttpDelete] y espera /{id} en la ruta
                 var url = Api($"Practicas/Eliminar/{id}");
-
-                context.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
-
-                // CRÍTICO: Usar DeleteAsync, NO PostAsync
-                var resp = context.DeleteAsync(url).Result;
-
-                return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
+                var resp = await client.DeleteAsync(url);
+                return Content(await resp.Content.ReadAsStringAsync(), "application/json");
             }
         }
 
         /* ======================================================
-         * 10. DETALLE
+         DETALLE
          * ====================================================== */
         [HttpGet]
-        public IActionResult Detalle(int id)
+        public async Task<IActionResult> Detalle(int id)
         {
-            using (var context = _http.CreateClient())
+            using (var client = CreateApiClient())
             {
                 var url = Api($"Practicas/Detalle?id={id}");
-
-                context.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
-
-                var resp = context.GetAsync(url).Result;
-
-                return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
+                var resp = await client.GetAsync(url);
+                return Content(await resp.Content.ReadAsStringAsync(), "application/json");
             }
         }
 
         /* ======================================================
-         * 11. UBICACIÓN EMPRESA
-         * ✅ CORREGIDO: Usa /{idEmpresa} en la ruta, NO ?idEmpresa=
+         UBICACIÓN EMPRESA
          * ====================================================== */
         [HttpGet]
-        public IActionResult GetUbicacionEmpresa(int idEmpresa)
+        public async Task<IActionResult> GetUbicacionEmpresa(int idEmpresa)
         {
-            using (var context = _http.CreateClient())
+            using (var client = CreateApiClient())
             {
-                // CRÍTICO: El API espera /{idEmpresa} en la ruta
-                // Ejemplo: /api/Practicas/UbicacionEmpresa/1
                 var url = Api($"Practicas/UbicacionEmpresa/{idEmpresa}");
-
-                context.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
-
-                var resp = context.GetAsync(url).Result;
-
-                return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
+                var resp = await client.GetAsync(url);
+                return Content(await resp.Content.ReadAsStringAsync(), "application/json");
             }
         }
 
         /* ======================================================
-         * 12. POSTULACIONES
+         ASIGNAR ESTUDIANTE
          * ====================================================== */
+        [HttpPost]
+        public async Task<IActionResult> AsignarEstudiante(int idUsuario, int idVacante)
+        {
+            try
+            {
+                using (var client = CreateApiClient())
+                {
+                    var url = Api("Practicas/AsignarEstudiante");
+
+                    var form = new Dictionary<string, string>
+                    {
+                        ["idVacante"] = idVacante.ToString(),
+                        ["idUsuario"] = idUsuario.ToString()
+                    };
+
+                    var resp = await client.PostAsync(url, new FormUrlEncodedContent(form));
+                    return Content(await resp.Content.ReadAsStringAsync(), "application/json");
+                }
+            }
+            catch
+            {
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /* ======================================================
+         RETIRAR ESTUDIANTE
+         * ====================================================== */
+        [HttpPost]
+        public async Task<IActionResult> RetirarEstudiante(int idVacante, int idUsuario, string comentario)
+        {
+            using (var client = CreateApiClient())
+            {
+                var url = Api("Practicas/RetirarEstudiante");
+
+                var form = new Dictionary<string, string>
+                {
+                    ["idVacante"] = idVacante.ToString(),
+                    ["idUsuario"] = idUsuario.ToString(),
+                    ["comentario"] = comentario ?? ""
+                };
+
+                var resp = await client.PostAsync(url, new FormUrlEncodedContent(form));
+                return Content(await resp.Content.ReadAsStringAsync(), "application/json");
+            }
+        }
+
+        /* ======================================================
+         DESASIGNAR PRÁCTICA
+         * ====================================================== */
+        [HttpPost]
+        public async Task<IActionResult> DesasignarPractica(int idPractica, string comentario)
+        {
+            using (var client = CreateApiClient())
+            {
+                var url = Api("Practicas/DesasignarPractica");
+
+                var form = new Dictionary<string, string>
+                {
+                    ["idPractica"] = idPractica.ToString(),
+                    ["comentario"] = comentario ?? ""
+                };
+
+                var resp = await client.PostAsync(url, new FormUrlEncodedContent(form));
+                return Content(await resp.Content.ReadAsStringAsync(), "application/json");
+            }
+        }
+
+        /* ======================================================
+         VISTA: VISUALIZACIÓN POSTULACIÓN
+         * ====================================================== */
+        [HttpGet]
+        public async Task<IActionResult> VisualizacionPostulacion(int idVacante, int idUsuario)
+        {
+            ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
+            ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
+            ViewBag.Usuario = HttpContext.Session.GetInt32("IdUsuario");
+
+            try
+            {
+                using (var client = CreateApiClient())
+                {
+                  
+                    var urlPractica = Api($"Practicas/ObtenerVisualizacionPractica?idVacante={idVacante}&idUsuario={idUsuario}");
+                    var respuestaPractica = await client.GetAsync(urlPractica);
+
+                    if (!respuestaPractica.IsSuccessStatusCode)
+                    {
+                        ViewBag.Error = "No se encontró información de la práctica.";
+                        return View(new VacantePracticaModel());
+                    }
+
+                    var practica = await respuestaPractica.Content.ReadFromJsonAsync<VacantePracticaModel>();
+
+                    if (practica == null)
+                    {
+                        ViewBag.Error = "No se encontró información de la práctica.";
+                        return View(new VacantePracticaModel());
+                    }
+
+                    var urlComentarios = Api($"Practicas/ObtenerComentariosPractica?idVacante={idVacante}&idUsuario={idUsuario}");
+                    var respuestaComentarios = await client.GetAsync(urlComentarios);
+
+                    if (respuestaComentarios.IsSuccessStatusCode)
+                    {
+                        var comentarios = await respuestaComentarios.Content.ReadFromJsonAsync<List<ComentarioPracticaModel>>();
+                        practica.Comentarios = comentarios ?? new List<ComentarioPracticaModel>();
+                    }
+
+                    var urlEstados = Api("Practicas/ObtenerEstadosPractica");
+                    var respuestaEstados = await client.GetAsync(urlEstados);
+
+                    if (respuestaEstados.IsSuccessStatusCode)
+                    {
+                        var estados = await respuestaEstados.Content.ReadFromJsonAsync<List<EstadoPracticaModel>>();
+                        practica.ListaEstados = estados ?? new List<EstadoPracticaModel>();
+                    }
+
+                    return View(practica);
+                }
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = "Error al cargar la información: " + ex.Message;
+                return View(new VacantePracticaModel());
+            }
+        }
+
+        /* ======================================================
+         OBTENER ESTUDIANTES ASIGNAR
+         * ====================================================== */
+        [HttpGet]
+        public async Task<IActionResult> ObtenerEstudiantesAsignar(int idVacante, int idUsuarioSesion)
+        {
+            using (var client = CreateApiClient())
+            {
+                var url = Api($"Practicas/EstudiantesAsignar?idVacante={idVacante}&idUsuarioSesion={idUsuarioSesion}");
+                var resp = await client.GetAsync(url);
+                return Content(await resp.Content.ReadAsStringAsync(), "application/json");
+            }
+        }
+
+
         [HttpGet]
         public IActionResult ObtenerPostulaciones(int idVacante)
         {
@@ -383,159 +472,8 @@ namespace SIGEP_ProyectoFinal.Controllers
             }
         }
 
-        /* ======================================================
-         * 14. ESTUDIANTES PARA ASIGNAR
-         * ====================================================== */
-        [HttpGet]
-        public IActionResult ObtenerEstudiantesAsignar(int idVacante, int idUsuarioSesion)
-        {
-            using (var context = _http.CreateClient())
-            {
-                var url = Api($"Practicas/EstudiantesAsignar?idVacante={idVacante}&idUsuarioSesion={idUsuarioSesion}");
 
-                context.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
 
-                var resp = context.GetAsync(url).Result;
-
-                return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
-            }
-        }
-
-        /* ======================================================
-         * 15. ASIGNAR ESTUDIANTE
-         * ====================================================== */
-        [HttpPost]
-        public IActionResult AsignarEstudiante(int idUsuario, int idVacante)
-        {
-            using (var context = _http.CreateClient())
-            {
-                var url = Api("Practicas/AsignarEstudiante");
-
-                context.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
-
-                var form = new Dictionary<string, string>
-                {
-                    ["idUsuario"] = idUsuario.ToString(),
-                    ["idVacante"] = idVacante.ToString()
-                };
-
-                var resp = context.PostAsync(url, new FormUrlEncodedContent(form)).Result;
-
-                return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
-            }
-        }
-
-        /* ======================================================
-         * 16. RETIRAR ESTUDIANTE
-         * ====================================================== */
-        [HttpPost]
-        public IActionResult RetirarEstudiante(int idVacante, int idUsuario, string comentario)
-        {
-            using (var context = _http.CreateClient())
-            {
-                var url = Api("Practicas/RetirarEstudiante");
-
-                context.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
-
-                var form = new Dictionary<string, string>
-                {
-                    ["idVacante"] = idVacante.ToString(),
-                    ["idUsuario"] = idUsuario.ToString(),
-                    ["comentario"] = comentario ?? ""
-                };
-
-                var resp = context.PostAsync(url, new FormUrlEncodedContent(form)).Result;
-
-                return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
-            }
-        }
-
-        /* ======================================================
-         * 17. DESASIGNAR PRÁCTICA
-         * ====================================================== */
-        [HttpPost]
-        public IActionResult DesasignarPractica(int idPractica, string comentario)
-        {
-            using (var context = _http.CreateClient())
-            {
-                var url = Api("Practicas/DesasignarPractica");
-
-                context.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
-
-                var form = new Dictionary<string, string>
-                {
-                    ["idPractica"] = idPractica.ToString(),
-                    ["comentario"] = comentario ?? ""
-                };
-
-                var resp = context.PostAsync(url, new FormUrlEncodedContent(form)).Result;
-
-                return Content(resp.Content.ReadAsStringAsync().Result, "application/json");
-            }
-        }
-
-        [HttpGet]
-        public IActionResult VisualizacionPostulacion(int idVacante, int idUsuario)
-        {
-            ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
-            ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
-            ViewBag.Usuario = HttpContext.Session.GetInt32("IdUsuario");
-
-            try
-            {
-                using (var context = _http.CreateClient())
-                {
-                    // Obtener datos de la práctica
-                    var urlPractica = _configuration["Valores:UrlAPI"] + $"Practicas/ObtenerVisualizacionPractica?idVacante={idVacante}&idUsuario={idUsuario}";
-                    var respuestaPractica = context.GetAsync(urlPractica).Result;
-
-                    if (!respuestaPractica.IsSuccessStatusCode)
-                    {
-                        ViewBag.Error = "No se encontró información de la práctica.";
-                        return View(new VacantePracticaModel());
-                    }
-
-                    var practica = respuestaPractica.Content.ReadFromJsonAsync<VacantePracticaModel>().Result;
-
-                    if (practica == null)
-                    {
-                        ViewBag.Error = "No se encontró información de la práctica.";
-                        return View(new VacantePracticaModel());
-                    }
-
-                    // Obtener comentarios
-                    var urlComentarios = _configuration["Valores:UrlAPI"] + $"Practicas/ObtenerComentariosPractica?idVacante={idVacante}&idUsuario={idUsuario}";
-                    var respuestaComentarios = context.GetAsync(urlComentarios).Result;
-
-                    if (respuestaComentarios.IsSuccessStatusCode)
-                    {
-                        var comentarios = respuestaComentarios.Content.ReadFromJsonAsync<List<ComentarioPracticaModel>>().Result;
-                        practica.Comentarios = comentarios ?? new List<ComentarioPracticaModel>();
-                    }
-
-                    // Obtener estados
-                    var urlEstados = _configuration["Valores:UrlAPI"] + "Practicas/ObtenerEstadosPractica";
-                    var respuestaEstados = context.GetAsync(urlEstados).Result;
-
-                    if (respuestaEstados.IsSuccessStatusCode)
-                    {
-                        var estados = respuestaEstados.Content.ReadFromJsonAsync<List<EstadoPracticaModel>>().Result;
-                        practica.ListaEstados = estados ?? new List<EstadoPracticaModel>();
-                    }
-
-                    return View(practica);
-                }
-            }
-            catch (Exception ex)
-            {
-                ViewBag.Error = "Error al cargar la información: " + ex.Message;
-                return View(new VacantePracticaModel());
-            }
-        }
         [HttpPost]
         public IActionResult AgregarComentario(int idVacante, int idUsuario, string comentario)
         {
