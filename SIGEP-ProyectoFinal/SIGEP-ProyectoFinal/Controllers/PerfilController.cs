@@ -33,8 +33,8 @@ namespace SIGEP_ProyectoFinal.Controllers
             using (var context = _http.CreateClient())
             {
                 var IdUsuario = HttpContext.Session.GetInt32("IdUsuario");
-                var urlApi = _configuration["Valores:UrlApi"] + "Perfil/ObtenerPerfil?IdUsuario=" + IdUsuario;
-                var urlApi2 = _configuration["Valores:UrlApi"] + "Perfil/ObtenerEncargados?IdUsuario=" + IdUsuario;
+                var urlApi = _configuration["Valores:UrlApi"] + "Perfil/ObtenerPerfil";
+                var urlApi2 = _configuration["Valores:UrlApi"] + "Perfil/ObtenerEncargados";
                 context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                 var respuesta = context.GetAsync(urlApi).Result;
                 var respuesta2 = context.GetAsync(urlApi2).Result;
@@ -402,12 +402,11 @@ namespace SIGEP_ProyectoFinal.Controllers
         [HttpGet]
         public JsonResult ObtenerDocumentos()
         {
-            var IdUsuario = HttpContext.Session.GetInt32("IdUsuario");
 
             using (var context = _http.CreateClient())
             {
                 var urlApi = _configuration["Valores:UrlApi"] +
-                             "Perfil/ObtenerDocumentos?IdUsuario=" + IdUsuario;
+                             "Perfil/ObtenerDocumentos";
                 context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                 var respuesta = context.GetAsync(urlApi).Result;
 

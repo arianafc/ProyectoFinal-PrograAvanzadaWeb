@@ -29,9 +29,11 @@ namespace SIGEP_ProyectoFinal.Controllers
             {
                 var urlApi = _configuration["Valores:UrlApi"] + "Home/ObtenerIndicadores";
                 var urlApi2 = _configuration["Valores:UrlApi"] + "Home/ObtenerUltimasPracticasAsignadas";
+              
                 context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                 var respuesta = context.GetAsync(urlApi).Result;
                 var respuesta2 = context.GetAsync(urlApi2).Result;
+
                 if (respuesta.IsSuccessStatusCode)
                 {
                     var datosApi = respuesta.Content.ReadFromJsonAsync<DashboardVM>().Result;
@@ -52,6 +54,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                     dashboard.UltimasPracticasAsignadas = new List<UltimasPracticasAsignadasDTO>();
                 }
 
+
             }
 
 
@@ -59,6 +62,7 @@ namespace SIGEP_ProyectoFinal.Controllers
             ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
             ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
             ViewBag.Usuario = HttpContext.Session.GetInt32("IdUsuario");
+
             return View(dashboard);
         }
 

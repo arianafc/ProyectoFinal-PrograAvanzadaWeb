@@ -12,5 +12,15 @@
         public string Descripcion { get; set; } = "";
         public DateTime FechaMaxAplicacion { get; set; }
         public DateTime FechaCierre { get; set; }
+
+        public string? NombreEmpresa { get; set; }
+
+        public string? Especialidad { get; set; }
+
+        public int CuposOcupados { get; set; }
+
+        public string? Tipo { get; set; }
+
+
     }
 }

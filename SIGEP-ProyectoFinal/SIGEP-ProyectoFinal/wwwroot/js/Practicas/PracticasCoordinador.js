@@ -60,14 +60,6 @@
     });
 
     // === ASIGNAR PRÁCTICA (abre modal) ===
-    $(document).on('click', '.btn-asignar', function () {
-        const idUsuario = $(this).data('idusuario');
-
-        if (!idUsuario) return;
-
-        $('#modalAsignar').modal('show');
-        recargarModalVacantes(idUsuario);
-    });
 
     // === INICIAR PRÁCTICAS ===
     $('#btnIniciarPracticas').on('click', function () {
@@ -136,6 +128,72 @@
         });
     }
 
+    ///LOGICA PARA TRAERME VACANTES DISPONIBLES///
 
+    $(document).on('click', '.btn-asignar', function () {
+
+        const idUsuario = $(this).data('idusuario');
+
+        $('#modalAsignar').data('idusuario', idUsuario);
+
+        cargarVacantes(idUsuario);
+
+        const modal = new bootstrap.Modal(document.getElementById('modalAsignar'));
+        modal.show();
+    });
+
+    function cargarVacantes(idUsuario) {
+
+        $.ajax({
+            url: '/GestionPracticas/ObtenerVacantesAsignar',
+            type: 'GET',
+            data: { IdUsuario: idUsuario },
+            success: function (data) {
+
+                const tbody = $('#miTablaAsignar tbody');
+                tbody.empty();
+
+                if (!data || data.length === 0) {
+                    tbody.append(`
+                    <tr class="text-center">
+                        <td colspan="7">No hay vacantes disponibles</td>
+                    </tr>
+                `);
+                    return;
+                }
+
+                data.forEach(v => {
+
+                    let btnAsignar = `
+                    <a href="javascript:void(0);" 
+                       class="btn-confirmar-asignacion"
+                       data-idvacante="${v.idVacante}"
+                       style="color:#2d594d;">
+                       <i class="fas fa-check-circle"></i>
+                    </a>`;
+
+                
+                    if (v.estadoPractica === 'Finalizada') {
+                        btnAsignar = '-';
+                    }
+
+                    tbody.append(`
+                    <tr class="text-center">
+                        <td>${v.nombreVacante}</td>
+                        <td>${v.nombreEmpresa}</td>
+                        <td>${v.especialidad}</td>
+                        <td>${v.numCupos}</td>
+                        <td>${v.cuposOcupados}</td>
+                       
+                        <td>${btnAsignar}</td>
+                    </tr>
+                `);
+                });
+            },
+            error: function () {
+                alert('Error al cargar vacantes');
+            }
+        });
+    }
 
 });

@@ -199,9 +199,6 @@ SELECT U.IdUsuario, U.Cedula, U.Nombre, U.Apellido1, U.Apellido2, U.FechaNacimie
 END
 
 
-drop procedure ObtenerPefilSP
-
-
 /****** Object:  StoredProcedure [dbo].[ActualizarContrasenna]    Script Date: 11/1/2025 12:53:17 AM ******/
 SET ANSI_NULLS ON
 GO
@@ -1029,10 +1026,6 @@ BEGIN
 
 END;
 
-INSERT INTO Modalidades VALUES ('Hibrido')
-
-USE [SIGEP_WEB]
-GO
 
 /****** Object:  StoredProcedure [dbo].[ObtenerPostulacionesSP]    Script Date: 12/16/2025 9:34:11 PM ******/
 SET ANSI_NULLS ON
@@ -1072,8 +1065,8 @@ BEGIN
     INNER JOIN UsuarioEspecialidad ue ON ue.IdUsuario = u.IdUsuario
     INNER JOIN Especialidades es ON es.IdEspecialidad = ue.IdEspecialidad
     LEFT JOIN Telefonos t ON t.IdUsuario = u.IdUsuario
-    LEFT JOIN NotasEstudiantesTB n ON n.IdUsuario = u.IdUsuario
-    WHERE YEAR(p.FechaAplicacion) = YEAR(GETDATE())
+    LEFT JOIN NotasEstudiantes n ON n.IdUsuario = u.IdUsuario
+    WHERE YEAR(p.FechaAplicacion) = YEAR(GETDATE()) 
     ORDER BY p.IdPractica DESC;
 END
 GO
@@ -1198,7 +1191,7 @@ BEGIN
                 ELSE @IdRezagada
             END
         FROM PracticaEstudiante pe
-        INNER JOIN NotasEstudiantesTB n 
+        INNER JOIN NotasEstudiantes n 
             ON n.IdUsuario = pe.IdUsuario
         WHERE pe.IdEstado = @IdEnCurso;
 
@@ -1238,131 +1231,132 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+    -------------------------------------------------
+    -- Especialidades del estudiante
+    -------------------------------------------------
     DECLARE @EspecialidadesEst TABLE (IdEspecialidad INT);
+
     INSERT INTO @EspecialidadesEst (IdEspecialidad)
     SELECT DISTINCT IdEspecialidad
     FROM UsuarioEspecialidad
     WHERE IdUsuario = @IdUsuario
       AND IdEstado = 1;
 
+    -------------------------------------------------
+    -- Estados que ocupan cupo
+    -------------------------------------------------
     DECLARE @EstadosOcupados TABLE (IdEstado INT);
+
     INSERT INTO @EstadosOcupados (IdEstado)
     SELECT IdEstado
     FROM Estados
     WHERE LOWER(LTRIM(RTRIM(Descripcion))) IN (
-        'asignada','en curso','aprobada','finalizada','rezagado'
+        'asignada',
+        'en curso',
+        'aprobada',
+        'finalizada',
+        'rezagada'
     );
 
+    -------------------------------------------------
+    -- Vacantes posibles para asignar
+    -------------------------------------------------
     SELECT
-        v.IdVacantePractica,
-        LTRIM(RTRIM(v.Nombre)) AS NombreVacante,
+        v.IdVacantePractica AS IdVacante,
+        LTRIM(RTRIM(v.Nombre)) AS Nombre,
         emp.NombreEmpresa,
 
         ISNULL((
             SELECT TOP 1 esp.Nombre
             FROM EspecialidadesVacante ev
-            INNER JOIN Especialidades esp ON esp.IdEspecialidad = ev.IdEspecialidad
+            INNER JOIN Especialidades esp 
+                ON esp.IdEspecialidad = ev.IdEspecialidad
             WHERE ev.IdVacante = v.IdVacantePractica
-              AND ev.IdEspecialidad IN (SELECT IdEspecialidad FROM @EspecialidadesEst)
+              AND ev.IdEspecialidad IN (
+                  SELECT IdEspecialidad FROM @EspecialidadesEst
+              )
         ), '—') AS Especialidad,
 
-        v.NumeroCupos,
+        v.NumeroCupos as NumCupos,
 
         (
             SELECT COUNT(*)
             FROM PracticaEstudiante p
             WHERE p.IdVacante = v.IdVacantePractica
-              AND p.IdEstado IN (SELECT IdEstado FROM @EstadosOcupados)
+              AND p.IdEstado IN (
+                  SELECT IdEstado FROM @EstadosOcupados
+              )
         ) AS CuposOcupados,
 
         v.FechaCierre,
-        v.Requisitos,
+        v.Requisitos as Requerimientos,
         v.Tipo,
 
-        CASE 
-            WHEN v.Tipo IS NOT NULL 
-                 AND LOWER(LTRIM(RTRIM(v.Tipo))) = 'autogestionada'
-                 AND EXISTS (
-                     SELECT 1 
-                     FROM PracticaEstudiante p
-                     WHERE p.IdUsuario = @IdUsuario
-                       AND p.IdVacante = v.IdVacantePractica
-                       AND p.IdEstado IN (3,5,6,8,9,11)
-                 )
-            THEN 'Autogestionada'
-            ELSE NULL
-        END AS TipoMensaje,
-
-        ISNULL((
-            SELECT TOP 1 LTRIM(RTRIM(e2.Descripcion))
-            FROM PracticaEstudiante p2
-            INNER JOIN Estados e2 ON e2.IdEstado = p2.IdEstado
-            WHERE p2.IdUsuario = @IdUsuario
-              AND p2.IdVacante = v.IdVacantePractica
-            ORDER BY p2.IdPractica DESC
-        ), 'Sin proceso activo') AS EstadoPractica,
-
-        ISNULL((
-            SELECT TOP 1 p3.IdPractica
-            FROM PracticaEstudiante p3
-            WHERE p3.IdUsuario = @IdUsuario
-              AND p3.IdVacante = v.IdVacantePractica
-            ORDER BY p3.IdPractica DESC
-        ), 0) AS IdPracticaVacante,
-
-        CASE 
-            WHEN EXISTS (
-                SELECT 1 
-                FROM PracticaEstudiante p4
-                INNER JOIN Estados e4 ON e4.IdEstado = p4.IdEstado
-                WHERE p4.IdUsuario = @IdUsuario
-                  AND p4.IdVacante <> v.IdVacantePractica
-                  AND LOWER(LTRIM(RTRIM(e4.Descripcion))) IN (
-                      'en curso','asignada','aprobada','finalizada','rezagado'
-                  )
-            ) THEN 0
-            ELSE 1
-        END AS PuedeAsignar,
+        -- Siempre puede asignar porque ya filtramos arriba
+        1 AS PuedeAsignar,
 
         (SELECT CONCAT(u.Nombre, ' ', u.Apellido1, ' ', u.Apellido2)
-         FROM Usuarios u 
+         FROM Usuarios u
          WHERE u.IdUsuario = @IdUsuario) AS NombreCompleto,
 
         CASE 
-            WHEN (SELECT EstadoAcademico FROM Usuarios WHERE IdUsuario = @IdUsuario) = 1
-            THEN 'Activo' 
-            ELSE 'Inactivo' 
+            WHEN (SELECT EstadoAcademico 
+                  FROM Usuarios 
+                  WHERE IdUsuario = @IdUsuario) = 1
+            THEN 'Activo'
+            ELSE 'Inactivo'
         END AS EstadoAcademicoDescripcion
 
     FROM VacantesPractica v
-    INNER JOIN Empresas emp ON emp.IdEmpresa = v.IdEmpresa
+    INNER JOIN Empresas emp 
+        ON emp.IdEmpresa = v.IdEmpresa
 
-    WHERE 
-    (
-        v.IdEstado IN (1, 5)
+    WHERE
+        -- Vacante activa
+        v.IdEstado = 1
+
+        -- Año actual
+        AND YEAR(v.FechaCierre) = YEAR(GETDATE())
+
+        -- Coincide con especialidad del estudiante
         AND EXISTS (
             SELECT 1
             FROM EspecialidadesVacante ev
             WHERE ev.IdVacante = v.IdVacantePractica
-              AND ev.IdEspecialidad IN (SELECT IdEspecialidad FROM @EspecialidadesEst)
+              AND ev.IdEspecialidad IN (
+                  SELECT IdEspecialidad FROM @EspecialidadesEst
+              )
         )
-    )
-    OR 
-    (
-        EXISTS (
-            SELECT 1
+
+        -- Cupos disponibles
+        AND (
+            SELECT COUNT(*)
             FROM PracticaEstudiante p
-            WHERE p.IdUsuario = @IdUsuario
-              AND p.IdVacante = v.IdVacantePractica
-              AND p.IdEstado IN (3,5,6,8,9,11)
+            WHERE p.IdVacante = v.IdVacantePractica
+              AND p.IdEstado IN (
+                  SELECT IdEstado FROM @EstadosOcupados
+              )
+        ) < v.NumeroCupos
+
+        -- El estudiante no tiene otra práctica activa o cerrada
+        AND NOT EXISTS (
+            SELECT 1
+            FROM PracticaEstudiante p2
+            INNER JOIN Estados e2 
+                ON e2.IdEstado = p2.IdEstado
+            WHERE p2.IdUsuario = @IdUsuario
+              AND LOWER(LTRIM(RTRIM(e2.Descripcion))) IN (
+                  'asignada',
+                  'en curso',
+                  'aprobada',
+                  'finalizada',
+                  'rezagada'
+              )
         )
-    )
 
     ORDER BY v.Nombre;
 END;
 GO
-
-exec ObtenerVacantesAsignarSP 8
 
 CREATE OR ALTER PROCEDURE [dbo].[ValidarAplicacionPracticaSP]
     @IdUsuario INT
@@ -1409,3 +1403,63 @@ END;
 GO
 
 EXEC ObtenerVacantesAsignarSP 8
+
+CREATE OR ALTER PROCEDURE ObtenerMiPracticaSP
+(@IdUsuario INT)
+AS
+BEGIN
+
+     DECLARE 
+        @IdAprobada   INT,
+        @IdRezagada   INT,
+        @IdFinalizada INT,
+        @IdEnCurso    INT,
+        @IdAsignada  INT;
+
+    SELECT @IdAprobada   = IdEstado FROM Estados WHERE Descripcion = 'Aprobada';
+    SELECT @IdRezagada   = IdEstado FROM Estados WHERE Descripcion = 'Rezagada';
+    SELECT @IdEnCurso    = IdEstado FROM Estados WHERE Descripcion = 'En Curso';
+    SELECT @IdAsignada  = IdEstado FROM Estados WHERE Descripcion = 'Asignada';
+
+
+    SELECT 1 IdVacante FROM PracticaEstudiante WHERE IdUsuario = @IdUsuario AND IdEstado IN (@IdAprobada, @IdRezagada, @IdEnCurso, @IdAsignada)
+
+end;
+
+
+CREATE OR ALTER PROCEDURE dbo.ListarVacantesPorUsuarioSP
+(
+    @IdUsuario INT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+ 
+    SELECT
+        pe.IdPractica,
+        pe.IdUsuario,
+        pe.IdVacante AS IdVacante,
+        pe.FechaAplicacion,
+        estPractica.Descripcion AS EstadoDescripcion,
+        v.Nombre AS NombreVacante,
+        estVacante.Descripcion AS EstadoVacante,
+        v.Requisitos,
+        v.FechaMaxAplicacion,
+        v.NumeroCupos,
+        v.FechaCierre,
+        e.NombreEmpresa as Empresa
+    FROM dbo.PracticaEstudiante pe
+    LEFT JOIN dbo.VacantesPractica v
+        ON v.IdVacantePractica = pe.IdVacante
+    LEFT JOIN dbo.Estados estPractica
+        ON estPractica.IdEstado = pe.IdEstado
+    LEFT JOIN dbo.Estados estVacante
+        ON estVacante.IdEstado = v.IdEstado
+    INNER JOIN dbo.Empresas e
+    on e.IdEmpresa = v.IdEmpresa
+    WHERE pe.IdUsuario = @IdUsuario
+    ORDER BY pe.IdPractica DESC;
+END
+GO
+
+EXEC ListarVacantesPorUsuarioSP 4

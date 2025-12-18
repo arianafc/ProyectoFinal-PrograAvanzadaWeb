@@ -402,7 +402,8 @@ namespace SIGEP_ProyectoFinal.Controllers
             ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
             ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
             ViewBag.Usuario = HttpContext.Session.GetInt32("IdUsuario");
-
+            var rol = HttpContext.Session.GetInt32("Rol");
+            var usuario = HttpContext.Session.GetInt32("IdUsuario");
             try
             {
                 using (var client = CreateApiClient())
@@ -413,6 +414,34 @@ namespace SIGEP_ProyectoFinal.Controllers
                     {
                         client.DefaultRequestHeaders.Authorization =
                             new AuthenticationHeaderValue("Bearer", token);
+                    }
+
+                    if (rol == 1)
+                    {
+                        var vacante = _configuration["Valores:UrlApi"] + "GestionPracticas/ObtenerMiPractica";
+                        var respuesta3 = client.GetAsync(vacante).Result;
+
+                        if (respuesta3.IsSuccessStatusCode)
+                        {
+                            var datosApi3 = respuesta3.Content
+                                .ReadFromJsonAsync<PostulacionDto>()
+                                .Result;
+
+                            if (datosApi3 != null && datosApi3.IdVacante != 0)
+                            {
+                                idVacante = datosApi3.IdVacante;
+                                idUsuario = (int)usuario;
+                                ViewBag.MiPractica = datosApi3; 
+                            }
+                            else
+                            {
+                                ViewBag.MiPractica = null;
+                            }
+                        }
+                        else
+                        {
+                            ViewBag.MiPractica = null;
+                        }
                     }
 
 
