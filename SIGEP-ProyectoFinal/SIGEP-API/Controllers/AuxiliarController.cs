@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace SIGEP_API.Controllers
 {
@@ -9,50 +10,109 @@ namespace SIGEP_API.Controllers
     public class AuxiliarController : ControllerBase
     {
         private readonly IConfiguration _config;
-        public AuxiliarController(IConfiguration config) => _config = config;
+
+        public AuxiliarController(IConfiguration config)
+        {
+            _config = config;
+        }
 
         private SqlConnection Conn() =>
             new SqlConnection(_config.GetConnectionString("BDConnection"));
 
+        // ============================================================
+        // OBTENER ESTADOS
+        // ============================================================
         [HttpGet("Estados")]
         public IActionResult Estados()
         {
-            using var cn = Conn();
-            var data = cn.Query<dynamic>(
-                "SELECT CAST(IdEstado AS VARCHAR(10)) AS value, Descripcion AS text FROM Estados WHERE IdEstado > 0"
-            );
-            return Ok(data);
+            try
+            {
+                using (var db = Conn())
+                {
+                    var data = db.Query<dynamic>(
+                        "ObtenerEstadosSP",
+                        commandType: CommandType.StoredProcedure
+                    );
+
+                    return Ok(data);
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { mensaje = "Error al obtener estados", detalle = ex.Message });
+            }
         }
 
+        // ============================================================
+        // OBTENER ESPECIALIDADES
+        // ============================================================
         [HttpGet("Especialidades")]
-        
         public IActionResult Especialidades()
         {
-            using var cn = Conn();
-            var data = cn.Query<dynamic>(
-                "SELECT CAST(IdEspecialidad AS VARCHAR(10)) AS value, Nombre AS text FROM Especialidades"
-            );
-            return Ok(data);
+            try
+            {
+                using (var db = Conn())
+                {
+                    var data = db.Query<dynamic>(
+                        "ObtenerEspecialidadesListaSP",
+                        commandType: CommandType.StoredProcedure
+                    );
+
+                    return Ok(data);
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { mensaje = "Error al obtener especialidades", detalle = ex.Message });
+            }
         }
 
+        // ============================================================
+        // OBTENER EMPRESAS
+        // ============================================================
         [HttpGet("Empresas")]
         public IActionResult Empresas()
         {
-            using var cn = Conn();
-            var data = cn.Query<dynamic>(
-                "SELECT CAST(IdEmpresa AS VARCHAR(10)) AS value, NombreEmpresa AS text FROM Empresas WHERE IdEstado = 1"
-            );
-            return Ok(data);
+            try
+            {
+                using (var db = Conn())
+                {
+                    var data = db.Query<dynamic>(
+                        "ObtenerEmpresasListaSP",
+                        commandType: CommandType.StoredProcedure
+                    );
+
+                    return Ok(data);
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { mensaje = "Error al obtener empresas", detalle = ex.Message });
+            }
         }
 
+        // ============================================================
+        // OBTENER MODALIDADES
+        // ============================================================
         [HttpGet("Modalidades")]
         public IActionResult Modalidades()
         {
-            using var cn = Conn();
-            var data = cn.Query<dynamic>(
-                "SELECT CAST(IdModalidad AS VARCHAR(10)) AS value, Descripcion AS text FROM Modalidades"
-            );
-            return Ok(data);
+            try
+            {
+                using (var db = Conn())
+                {
+                    var data = db.Query<dynamic>(
+                        "ObtenerModalidadesSP",
+                        commandType: CommandType.StoredProcedure
+                    );
+
+                    return Ok(data);
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { mensaje = "Error al obtener modalidades", detalle = ex.Message });
+            }
         }
     }
 }

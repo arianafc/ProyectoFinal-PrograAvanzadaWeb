@@ -23,7 +23,7 @@ namespace SIGEP_ProyectoFinal.Controllers
 
         private string Api(string ruta)
         {
-            // Unificar (en tu código estaba mezclado UrlApi vs UrlAPI)
+            
             return _configuration["Valores:UrlAPI"] + ruta;
         }
 

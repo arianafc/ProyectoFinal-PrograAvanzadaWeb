@@ -1640,3 +1640,77 @@ PRINT '- API DTOs: Propiedad "Requisitos"';
 PRINT '- Web ViewModels: Propiedad "Requisitos"';
 PRINT '';
 PRINT '========================================';
+
+USE SIGEP_WEB;
+GO
+
+/* =========================================================
+   SP AUXILIARES - Para listas desplegables y catálogos
+   ========================================================= */
+
+-- ============================================================
+-- Obtener Estados
+-- ============================================================
+CREATE OR ALTER PROCEDURE dbo.ObtenerEstadosSP
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        CAST(IdEstado AS VARCHAR(10)) AS value,
+        Descripcion AS text
+    FROM Estados
+    WHERE IdEstado > 0
+    ORDER BY Descripcion;
+END
+GO
+
+-- ============================================================
+-- Obtener Especialidades
+-- ============================================================
+CREATE OR ALTER PROCEDURE dbo.ObtenerEspecialidadesListaSP
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        CAST(IdEspecialidad AS VARCHAR(10)) AS value,
+        Nombre AS text
+    FROM Especialidades
+    WHERE IdEstado = 1
+    ORDER BY Nombre;
+END
+GO
+
+-- ============================================================
+-- Obtener Empresas Activas
+-- ============================================================
+CREATE OR ALTER PROCEDURE dbo.ObtenerEmpresasListaSP
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        CAST(IdEmpresa AS VARCHAR(10)) AS value,
+        NombreEmpresa AS text
+    FROM Empresas
+    WHERE IdEstado = 1
+    ORDER BY NombreEmpresa;
+END
+GO
+
+-- ============================================================
+-- Obtener Modalidades
+-- ============================================================
+CREATE OR ALTER PROCEDURE dbo.ObtenerModalidadesSP
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        CAST(IdModalidad AS VARCHAR(10)) AS value,
+        Descripcion AS text
+    FROM Modalidades
+    ORDER BY Descripcion;
+END
+GO

@@ -43,7 +43,7 @@
             const est = normalizarEstado(estadoOriginal);
 
             const mapa = {
-                // Estados de prácticas/vacantes
+                
                 'en proceso de aplicacion': { cls: 'badge-en-progreso', txt: 'En proceso de Aplicación' },
                 'en proceso': { cls: 'badge-en-proceso', txt: 'En Proceso' },
                 'rechazada': { cls: 'badge-rechazada', txt: 'Rechazada' },
@@ -55,12 +55,11 @@
                 'archivado': { cls: 'badge-archivado', txt: 'Archivado' },
                 'en curso': { cls: 'badge-en-curso', txt: 'En Curso' },
 
-                // Estados académicos
                 'activo': { cls: 'badge-activo', txt: 'Activo' },
                 'inactivo': { cls: 'badge-inactivo', txt: 'Inactivo' },
                 'rezagado': { cls: 'badge-rezagado', txt: 'Rezagado' },
 
-                // Estados especiales
+               
                 'sin proceso activo': { cls: 'badge-no-asignada', txt: 'Sin proceso activo' },
                 'no asignada': { cls: 'badge-no-asignada', txt: 'No asignada' },
                 'desasignada': { cls: 'badge-desasignada', txt: 'Desasignada' },
@@ -97,6 +96,16 @@
                 return null;
             }
         }
+        function validarFechaNoAnteriorHoy(fecha) {
+            if (!fecha) return false;
+
+            const fechaSeleccionada = new Date(fecha);
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0); 
+
+            return fechaSeleccionada >= hoy;
+        }
+
 
         // =====================================================
         // 🔹 DataTable principal
@@ -317,6 +326,7 @@
             const fechaAplic = $('[name="FechaMaxAplicacion"]').val();
             const fechaCierre = $('[name="FechaCierre"]').val();
 
+           
             if (!nombre || !idEmpresa || !requisitos || numCupos < 1 || !idEspecialidad || !idModalidad) {
                 Swal.fire({
                     icon: 'warning',
@@ -326,6 +336,7 @@
                 return false;
             }
 
+         
             if (!fechaAplic || !fechaCierre) {
                 Swal.fire({
                     icon: 'warning',
@@ -335,6 +346,27 @@
                 return false;
             }
 
+           
+            if (!validarFechaNoAnteriorHoy(fechaAplic)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Fecha inválida',
+                    text: 'La fecha límite de aplicación no puede ser anterior a la fecha actual.'
+                });
+                return false;
+            }
+
+           
+            if (!validarFechaNoAnteriorHoy(fechaCierre)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Fecha inválida',
+                    text: 'La fecha de cierre no puede ser anterior a la fecha actual.'
+                });
+                return false;
+            }
+
+           
             if (validarFechas(fechaAplic, fechaCierre)) {
                 Swal.fire({
                     icon: 'warning',
@@ -344,6 +376,7 @@
                 return false;
             }
 
+      
             const fechaAplicISO = formatearFechaSQL(fechaAplic);
             const fechaCierreISO = formatearFechaSQL(fechaCierre);
 
@@ -420,7 +453,6 @@
                 }
             });
         });
-
         // =====================================================
         // 🔹 Visualizar Vacante + Postulaciones
         // =====================================================
@@ -810,7 +842,26 @@
                 return false;
             }
 
-           
+          
+            if (!validarFechaNoAnteriorHoy(fechaMaxAplicacion)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Fecha inválida',
+                    text: 'La fecha límite de aplicación no puede ser anterior a la fecha actual.'
+                });
+                return false;
+            }
+
+            
+            if (!validarFechaNoAnteriorHoy(fechaCierre)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Fecha inválida',
+                    text: 'La fecha de cierre no puede ser anterior a la fecha actual.'
+                });
+                return false;
+            }
+
             const fechaMaxISO = formatearFechaSQL(fechaMaxAplicacion);
             const fechaCierreISO = formatearFechaSQL(fechaCierre);
 
