@@ -4,6 +4,9 @@
     if (window._PracticasScriptLoaded) return;
     window._PracticasScriptLoaded = true;
 
+   
+
+
     // === BADGE DE ESTADO ===
     function badgeEstado(estadoOriginal) {
         const estado = (estadoOriginal || '')
@@ -45,6 +48,26 @@
         }
     });
 
+    /* =============================
+     * FILTRO POR ESTADO
+     * ============================= */
+    $('#filtroPractica').on('change', function () {
+        var estado = $(this).val();
+        table.column(4).search(estado).draw();
+    });
+
+    /* =============================
+     * FILTRO POR ESPECIALIDAD
+     * ============================= */
+    $('#filtroEspecialidad').on('change', function () {
+        var especialidad = $(this).find('option:selected').text();
+
+        if (especialidad === "Todas") {
+            table.column(2).search('').draw();
+        } else {
+            table.column(2).search(especialidad).draw();
+        }
+    });
     // === VER DETALLE POSTULACIÓN ===
     $(document).on('click', '.btn-ver', function () {
         const idVacante = $(this).data('idvacante');

@@ -81,26 +81,6 @@ namespace SIGEP_API.Controllers
             }
         }
 
-        [HttpGet]
-        [Route("ObtenerVacantesAsignar")]
-        public IActionResult ObtenerVacantesAsignar(int IdUsuario)
-        {
-            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
-            {
-                var parametros = new DynamicParameters();
-                parametros.Add("@IdUsuario", IdUsuario);
-
-                var resultado = context
-                    .Query<VacantesAsignarModelResponse>(
-                        "ObtenerVacantesAsignarSP",
-                        parametros,
-                        commandType: CommandType.StoredProcedure
-                    )
-                    .ToList();
-
-                return Ok(resultado);
-            }
-        }
 
         [HttpGet]
         [Route("ListarVacantesPorUsuario")]

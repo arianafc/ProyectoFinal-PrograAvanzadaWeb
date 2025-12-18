@@ -81,6 +81,60 @@ namespace SIGEP_ProyectoFinal.Controllers
         }
 
 
+        [FiltroUsuarioAdmin]
+        [HttpGet]
+        public IActionResult Historico()
+        {
+            ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
+            ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
+            ViewBag.Usuario = HttpContext.Session.GetInt32("IdUsuario");
+
+            var vm = new VacantesViewModel();
+
+            var client = _http.CreateClient();
+            var token = HttpContext.Session.GetString("Token");
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                client.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", token);
+            }
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+
+            try
+            {
+                var postulaciones = client.GetAsync(Api("GestionPracticas/ObtenerHistorico")).Result;
+
+                if (postulaciones.IsSuccessStatusCode)
+                {
+                    vm.Postulaciones =
+                      postulaciones.Content
+                          .ReadFromJsonAsync<List<PostulacionDto>>()
+                          .Result;
+                }
+                else
+                {
+                    vm.Postulaciones = new List<PostulacionDto>();
+                }
+
+                var resEsp = client.GetAsync(Api("Home/ObtenerEspecialidades")).Result;
+                var especialidades = resEsp.Content.ReadFromJsonAsync<List<Especialidades>>().Result;
+                vm.Especialidades = especialidades?.Select(x => new SelectListItem
+                {
+                    Value = x.IdEspecialidad.ToString(),
+                    Text = x.Nombre
+                }).ToList() ?? new List<SelectListItem>();
+            }
+            catch { vm.Especialidades = new List<SelectListItem>(); }
+
+            return View("Historico", vm);
+        }
+
         [HttpPost]
         public JsonResult AccionarPracticas(int accion)
         {

@@ -53,8 +53,7 @@ document.addEventListener('DOMContentLoaded', function () {
             type: 'GET',
             success: function (response) {
 
-                // Si tu action devuelve { exito, data }, lo usamos
-                // Si devuelve directamente un array, también lo soportamos
+              
                 let documentos = null;
 
                 if (Array.isArray(response)) {
@@ -77,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 documentos.forEach(doc => {
 
-                    // Robusto: soporta idDocumento o IdDocumento
+                 
                     const idDocumento = doc.idDocumento ?? doc.IdDocumento ?? doc.id ?? 0;
 
                     const rutaCompleta = doc.documento ?? doc.Documento ?? "";
@@ -87,10 +86,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         ? new Date(doc.fechaSubida).toLocaleString()
                         : (doc.FechaSubida ? new Date(doc.FechaSubida).toLocaleString() : '');
 
-                    // Descarga ideal por ID (si ya implementaste DescargarDocumento por id)
-                    // Si tu Descargar aún usa ruta, podés volverlo a como estaba,
-                    // pero lo correcto es por Id.
-                    const urlDescarga = `/Estudiante/DescargarDocumento/${idDocumento}`;
+
+                    const urlDescarga = `/Perfil/DescargarDocumento?ruta=${encodeURIComponent(rutaCompleta)}`;
+
 
                     const item = document.createElement("div");
                     item.className = "list-group-item d-flex justify-content-between align-items-center";
