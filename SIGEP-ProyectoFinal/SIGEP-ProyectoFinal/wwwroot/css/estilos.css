@@ -58,12 +58,12 @@ body {
 
 /* Footer */
 footer {
-    background-color:  #2d594d;
-    color: white;
+   
+    color: #2d594d;
     text-align: center;
     padding: 15px 0;
     margin-top: 50px;
-    border-top: 3px solid #a5d6a7;
+    border-top: 0.5px thin #fff;
 }
 
 /* Layout principal */
@@ -540,7 +540,7 @@ table#miTabla {
 }
 
 #miTabla tbody tr {
-    background-color: #EAF2D8;
+  
     /*box-shadow: 0 4px 10px rgba(0,0,0,0.05);*/
     box-shadow: 4px 0 0 white, -4px 0 0 white; /* Bordes izquierdo y derecho */
     border-radius: 8px;
@@ -553,6 +553,7 @@ table#miTabla {
     color: #2D594D;
     font-size: 0.9rem;
     border-bottom: none;
+    background-color: white;
     white-space: normal !important; /* permite salto de línea dentro de celdas */
     word-wrap: break-word;
 }

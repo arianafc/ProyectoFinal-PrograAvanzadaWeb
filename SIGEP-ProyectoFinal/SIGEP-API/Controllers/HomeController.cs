@@ -264,6 +264,40 @@ namespace SIGEP_API.Controllers
 
         #endregion
 
+
+        [HttpGet]
+        [Route("ObtenerIndicadores")]
+
+        public IActionResult ObtenerIndicadores()
+        {
+            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            {
+                var resultado = context.QueryFirstOrDefault<DashboardResponseModel>("IndicadoresDashboard");
+                return Ok(resultado);
+            }
+        }
+
+
+        [HttpGet]
+        [Route("ObtenerUltimasPracticas")]
+
+        public IActionResult ObtenerUltimasPracticas()
+        {
+            using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
+            {
+                var resultado = context.Query<DashboardResponseModel>("ObtenerUltimasPracticasSP").ToList();
+                return Ok(resultado);
+            }
+        }
+
+
+
+
+
+
+
+
+
         private string GenerarToken(int usuarioId, string nombre, int rol)
         {
             var key = _configuration["Valores:KeyJWT"]!;

@@ -22,10 +22,44 @@ namespace SIGEP_ProyectoFinal.Controllers
       
         public IActionResult Index()
         {
+
+            var dashboard = new DashboardVM();              
+
+            using (var context = _http.CreateClient())
+            {
+                var urlApi = _configuration["Valores:UrlApi"] + "Home/ObtenerIndicadores";
+                var urlApi2 = _configuration["Valores:UrlApi"] + "Home/ObtenerUltimasPracticasAsignadas";
+                context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
+                var respuesta = context.GetAsync(urlApi).Result;
+                var respuesta2 = context.GetAsync(urlApi2).Result;
+                if (respuesta.IsSuccessStatusCode)
+                {
+                    var datosApi = respuesta.Content.ReadFromJsonAsync<DashboardVM>().Result;
+                    dashboard = datosApi ?? new DashboardVM();
+                }
+                else
+                {
+                    dashboard = new DashboardVM();
+                }
+
+                if(respuesta2.IsSuccessStatusCode)
+                {
+                    var datosApi2 = respuesta2.Content.ReadFromJsonAsync<List<UltimasPracticasAsignadasDTO>>().Result;
+                    dashboard.UltimasPracticasAsignadas = datosApi2 ?? new List<UltimasPracticasAsignadasDTO>();
+                }
+                else
+                {
+                    dashboard.UltimasPracticasAsignadas = new List<UltimasPracticasAsignadasDTO>();
+                }
+
+            }
+
+
+
             ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
             ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
             ViewBag.Usuario = HttpContext.Session.GetInt32("IdUsuario");
-            return View();
+            return View(dashboard);
         }
 
         #region Iniciar Sesion

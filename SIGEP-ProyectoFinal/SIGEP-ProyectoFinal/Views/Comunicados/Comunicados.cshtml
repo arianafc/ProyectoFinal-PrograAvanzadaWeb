@@ -38,9 +38,16 @@
                 {
                     <div class="col-12 col-sm-6 col-lg-3 d-flex" id="comunicado-@c.IdComunicado">
                         <div class="card w-100 shadow-sm">
-                            <div class="card-body d-flex flex-column">
+                            <div class="card-body d-flex flex-column card-comunicado-body">
 
-                                <h6 class="card-title fw-bold">@c.Nombre</h6>
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title fw-bold mb-0">@c.Nombre</h6>
+
+                                    @if (c.IdEstado != 1)
+                                    {
+                                        <span class="badge bg-danger">Inactivo</span>
+                                    }
+                                </div>
 
                                 <p class="text-muted mb-3">
                                     <strong>Publicado:</strong> @c.Fecha.ToString("dd/MM/yyyy")
@@ -48,7 +55,8 @@
 
                                 <div class="mt-auto text-center">
                                     <button type="button"
-                                            class="btn btn-primary btn-sm btn-abrir-comunicado"
+                                            class="btn btn-sm btn-ver btn-abrir-comunicado"
+"
                                             data-bs-toggle="modal"
                                             data-bs-target="#modalComunicadoUnico"
                                             data-id="@c.IdComunicado"
@@ -91,7 +99,7 @@
                 {
                     <div class="col-12 col-sm-6 col-lg-3 d-flex" id="comunicado-@c.IdComunicado">
                         <div class="card w-100 shadow-sm">
-                            <div class="card-body d-flex flex-column">
+                            <div class="card-body d-flex flex-column card-comunicado-body">
 
                                 <h6 class="card-title fw-bold">@c.Nombre</h6>
 
@@ -101,7 +109,7 @@
 
                                 <div class="mt-auto text-center">
                                     <button type="button"
-                                            class="btn btn-primary btn-sm btn-abrir-comunicado"
+                                            class="btn btn-sm btn-ver btn-abrir-comunicado"
                                             data-bs-toggle="modal"
                                             data-bs-target="#modalComunicadoUnico"
                                             data-id="@c.IdComunicado"
@@ -148,21 +156,20 @@
                     @Html.AntiForgeryToken()
                     <div class="mb-3">
                         <label class="form-label"><strong>Población:</strong></label>
-                        <select class="form-control" id="correoPoblacion" name="Poblacion" required>
+                        <select class="form-control" id="correoPoblacion" name="PoblacionCorreo" required>
                             <option value="">Seleccione población</option>
-                            <option value="Profesores">Profesores</option>
+                            <option value="Administrativos">Administrativos</option>
                             <option value="Estudiantes">Estudiantes</option>
-                            <option value="Egresados">Egresados</option>
                             <option value="General">General</option>
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label"><strong>Asunto:</strong></label>
-                        <input type="text" class="form-control" id="correoAsunto" name="Asunto" required />
+                        <input type="text" class="form-control" id="correoAsunto" name="AsuntoCorreo" required />
                     </div>
                     <div class="mb-3">
                         <label class="form-label"><strong>Mensaje:</strong></label>
-                        <textarea class="form-control" id="correoMensaje" name="Mensaje" rows="5" required></textarea>
+                        <textarea class="form-control" id="correoMensaje" name="MensajeCorreo" rows="5" required></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label"><strong>Adjuntar Archivo:</strong></label>
@@ -345,8 +352,8 @@
             <div class="modal-footer">
                 @if (rol == 2)
                 {
-                    <button type="button" class="btn btn-warning btnEditarComunicado" data-bs-toggle="modal" data-bs-target="#modalEditarComunicado">Editar</button>
-                    <form id="formEstadoComunicado" method="post">
+                    <button type="button" class="btn btn-warning btnEditarComunicado" data-bs-toggle="modal" id="BtnEditarComunicado" data-bs-target="#modalEditarComunicado">Editar</button>
+                    <form id="formEstadoComunicado" class="d-none" method="post">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="IdComunicado" id="IdComunicadoEstado" />
                     </form>

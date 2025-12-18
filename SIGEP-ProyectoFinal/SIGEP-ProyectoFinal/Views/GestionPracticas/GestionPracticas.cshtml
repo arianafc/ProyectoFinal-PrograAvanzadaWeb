@@ -1,0 +1,196 @@
+﻿@using SIGEP_ProyectoFinal.Models
+@model VacantesViewModel
+
+@{
+    Layout = "_LayoutMain";
+    ViewBag.Title = "Gestión de Prácticas";
+
+    //var idRol = Model.IdRol;
+    var especialidades = Model.Especialidades ?? new List<SelectListItem>();
+}
+
+<h2 class="vacantes-titulo titulo-principal text-center">
+    Proceso de Prácticas @DateTime.Now.Year
+</h2>
+
+<div class="vacantes-titulo titulo-principal d-flex justify-content-between align-items-center mb-3 flex-wrap">
+
+    <!-- IZQUIERDA: FILTROS -->
+    <div class="d-flex align-items-center gap-2">
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle"
+                    type="button"
+                    id="filtroDropdown"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false">
+                <i class="fas fa-filter"></i>
+            </button>
+
+            <div class="dropdown-menu p-3" style="min-width: 300px;">
+                <div class="mb-2">
+                    <label>Estado de práctica</label>
+                    <select id="filtroPractica" class="form-control">
+                        <option value="">Todos</option>
+                        <option value="Asignada">Asignada</option>
+                        <option value="En Proceso de Aplicacion">En Proceso</option>
+                        <option value="Retirada">Retirada</option>
+                        <option value="En Curso">En Curso</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label>Especialidad</label>
+                    <select id="filtroEspecialidad" class="form-control">
+                        <option value="">Todas</option>
+                        @foreach (var esp in especialidades as List<SelectListItem>)
+                        {
+                            <option value="@esp.Value">@esp.Text</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DERECHA: BOTONES -->
+    <div class="d-flex align-items-center gap-2">
+        <button type="button"
+                id="btnIniciarPracticas"
+                class="btn-verde-personalizado" style="font-size: 0.875rem !important;">
+            <i class="fas fa-play"></i> Iniciar Prácticas
+        </button>
+
+        <button type="button"
+                id="btnFinalizarPracticas"
+                class="btn-rojo-personalizado" style="font-size: 0.875rem !important;">
+            <i class="fas fa-stop"></i> Finalizar Prácticas
+        </button>
+    </div>
+
+</div>
+
+
+<!-- TABLA PRINCIPAL -->
+<div class="card rounded-5 p-3">
+    <table id="miTabla" class="display responsive nowrap w-100">
+        <thead>
+            <tr>
+                <th>Cédula</th>
+                <th>Nombre</th>
+                <th>Especialidad</th>
+                <th>Teléfono</th>
+                <th>Estado de Postulación</th>
+                <th>Empresa</th>
+                <th>Nota Final</th>
+                <th style="width:140px;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Postulaciones != null && Model.Postulaciones.Any())
+            {
+                foreach (var item in Model.Postulaciones)
+                {
+                    <tr>
+                        <td>@item.Cedula</td>
+                        <td>@item.NombreCompleto</td>
+                        <td>@item.Especialidad</td>
+                        <td>@item.Telefono</td>
+                        <td class="estado-postulacion"
+                            data-estado="@item.EstadoDescripcion">
+                           
+                        </td>
+                        <td>@item.Empresa</td>
+                        <td>@item.NotaFinal</td>
+                        <td class="text-center">
+                            <a href="javascript:void(0);" class="btn-ver"
+                               data-idvacante="@item.IdVacante"
+                               data-idusuario="@item.IdUsuario"
+                               title="Ver detalle"
+                               style="color:#2d594d; margin-right:8px;">
+                                <i class="fas fa-eye"></i>
+                            </a>
+
+                            @if (item.EstadoDescripcion != "Finalizada")
+                            {
+                                <a href="javascript:void(0);" class="btn-asignar"
+                                   data-idusuario="@item.IdUsuario"
+                                   title="Asignar práctica"
+                                   style="color:#2d594d; margin-right:8px;">
+                                    <i class="fas fa-user-plus"></i>
+                                </a>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="7" class="text-center text-muted">
+                        No hay postulaciones registradas
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- MODAL ASIGNACIÓN -->
+<div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius:12px; background-color:#F2F2F2; color:#2D594D;">
+
+            <div class="modal-header" style="background-color:#2D594D; color:white;">
+                <h5 class="modal-title">Asignar Estudiante a Vacante</h5>
+                <button type="button" class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body px-4">
+                <div class="card rounded-5 p-3">
+                    <h5 class="section-title mb-3">Vacantes disponibles</h5>
+
+                    <table id="miTablaAsignar" class="display nowrap w-100">
+                        <thead class="table-light">
+                            <tr class="text-center">
+                                <th>Vacante</th>
+                                <th>Empresa</th>
+                                <th>Especialidad</th>
+                                <th>Cupos</th>
+                                <th>Ocupados</th>
+                                <th>Estado práctica</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer px-4">
+                <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Cerrar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+
+    <script src="~/js/practicas/practicascoordinador.js"></script>
+
+    <script>
+        window.PracticasCfg = {
+            urls: {
+                obtenerEstudiantesPracticas: '@Url.Action("ObtenerEstudiantesPracticas", "Practicas")',
+                obtenerVacantesAsignar: '@Url.Action("ObtenerVacantesAsignar", "Practicas")',
+                asignarEstudiante: '@Url.Action("AsignarEstudiante", "Practicas")',
+                desasignarPractica: '@Url.Action("DesasignarPractica", "Practicas")',
+                retirarEstudiante: '@Url.Action("RetirarEstudiante", "Practicas")'
+            },
+           };
+    </script>
+}

@@ -19,5 +19,14 @@
         public List<Comunicado> ComunicadosAdmin { get; set; } = new List<Comunicado>();
 
         public List<DocumentoVM> Documentos { get; set; } = new List<DocumentoVM>();
+
+        public string? PoblacionCorreo { get; set; }
+
+        public string? AsuntoCorreo { get; set; }
+
+        public string? MensajeCorreo { get; set; }
+
+
+
     }
 }

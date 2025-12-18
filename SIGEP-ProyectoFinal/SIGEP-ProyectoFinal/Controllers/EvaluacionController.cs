@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SIGEP_ProyectoFinal.Models;
+using System.Net.Http.Headers;
 
 namespace SIGEP_ProyectoFinal.Controllers
 {
@@ -49,6 +50,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                 using (var context = _http.CreateClient())
                 {
                     var urlApi = _configuration["Valores:UrlAPI"] + "Evaluacion/ObtenerEstudiantes";
+                    context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                     var request = new { IdCoordinador = idCoordinador.Value };
 
                     var respuesta = context.PostAsJsonAsync(urlApi, request).Result;
@@ -80,6 +82,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                 using (var context = _http.CreateClient())
                 {
                     var urlApi = _configuration["Valores:UrlAPI"] + $"Evaluacion/ObtenerPerfilEstudiante?idUsuario={idUsuario}";
+                    context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                     var respuesta = context.GetAsync(urlApi).Result;
 
                     if (respuesta.IsSuccessStatusCode)
@@ -124,6 +127,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                 using (var context = _http.CreateClient())
                 {
                     var urlApi = _configuration["Valores:UrlAPI"] + $"Evaluacion/ObtenerComentarios?idUsuario={idUsuario}";
+                    context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                     var respuesta = context.GetAsync(urlApi).Result;
 
                     if (respuesta.IsSuccessStatusCode)
@@ -153,6 +157,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                 using (var context = _http.CreateClient())
                 {
                     var urlApi = _configuration["Valores:UrlAPI"] + $"Evaluacion/ObtenerNotas?idUsuario={idUsuario}";
+                    context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                     var respuesta = context.GetAsync(urlApi).Result;
 
                     if (respuesta.IsSuccessStatusCode)
@@ -188,6 +193,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                 using (var context = _http.CreateClient())
                 {
                     var urlApi = _configuration["Valores:UrlAPI"] + "Evaluacion/GuardarNota";
+                    context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                     var request = new
                     {
                         IdUsuario = model.IdUsuario,
@@ -233,6 +239,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                 using (var context = _http.CreateClient())
                 {
                     var urlApi = _configuration["Valores:UrlAPI"] + "Evaluacion/GuardarComentario";
+                    context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                     var request = new
                     {
                         IdUsuario = model.IdUsuario,
@@ -310,6 +317,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                 using (var context = _http.CreateClient())
                 {
                     var urlApi = _configuration["Valores:UrlAPI"] + "Evaluacion/GuardarDocumento";
+                    context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                     var request = new
                     {
                         IdUsuario = idUsuario,
@@ -352,6 +360,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                 using (var context = _http.CreateClient())
                 {
                     var urlApi = _configuration["Valores:UrlAPI"] + $"Evaluacion/ObtenerDocumentosEvaluacion?idUsuario={idUsuario}";
+                    context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                     var respuesta = context.GetAsync(urlApi).Result;
 
                     if (respuesta.IsSuccessStatusCode)
@@ -499,6 +508,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                 using (var context = _http.CreateClient())
                 {
                     var urlEliminar = _configuration["Valores:UrlAPI"] + $"Evaluacion/EliminarDocumento?idDocumento={idDocumento}";
+                    context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                     var request = new HttpRequestMessage(HttpMethod.Delete, urlEliminar);
                     var respuesta = context.SendAsync(request).Result;
 
@@ -527,6 +537,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                 using (var context = _http.CreateClient())
                 {
                     var urlApi = _configuration["Valores:UrlAPI"] + $"Evaluacion/ObtenerCedulaUsuario?idUsuario={idUsuario}";
+                    context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                     var respuesta = context.GetAsync(urlApi).Result;
 
                     if (respuesta.IsSuccessStatusCode)
@@ -551,6 +562,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                 using (var context = _http.CreateClient())
                 {
                     var urlApi = _configuration["Valores:UrlAPI"] + $"Evaluacion/ObtenerDocumentoPorId?idDocumento={idDocumento}";
+                    context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                     var respuesta = context.GetAsync(urlApi).Result;
 
                     if (respuesta.IsSuccessStatusCode)
