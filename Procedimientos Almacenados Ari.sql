@@ -3133,7 +3133,7 @@ BEGIN
 END;
 GO
 
-exec ObtenerVacantesAsignarSP 8
+exec UltimasPracticasAsignadasSP
 
 CREATE OR ALTER PROCEDURE [dbo].[ValidarAplicacionPracticaSP]
     @IdUsuario INT

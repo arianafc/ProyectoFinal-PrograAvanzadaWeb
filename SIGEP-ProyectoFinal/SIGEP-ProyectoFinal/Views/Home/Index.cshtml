@@ -154,7 +154,7 @@
                                     <td>@p.Estudiante</td>
                                     <td>@p.Especialidad</td>
                                     <td>@p.NombreEmpresa</td>
-                                    <td>@p.FechaAplicacion.ToString(("dd/MM/yyyy") ?? "Sin fecha"))</td>
+                                    <td> @(p.FechaAplicacion?.ToString("dd/MM/yyyy") ?? "Sin fecha")
                                     <td>
                                       
                                     @p.Estado

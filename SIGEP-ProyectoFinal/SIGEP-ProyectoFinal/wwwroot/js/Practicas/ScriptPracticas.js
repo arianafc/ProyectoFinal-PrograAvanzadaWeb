@@ -21,15 +21,7 @@
             return;
         }
 
-        if (!idVacante || !idUsuario) {
-            Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: "No se pudieron obtener los datos necesarios. Recarga la página e inténtalo de nuevo.",
-                confirmButtonColor: "#2D594D"
-            });
-            return;
-        }
+       
 
         Swal.fire({
             title: 'Guardando comentario...',

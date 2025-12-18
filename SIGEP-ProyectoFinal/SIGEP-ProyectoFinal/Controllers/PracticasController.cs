@@ -397,7 +397,7 @@ namespace SIGEP_ProyectoFinal.Controllers
          VISTA: VISUALIZACIÓN POSTULACIÓN
          * ====================================================== */
         [HttpGet]
-        public async Task<IActionResult> VisualizacionPostulacion(int idVacante, int idUsuario)
+        public async Task<IActionResult> VisualizacionPostulacion(int? idVacante, int? idUsuario)
         {
             ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
             ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
@@ -416,7 +416,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                             new AuthenticationHeaderValue("Bearer", token);
                     }
 
-                    if (rol == 1)
+                    if (rol == 1 && !idVacante.HasValue && !idUsuario.HasValue)
                     {
                         var vacante = _configuration["Valores:UrlApi"] + "GestionPracticas/ObtenerMiPractica";
                         var respuesta3 = client.GetAsync(vacante).Result;
@@ -442,6 +442,10 @@ namespace SIGEP_ProyectoFinal.Controllers
                         {
                             ViewBag.MiPractica = null;
                         }
+                    } else
+                    {
+
+                        ViewBag.MiPractica = idVacante;
                     }
 
 
@@ -521,12 +525,12 @@ namespace SIGEP_ProyectoFinal.Controllers
         }
 
         [HttpPost]
-        public IActionResult AgregarComentario(int idVacante, int idUsuario, string comentario)
+        public IActionResult AgregarComentario(int? idVacante, int idUsuario, string comentario)
         {
             try
             {
                 var idUsuarioSesion = HttpContext.Session.GetInt32("IdUsuario");
-
+                var rol = HttpContext.Session.GetInt32("Rol");
                 if (idUsuarioSesion == null)
                 {
                     return Json(new { success = false, message = "Sesión expirada" });
@@ -537,11 +541,11 @@ namespace SIGEP_ProyectoFinal.Controllers
                     return Json(new { success = false, message = "El comentario no puede estar vacío" });
                 }
 
-          
+                
+
 
                 using (var context = _http.CreateClient())
                 {
-                    var urlApi = _configuration["Valores:UrlAPI"] + "Practicas/AgregarComentario";
                     var token = HttpContext.Session.GetString("Token");
 
                     if (!string.IsNullOrEmpty(token))
@@ -550,6 +554,24 @@ namespace SIGEP_ProyectoFinal.Controllers
                             new AuthenticationHeaderValue("Bearer", token);
                     }
 
+                    if (!idVacante.HasValue && rol == 1)
+                    {
+                        var vacante = _configuration["Valores:UrlApi"] + "GestionPracticas/ObtenerMiPractica";
+                        var respuesta3 = context.GetAsync(vacante).Result;
+
+                        if (respuesta3.IsSuccessStatusCode)
+                        {
+                            var datosApi3 = respuesta3.Content
+                                .ReadFromJsonAsync<PostulacionDto>()
+                                .Result;
+                            idVacante = datosApi3.IdVacante;
+                            idUsuario = (int)idUsuarioSesion;
+                        }
+
+                    }
+                        var urlApi = _configuration["Valores:UrlAPI"] + "Practicas/AgregarComentario";
+       
+                   
 
                     var request = new
                     {
