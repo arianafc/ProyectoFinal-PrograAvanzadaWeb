@@ -233,7 +233,7 @@ namespace SIGEP_API.Controllers
                     commandType: CommandType.StoredProcedure
                 );
 
-                if (usuarioExistente != null && usuarioExistente.IdRol == 1)
+                if (usuarioExistente != null && usuarioExistente.IdRol == 1 && usuarioExistente.IdEstado == 1)
                 {
                     return BadRequest(
                         "Lo sentimos. La cédula ingresada corresponde a un estudiante registrado en el sistema y no puede ser asignado como encargado."
