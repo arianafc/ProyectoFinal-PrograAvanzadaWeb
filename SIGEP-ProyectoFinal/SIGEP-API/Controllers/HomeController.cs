@@ -285,7 +285,7 @@ namespace SIGEP_API.Controllers
         {
             using (var context = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
             {
-                var resultado = context.Query<DashboardResponseModel>("ObtenerUltimasPracticasSP").ToList();
+                var resultado = context.Query<DashboardResponseModel>("UltimasPracticasAsignadasSP").ToList();
                 return Ok(resultado);
             }
         }

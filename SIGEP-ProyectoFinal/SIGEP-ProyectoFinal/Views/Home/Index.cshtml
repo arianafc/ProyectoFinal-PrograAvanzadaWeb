@@ -143,7 +143,7 @@
                                 <th>Estudiante</th>
                                 <th>Especialidad</th>
                                 <th>Empresa</th>
-                                <th>Fecha de inicio</th>
+                                <th>Fecha de Aplicación</th>
                                 <th>Estado</th>
                             </tr>
                         </thead>
@@ -154,7 +154,7 @@
                                     <td>@p.Estudiante</td>
                                     <td>@p.Especialidad</td>
                                     <td>@p.NombreEmpresa</td>
-                                    <td>@p.FechaAplicacion</td>
+                                    <td>@p.FechaAplicacion.ToString(("dd/MM/yyyy") ?? "Sin fecha"))</td>
                                     <td>
                                       
                                     @p.Estado

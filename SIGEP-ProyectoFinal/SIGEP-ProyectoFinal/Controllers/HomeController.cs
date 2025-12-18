@@ -28,7 +28,7 @@ namespace SIGEP_ProyectoFinal.Controllers
             using (var context = _http.CreateClient())
             {
                 var urlApi = _configuration["Valores:UrlApi"] + "Home/ObtenerIndicadores";
-                var urlApi2 = _configuration["Valores:UrlApi"] + "Home/ObtenerUltimasPracticasAsignadas";
+                var urlApi2 = _configuration["Valores:UrlApi"] + "Home/ObtenerUltimasPracticas";
               
                 context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
                 var respuesta = context.GetAsync(urlApi).Result;
