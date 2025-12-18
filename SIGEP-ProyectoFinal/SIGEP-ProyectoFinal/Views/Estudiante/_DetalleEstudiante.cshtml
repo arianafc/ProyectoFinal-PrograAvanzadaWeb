@@ -127,8 +127,6 @@
     {
         foreach (var doc in Model.Documentos)
         {
-            // doc.Documento trae la ruta completa (ej: C:\...\archivo.pdf)
-            // mostramos solo el nombre del archivo después del último \ o /
             var ruta = (doc.Documento ?? "").Trim();
             var nombreArchivo = ruta;
 

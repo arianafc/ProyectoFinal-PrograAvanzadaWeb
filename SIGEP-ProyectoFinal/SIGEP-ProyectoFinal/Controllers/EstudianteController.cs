@@ -209,7 +209,7 @@ namespace SIGEP_ProyectoFinal.Controllers
             {
                 using (var context = CrearClienteConToken())
                 {
-                    // IMPORTANTE: probamos dos rutas comunes
+                 
                     var url1 = Api($"Estudiante/VisualizarDocumento/{id}");
                     var resp = context.GetAsync(url1).Result;
 

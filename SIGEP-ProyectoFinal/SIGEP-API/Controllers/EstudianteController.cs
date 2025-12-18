@@ -203,10 +203,6 @@ namespace SIGEP_API.Controllers
         }
         #endregion
 
-        // ==========================================================
-        // ✅ NUEVO: Visualizar / Descargar Documento (sin SQL directo)
-        // Usa SP: ObtenerRutaDocumentoSP
-        // ==========================================================
 
         #region Visualizar Documento (inline)
         [HttpGet]
@@ -222,7 +218,7 @@ namespace SIGEP_API.Controllers
                     var p = new DynamicParameters();
                     p.Add("@IdDocumento", id);
 
-                    // SP debe devolver al menos: UrlDocumento
+            
                     var doc = db.QueryFirstOrDefault<DocumentoRutaResponse>(
                         "ObtenerRutaDocumentoSP",
                         p,
@@ -326,30 +322,4 @@ namespace SIGEP_API.Controllers
         }
     }
 
-    #region Request Models
-    public class ActualizarEstadoRequest
-    {
-        public int IdUsuario { get; set; }
-        public int NuevoEstadoId { get; set; }
-    }
-
-    public class EliminarDocumentoRequest
-    {
-        public int IdDocumento { get; set; }
-    }
-
-    public class RespuestaGenericaModel
-    {
-        public int Resultado { get; set; }
-        public string Mensaje { get; set; } = "";
-    }
-    #endregion
-
-    #region SP Response Models
-    // Respuesta del SP ObtenerRutaDocumentoSP
-    public class DocumentoRutaResponse
-    {
-        public string Documento { get; set; } = "";
-    }
-    #endregion
 }
