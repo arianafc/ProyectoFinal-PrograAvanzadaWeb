@@ -3,6 +3,22 @@
 USE SIGEP_WEB
 GO
 
+-- Crear tabla para almacenar las notas de los estudiantes
+CREATE TABLE [dbo].[NotasEstudiantes](
+    [IdNota] [int] IDENTITY(1,1) NOT NULL,
+    [IdUsuario] [int] NOT NULL,
+    [Nota1] [decimal](5, 2) NULL,
+    [Nota2] [decimal](5, 2) NULL,
+    [NotaFinal] [decimal](5, 2) NULL,
+    [FechaRegistro] [datetime] NOT NULL DEFAULT GETDATE(),
+    [FechaActualizacion] [datetime] NULL,
+    [IdCoordinador] [int] NOT NULL,
+    CONSTRAINT [PK_NotasEstudiantes] PRIMARY KEY CLUSTERED ([IdNota] ASC),
+    CONSTRAINT [FK_NotasEstudiantes_Usuario] FOREIGN KEY([IdUsuario]) REFERENCES [dbo].[Usuarios] ([IdUsuario]),
+    CONSTRAINT [FK_NotasEstudiantes_Coordinador] FOREIGN KEY([IdCoordinador]) REFERENCES [dbo].[Usuarios] ([IdUsuario])
+)
+GO
+
 CREATE OR ALTER PROCEDURE [dbo].[ObtenerEstudiantesParaEvaluacionSP]
     @IdCoordinador INT
 AS
@@ -360,21 +376,7 @@ BEGIN
 END
 GO
 
--- Crear tabla para almacenar las notas de los estudiantes
-CREATE TABLE [dbo].[NotasEstudiantes](
-    [IdNota] [int] IDENTITY(1,1) NOT NULL,
-    [IdUsuario] [int] NOT NULL,
-    [Nota1] [decimal](5, 2) NULL,
-    [Nota2] [decimal](5, 2) NULL,
-    [NotaFinal] [decimal](5, 2) NULL,
-    [FechaRegistro] [datetime] NOT NULL DEFAULT GETDATE(),
-    [FechaActualizacion] [datetime] NULL,
-    [IdCoordinador] [int] NOT NULL,
-    CONSTRAINT [PK_NotasEstudiantes] PRIMARY KEY CLUSTERED ([IdNota] ASC),
-    CONSTRAINT [FK_NotasEstudiantes_Usuario] FOREIGN KEY([IdUsuario]) REFERENCES [dbo].[Usuarios] ([IdUsuario]),
-    CONSTRAINT [FK_NotasEstudiantes_Coordinador] FOREIGN KEY([IdCoordinador]) REFERENCES [dbo].[Usuarios] ([IdUsuario])
-)
-GO
+
 
 -- Stored Procedure principal para obtener todos los datos
 CREATE OR ALTER PROCEDURE [dbo].[ObtenerVisualizacionPracticaSP]
@@ -431,6 +433,9 @@ BEGIN
     WHERE v.IdVacantePractica = @IdVacante
 END
 GO
+
+
+
 
 -- Stored Procedure para obtener comentarios
 CREATE OR ALTER PROCEDURE [dbo].[ObtenerComentariosPracticaSP]
