@@ -19,7 +19,8 @@
             'rechazada': 'badge-rechazada',
             'retirada': 'badge-retirada',
             'finalizada': 'badge-finalizada',
-            'rezagado': 'badge-rezagado'
+            'rezagado': 'badge-rezagado',
+            'en curso': 'badge-en-curso'
         };
 
         const cls = mapa[estado] || 'badge-no-asignada';

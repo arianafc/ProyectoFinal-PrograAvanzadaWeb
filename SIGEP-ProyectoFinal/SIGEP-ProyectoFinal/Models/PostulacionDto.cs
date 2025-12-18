@@ -17,5 +17,7 @@
         public string? Telefono { get; set; }
 
         public string? Especialidad { get; set; }
+
+        public string? NotaFinal { get; set; }
     }
 }

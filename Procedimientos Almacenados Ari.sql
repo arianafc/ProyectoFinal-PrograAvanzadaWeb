@@ -1041,7 +1041,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE  OR ALTER  PROCEDURE [dbo].[ObtenerPostulacionesPracticasSP]
+CREATE OR ALTER PROCEDURE [dbo].[ObtenerPostulacionesPracticasSP]
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -1053,19 +1053,27 @@ BEGIN
         u.Cedula,
         NombreCompleto = CONCAT(u.Nombre,' ',u.Apellido1,' ',u.Apellido2),
         EstadoDescripcion = e.Descripcion,
-        em.NombreEmpresa as Empresa,
+        em.NombreEmpresa AS Empresa,
         em.IdEmpresa,
-        es.Nombre as Especialidad, 
-        t.Telefono as Telefono
+        es.Nombre AS Especialidad, 
+        t.Telefono AS Telefono,
+
+    NotaFinal = CASE 
+        WHEN e.Descripcion IN ('En Curso', 'Aprobada', 'Rezagada', 'Finalizada')
+            THEN CAST(n.NotaFinal AS VARCHAR(10))
+        ELSE 'No Aplica'
+    END
+
     FROM PracticaEstudiante p
     INNER JOIN Usuarios u ON u.IdUsuario = p.IdUsuario
-    INNER JOIN Estados  e ON e.IdEstado  = p.IdEstado
-    INNER JOIN VacantesPractica v on v.IdVacantePractica = p.IdVacante
-    INNER JOIN Empresas em on em.IdEmpresa = v.IdEmpresa
-    INNER JOIN UsuarioEspecialidad ue on ue.IdUsuario = u.IdUsuario
-    INNER JOIN Especialidades es on es.IdEspecialidad = ue.IdEspecialidad
-    LEFT JOIN Telefonos T on T.IdUsuario = U.IdUsuario
-   WHERE YEAR(p.FechaAplicacion) = YEAR(GETDATE())
+    INNER JOIN Estados e ON e.IdEstado = p.IdEstado
+    INNER JOIN VacantesPractica v ON v.IdVacantePractica = p.IdVacante
+    INNER JOIN Empresas em ON em.IdEmpresa = v.IdEmpresa
+    INNER JOIN UsuarioEspecialidad ue ON ue.IdUsuario = u.IdUsuario
+    INNER JOIN Especialidades es ON es.IdEspecialidad = ue.IdEspecialidad
+    LEFT JOIN Telefonos t ON t.IdUsuario = u.IdUsuario
+    LEFT JOIN NotasEstudiantesTB n ON n.IdUsuario = u.IdUsuario
+    WHERE YEAR(p.FechaAplicacion) = YEAR(GETDATE())
     ORDER BY p.IdPractica DESC;
 END
 GO
@@ -1108,30 +1116,46 @@ BEGIN
     SET NOCOUNT ON;
 
     DECLARE 
-        @IdAsignada INT,
-        @IdEnCurso INT,
-        @IdRetirada INT;
+        @IdAsignada   INT,
+        @IdEnCurso    INT,
+        @IdRetirada   INT,
+        @IdFinalizada INT,
+        @IdAprobada   INT,
+        @IdRezagada   INT;
 
-    SELECT @IdAsignada = IdEstado FROM Estados WHERE Descripcion = 'Asignada';
-    SELECT @IdEnCurso  = IdEstado FROM Estados WHERE Descripcion = 'En Curso';
-    SELECT @IdRetirada = IdEstado FROM Estados WHERE Descripcion = 'Retirada';
+    SELECT @IdAsignada   = IdEstado FROM Estados WHERE Descripcion = 'Asignada';
+    SELECT @IdEnCurso    = IdEstado FROM Estados WHERE Descripcion = 'En Curso';
+    SELECT @IdRetirada   = IdEstado FROM Estados WHERE Descripcion = 'Retirada';
+    SELECT @IdFinalizada = IdEstado FROM Estados WHERE Descripcion = 'Finalizada';
+    SELECT @IdAprobada   = IdEstado FROM Estados WHERE Descripcion = 'Aprobada';
+    SELECT @IdRezagada   = IdEstado FROM Estados WHERE Descripcion = 'Rezagada';
 
     BEGIN TRY
         BEGIN TRAN;
 
-        -- Asignada + estudiante activo → En Curso
+        -------------------------------------------------
+        -- 1. Asignada + estudiante activo → En Curso
+        -------------------------------------------------
         UPDATE p
-        SET IdEstado = @IdEnCurso
+        SET p.IdEstado = @IdEnCurso
         FROM PracticaEstudiante p
         INNER JOIN Usuarios u ON u.IdUsuario = p.IdUsuario
         WHERE p.IdEstado = @IdAsignada
           AND u.EstadoAcademico = 1;
 
-        -- El resto → Retirada
+        -------------------------------------------------
+        -- 2. Todo lo demás → Retirada
+        --    (excepto En Curso, Finalizada, Aprobada, Rezagada)
+        -------------------------------------------------
         UPDATE p
-        SET IdEstado = @IdRetirada
+        SET p.IdEstado = @IdRetirada
         FROM PracticaEstudiante p
-        WHERE p.IdEstado <> @IdEnCurso;
+        WHERE p.IdEstado NOT IN (
+            @IdEnCurso,
+            @IdFinalizada,
+            @IdAprobada,
+            @IdRezagada
+        );
 
         COMMIT TRAN;
     END TRY
@@ -1142,7 +1166,8 @@ BEGIN
 END;
 GO
 
-CREATE or alter PROCEDURE FinalizarPracticasSP
+
+CREATE OR ALTER PROCEDURE FinalizarPracticasSP
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -1150,21 +1175,36 @@ BEGIN
     DECLARE 
         @IdAprobada   INT,
         @IdRezagada   INT,
-        @IdFinalizada INT;
+        @IdFinalizada INT,
+        @IdEnCurso    INT,
+        @IdArchivado  INT;
 
     SELECT @IdAprobada   = IdEstado FROM Estados WHERE Descripcion = 'Aprobada';
     SELECT @IdRezagada   = IdEstado FROM Estados WHERE Descripcion = 'Rezagada';
     SELECT @IdFinalizada = IdEstado FROM Estados WHERE Descripcion = 'Finalizada';
+    SELECT @IdEnCurso    = IdEstado FROM Estados WHERE Descripcion = 'En Curso';
+    SELECT @IdArchivado  = IdEstado FROM Estados WHERE Descripcion = 'Archivado';
 
     BEGIN TRY
         BEGIN TRAN;
 
-        -- Aprobadas → Finalizada
-        UPDATE PracticaEstudiante
-        SET IdEstado = @IdFinalizada
-        WHERE IdEstado = @IdAprobada;
+        -------------------------------------------------
+        -- 1. En Curso → Finalizada / Rezagada
+        -------------------------------------------------
+        UPDATE pe
+        SET pe.IdEstado = 
+            CASE 
+                WHEN n.NotaFinal >= 70 THEN @IdFinalizada
+                ELSE @IdRezagada
+            END
+        FROM PracticaEstudiante pe
+        INNER JOIN NotasEstudiantesTB n 
+            ON n.IdUsuario = pe.IdUsuario
+        WHERE pe.IdEstado = @IdEnCurso;
 
-        -- Usuarios con práctica finalizada → Inactivo + FechaEgreso
+        -------------------------------------------------
+        -- 2. Usuarios con práctica finalizada → Inactivo
+        -------------------------------------------------
         UPDATE u
         SET u.IdEstado = 2,
             u.FechaEgreso = GETDATE()
@@ -1176,6 +1216,12 @@ BEGIN
               AND p.IdEstado = @IdFinalizada
         );
 
+        -------------------------------------------------
+        -- 3. TODAS las vacantes → Archivadas
+        -------------------------------------------------
+        UPDATE VacantesPractica
+        SET IdEstado = @IdArchivado;
+
         COMMIT TRAN;
     END TRY
     BEGIN CATCH
@@ -1184,3 +1230,182 @@ BEGIN
     END CATCH
 END;
 GO
+
+
+CREATE OR ALTER PROCEDURE [dbo].[ObtenerVacantesAsignarSP]
+    @IdUsuario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @EspecialidadesEst TABLE (IdEspecialidad INT);
+    INSERT INTO @EspecialidadesEst (IdEspecialidad)
+    SELECT DISTINCT IdEspecialidad
+    FROM UsuarioEspecialidad
+    WHERE IdUsuario = @IdUsuario
+      AND IdEstado = 1;
+
+    DECLARE @EstadosOcupados TABLE (IdEstado INT);
+    INSERT INTO @EstadosOcupados (IdEstado)
+    SELECT IdEstado
+    FROM Estados
+    WHERE LOWER(LTRIM(RTRIM(Descripcion))) IN (
+        'asignada','en curso','aprobada','finalizada','rezagado'
+    );
+
+    SELECT
+        v.IdVacantePractica,
+        LTRIM(RTRIM(v.Nombre)) AS NombreVacante,
+        emp.NombreEmpresa,
+
+        ISNULL((
+            SELECT TOP 1 esp.Nombre
+            FROM EspecialidadesVacante ev
+            INNER JOIN Especialidades esp ON esp.IdEspecialidad = ev.IdEspecialidad
+            WHERE ev.IdVacante = v.IdVacantePractica
+              AND ev.IdEspecialidad IN (SELECT IdEspecialidad FROM @EspecialidadesEst)
+        ), '—') AS Especialidad,
+
+        v.NumeroCupos,
+
+        (
+            SELECT COUNT(*)
+            FROM PracticaEstudiante p
+            WHERE p.IdVacante = v.IdVacantePractica
+              AND p.IdEstado IN (SELECT IdEstado FROM @EstadosOcupados)
+        ) AS CuposOcupados,
+
+        v.FechaCierre,
+        v.Requisitos,
+        v.Tipo,
+
+        CASE 
+            WHEN v.Tipo IS NOT NULL 
+                 AND LOWER(LTRIM(RTRIM(v.Tipo))) = 'autogestionada'
+                 AND EXISTS (
+                     SELECT 1 
+                     FROM PracticaEstudiante p
+                     WHERE p.IdUsuario = @IdUsuario
+                       AND p.IdVacante = v.IdVacantePractica
+                       AND p.IdEstado IN (3,5,6,8,9,11)
+                 )
+            THEN 'Autogestionada'
+            ELSE NULL
+        END AS TipoMensaje,
+
+        ISNULL((
+            SELECT TOP 1 LTRIM(RTRIM(e2.Descripcion))
+            FROM PracticaEstudiante p2
+            INNER JOIN Estados e2 ON e2.IdEstado = p2.IdEstado
+            WHERE p2.IdUsuario = @IdUsuario
+              AND p2.IdVacante = v.IdVacantePractica
+            ORDER BY p2.IdPractica DESC
+        ), 'Sin proceso activo') AS EstadoPractica,
+
+        ISNULL((
+            SELECT TOP 1 p3.IdPractica
+            FROM PracticaEstudiante p3
+            WHERE p3.IdUsuario = @IdUsuario
+              AND p3.IdVacante = v.IdVacantePractica
+            ORDER BY p3.IdPractica DESC
+        ), 0) AS IdPracticaVacante,
+
+        CASE 
+            WHEN EXISTS (
+                SELECT 1 
+                FROM PracticaEstudiante p4
+                INNER JOIN Estados e4 ON e4.IdEstado = p4.IdEstado
+                WHERE p4.IdUsuario = @IdUsuario
+                  AND p4.IdVacante <> v.IdVacantePractica
+                  AND LOWER(LTRIM(RTRIM(e4.Descripcion))) IN (
+                      'en curso','asignada','aprobada','finalizada','rezagado'
+                  )
+            ) THEN 0
+            ELSE 1
+        END AS PuedeAsignar,
+
+        (SELECT CONCAT(u.Nombre, ' ', u.Apellido1, ' ', u.Apellido2)
+         FROM Usuarios u 
+         WHERE u.IdUsuario = @IdUsuario) AS NombreCompleto,
+
+        CASE 
+            WHEN (SELECT EstadoAcademico FROM Usuarios WHERE IdUsuario = @IdUsuario) = 1
+            THEN 'Activo' 
+            ELSE 'Inactivo' 
+        END AS EstadoAcademicoDescripcion
+
+    FROM VacantesPractica v
+    INNER JOIN Empresas emp ON emp.IdEmpresa = v.IdEmpresa
+
+    WHERE 
+    (
+        v.IdEstado IN (1, 5)
+        AND EXISTS (
+            SELECT 1
+            FROM EspecialidadesVacante ev
+            WHERE ev.IdVacante = v.IdVacantePractica
+              AND ev.IdEspecialidad IN (SELECT IdEspecialidad FROM @EspecialidadesEst)
+        )
+    )
+    OR 
+    (
+        EXISTS (
+            SELECT 1
+            FROM PracticaEstudiante p
+            WHERE p.IdUsuario = @IdUsuario
+              AND p.IdVacante = v.IdVacantePractica
+              AND p.IdEstado IN (3,5,6,8,9,11)
+        )
+    )
+
+    ORDER BY v.Nombre;
+END;
+GO
+
+exec ObtenerVacantesAsignarSP 8
+
+CREATE OR ALTER PROCEDURE [dbo].[ValidarAplicacionPracticaSP]
+    @IdUsuario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- 1️⃣ Validar estado académico
+    IF EXISTS (
+        SELECT 1
+        FROM Usuarios
+        WHERE IdUsuario = @IdUsuario
+          AND EstadoAcademico = 0
+    )
+    BEGIN
+        SELECT 
+            0 AS PuedeAplicar,
+            'El estudiante tiene estado académico rezagado, no puede aplicar.' AS Mensaje;
+        RETURN;
+    END;
+
+    -- 2️⃣ Validar si ya tiene una práctica asignada
+    IF EXISTS (
+        SELECT 1
+        FROM PracticaEstudiante p
+        INNER JOIN Estados e ON e.IdEstado = p.IdEstado
+        WHERE p.IdUsuario = @IdUsuario
+          AND LOWER(LTRIM(RTRIM(e.Descripcion))) IN (
+              'en curso','asignada','aprobada','finalizada'
+          )
+    )
+    BEGIN
+        SELECT 
+            0 AS PuedeAplicar,
+            'El estudiante ya tiene una práctica asignada.' AS Mensaje;
+        RETURN;
+    END;
+
+    -- 3️⃣ Si todo está bien
+    SELECT 
+        1 AS PuedeAplicar,
+        'El estudiante puede aplicar a una práctica.' AS Mensaje;
+END;
+GO
+
+EXEC ObtenerVacantesAsignarSP 8
