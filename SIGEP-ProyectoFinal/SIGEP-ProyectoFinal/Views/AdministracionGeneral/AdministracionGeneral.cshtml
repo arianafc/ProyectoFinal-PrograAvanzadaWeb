@@ -232,6 +232,9 @@
 </section>
 
 @section Scripts {
-    <script>window.__TAB_INICIAL__='@tab';</script>
+    <script>
+        window.__TAB_INICIAL__ = '@tab';
+        window.__ID_USUARIO_ACTUAL__ = @(usuario ?? 0);
+    </script>
     <script src="~/js/AdminGeneral/AdminGeneral.js"></script>
 }

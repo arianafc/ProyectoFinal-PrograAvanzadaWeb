@@ -24,6 +24,7 @@ namespace SIGEP_ProyectoFinal.Controllers
             ViewBag.Nombre = HttpContext.Session.GetString("Nombre");
             ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
             ViewBag.Usuario = HttpContext.Session.GetInt32("IdUsuario");
+            ViewBag.IdUsuario = HttpContext.Session.GetInt32("IdUsuario");
             ViewBag.Tab = string.IsNullOrWhiteSpace(tab) ? "usuarios" : tab;
             return View();
         }
@@ -60,6 +61,7 @@ namespace SIGEP_ProyectoFinal.Controllers
                 return Json(new { ok = false, mensaje = "Error: " + ex.Message });
             }
         }
+
 
         [HttpPost]
         public IActionResult CambiarEstadoUsuario([FromBody] CambiarEstadoUsuarioModel request)

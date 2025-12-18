@@ -72,13 +72,26 @@
     // ============================
     function loadUsuarios() {
         const rol = $('#filtroRol').val() || '';
+        const idUsuarioActual = window.__ID_USUARIO_ACTUAL__ || 0;
+
+        
+        console.log('ID Usuario Actual desde window:', idUsuarioActual);
+
         if (dtUsuarios) dtUsuarios.destroy();
         dtUsuarios = $('#tablaUsuarios').DataTable({
             language: DT_ES,
             responsive: true,
             ajax: {
                 url: `/AdministracionGeneral/ConsultarUsuarios${rol ? '?rol=' + encodeURIComponent(rol) : ''}`,
-                dataSrc: 'data'
+                dataSrc: function (json) {
+                    
+                    console.log('Datos recibidos:', json.data);
+                    if (json.data && json.data.length > 0) {
+                        console.log('Primer registro:', json.data[0]);
+                        console.log('Propiedades del primer registro:', Object.keys(json.data[0]));
+                    }
+                    return json.data;
+                }
             },
             columns: [
                 { data: 'nombre' },
@@ -90,18 +103,47 @@
                     data: null,
                     orderable: false,
                     render: (row) => {
+                     
+                        console.log('Row completo:', row);
+                        console.log('row.idUsuario:', row.idUsuario);
+                        console.log('row.IdUsuario:', row.IdUsuario);
+
                         const siguiente = row.idEstado === 1 ? 'Inactivo' : 'Activo';
                         const icon = row.idEstado === 1 ? 'bi-person-slash' : 'bi-person-check';
-                        return `
-                            <a href="#" class="btn-accion editar btn btn-sm btn-editar-rol-usuario"
-                               data-id="${row.idUsuario}" data-nombre="${row.nombre}"
-                               data-cedula="${row.cedula}" data-email="${row.email}"
-                               title="Editar rol"><i class="bi bi-person-gear"></i></a>
+
+                      
+                        const idUsuarioRow = row.idUsuario || row.IdUsuario;
+                        const esMismoUsuario = parseInt(idUsuarioRow) === parseInt(idUsuarioActual);
+
+                   
+                        console.log(`Comparando: ${idUsuarioRow} === ${idUsuarioActual} = ${esMismoUsuario}`);
+
+                        const btnEditarRol = `
+                        <a href="#" class="btn-accion editar btn btn-sm btn-editar-rol-usuario"
+                           data-id="${idUsuarioRow}" data-nombre="${row.nombre}"
+                           data-cedula="${row.cedula}" data-email="${row.email}"
+                           title="Editar rol"><i class="bi bi-person-gear"></i></a>
+                    `;
+
+                        let btnCambiarEstado;
+                        if (esMismoUsuario) {
+                            console.log('✅ Es el mismo usuario - Deshabilitando botón');
+                            btnCambiarEstado = `
+                            <a href="#" class="btn-accion toggle btn btn-sm disabled opacity-50"
+                               style="pointer-events: none; cursor: not-allowed;"
+                               title="No puedes desactivar tu propia cuenta">
+                               <i class="bi ${icon}"></i></a>
+                        `;
+                        } else {
+                            btnCambiarEstado = `
                             <a href="#" class="btn-accion toggle btn btn-sm btn-toggle-estado"
-                               data-id="${row.idUsuario}" data-estado="${row.estado}" data-nombre="${row.nombre}"
+                               data-id="${idUsuarioRow}" data-estado="${row.estado}" data-nombre="${row.nombre}"
                                title="${siguiente === 'Inactivo' ? 'Desactivar' : 'Activar'}">
                                <i class="bi ${icon}"></i></a>
                         `;
+                        }
+
+                        return btnEditarRol + ' ' + btnCambiarEstado;
                     }
                 },
                 { data: 'idEstado', visible: false, render: v => Number(v) === 1 ? 0 : 1 }
@@ -109,6 +151,7 @@
             order: [[6, 'asc'], [0, 'asc']]
         });
     }
+
     $('#filtroRol').on('change', () => loadUsuarios());
 
     $(document).on('click', '.btn-editar-rol-usuario', function (e) {
