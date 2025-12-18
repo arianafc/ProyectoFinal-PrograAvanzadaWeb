@@ -20,6 +20,32 @@ namespace SIGEP_ProyectoFinal.Controllers
         private string Api(string ruta) =>
             _configuration["Valores:UrlAPI"] + ruta;
 
+        private HttpClient CrearClienteConToken()
+        {
+            var context = _http.CreateClient();
+            var token = HttpContext.Session.GetString("Token") ?? "";
+            context.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            return context;
+        }
+
+        private static string ObtenerNombreArchivo(HttpResponseMessage resp, int id, string fallback)
+        {
+            var cd = resp.Content.Headers.ContentDisposition;
+            if (cd != null)
+            {
+                var fileName = cd.FileNameStar ?? cd.FileName;
+                if (!string.IsNullOrWhiteSpace(fileName))
+                    return fileName.Trim('"');
+            }
+
+            return $"{fallback}_{id}";
+        }
+
+        private static string ObtenerContentType(HttpResponseMessage resp)
+        {
+            return resp.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
+        }
+
         #region Vista Principal
         [HttpGet]
         public IActionResult ListarEstudiante()
@@ -33,11 +59,8 @@ namespace SIGEP_ProyectoFinal.Controllers
 
             try
             {
-                using (var context = _http.CreateClient())
+                using (var context = CrearClienteConToken())
                 {
-                    context.DefaultRequestHeaders.Authorization =
-                        new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
-
                     var urlEsp = Api("Estudiante/ObtenerEspecialidades");
                     System.Diagnostics.Debug.WriteLine($"[WEB] URL Especialidades: {urlEsp}");
 
@@ -60,8 +83,6 @@ namespace SIGEP_ProyectoFinal.Controllers
                     {
                         System.Diagnostics.Debug.WriteLine($"[WEB ERROR] Error al obtener especialidades: {content}");
                         ViewBag.Especialidades = new List<EspecialidadModel>();
-
-                        // Mostrar el error al usuario
                         TempData["Error"] = $"Error al cargar especialidades: {respEsp.StatusCode}";
                     }
                 }
@@ -79,19 +100,15 @@ namespace SIGEP_ProyectoFinal.Controllers
             return View();
         }
         #endregion
+
         #region Obtener Estudiantes (DataTable)
         [HttpGet]
         public IActionResult GetEstudiantes(string estado = "", int idEspecialidad = 0)
         {
             try
             {
-                using (var context = _http.CreateClient())
+                using (var context = CrearClienteConToken())
                 {
-                    var token = HttpContext.Session.GetString("Token");
-
-                    context.DefaultRequestHeaders.Authorization =
-                        new AuthenticationHeaderValue("Bearer", token);
-
                     var url = Api($"Estudiante/ListarEstudiantes?estado={estado}&idEspecialidad={idEspecialidad}");
 
                     var resp = context.GetAsync(url).Result;
@@ -104,24 +121,29 @@ namespace SIGEP_ProyectoFinal.Controllers
                             new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
                         );
 
-                        if (lista == null)
+                        return Json(new
                         {
-                            return Json(new { data = new List<object>() });
-                        }
+                            data = lista ?? new List<EstudianteListItemModel>()
+                        });
+                    }
 
-                        return Json(new { data = lista });
-                    }
-                    else
+                    return Json(new
                     {
-                        return Json(new { data = new List<object>(), error = content });
-                    }
+                        data = new List<EstudianteListItemModel>(),
+                        error = content
+                    });
                 }
             }
             catch (Exception ex)
             {
-                return Json(new { data = new List<object>(), error = ex.Message });
+                return Json(new
+                {
+                    data = new List<EstudianteListItemModel>(),
+                    error = ex.Message
+                });
             }
         }
+
         #endregion
 
         #region Detalle Estudiante
@@ -130,11 +152,8 @@ namespace SIGEP_ProyectoFinal.Controllers
         {
             try
             {
-                using (var context = _http.CreateClient())
+                using (var context = CrearClienteConToken())
                 {
-                    context.DefaultRequestHeaders.Authorization =
-                        new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
-
                     var url = Api($"Estudiante/ConsultarEstudiante?idUsuario={id}");
                     var resp = context.GetAsync(url).Result;
                     var content = resp.Content.ReadAsStringAsync().Result;
@@ -147,51 +166,149 @@ namespace SIGEP_ProyectoFinal.Controllers
                         );
 
                         if (estudiante == null)
-                        {
                             return Content("<div class='alert alert-warning'>No se encontró información del estudiante</div>");
-                        }
 
                         ViewBag.Rol = HttpContext.Session.GetInt32("Rol");
                         return PartialView("_DetalleEstudiante", estudiante);
                     }
-                    else
-                    {
-                        return Content($@"
-                    <div class='alert alert-danger'>
-                        <h5>Error al cargar el perfil</h5>
-                        <p><strong>Status Code:</strong> {resp.StatusCode}</p>
-                        <p><strong>Detalles:</strong></p>
-                        <pre>{content}</pre>
-                    </div>
-                ");
-                    }
+
+                    return Content($@"
+                        <div class='alert alert-danger'>
+                            <h5>Error al cargar el perfil</h5>
+                            <p><strong>Status Code:</strong> {resp.StatusCode}</p>
+                            <p><strong>Detalles:</strong></p>
+                            <pre>{content}</pre>
+                        </div>
+                    ");
                 }
             }
             catch (Exception ex)
             {
                 var errorMessage = $@"
-            <div class='alert alert-danger'>
-                <h5>Error en el Controlador Web</h5>
-                <p><strong>Mensaje:</strong> {ex.Message}</p>
-                <p><strong>Inner Exception:</strong> {ex.InnerException?.Message}</p>
-                <p><strong>Stack Trace:</strong></p>
-                <pre>{ex.StackTrace}</pre>
-            </div>
-        ";
+                    <div class='alert alert-danger'>
+                        <h5>Error en el Controlador Web</h5>
+                        <p><strong>Mensaje:</strong> {ex.Message}</p>
+                        <p><strong>Inner Exception:</strong> {ex.InnerException?.Message}</p>
+                        <p><strong>Stack Trace:</strong></p>
+                        <pre>{ex.StackTrace}</pre>
+                    </div>
+                ";
                 return Content(errorMessage);
             }
         }
+        #endregion
+
+        #region 
+
+        #region ✅ Visualizar / Descargar Documento (WEB proxy a API) - DEBUG
+
+        [HttpGet]
+        public IActionResult VisualizarDocumento(int id)
+        {
+            try
+            {
+                using (var context = CrearClienteConToken())
+                {
+                    // IMPORTANTE: probamos dos rutas comunes
+                    var url1 = Api($"Estudiante/VisualizarDocumento/{id}");
+                    var resp = context.GetAsync(url1).Result;
+
+                    if (!resp.IsSuccessStatusCode)
+                    {
+                        var url2 = Api($"Estudiante/VisualizarDocumento?id={id}");
+                        resp = context.GetAsync(url2).Result;
+
+                        if (!resp.IsSuccessStatusCode)
+                        {
+                            var bodyFail = resp.Content.ReadAsStringAsync().Result;
+                            return Content(
+                                $"[WEB] API falló\n" +
+                                $"URL probada 1: {url1}\n" +
+                                $"URL probada 2: {url2}\n" +
+                                $"Status: {(int)resp.StatusCode} {resp.StatusCode}\n" +
+                                $"Body:\n{bodyFail}",
+                                "text/plain"
+                            );
+                        }
+                    }
+
+                    var bytes = resp.Content.ReadAsByteArrayAsync().Result;
+                    var contentType = resp.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
+
+                    var cd = resp.Content.Headers.ContentDisposition;
+                    var fileName = (cd?.FileNameStar ?? cd?.FileName ?? $"documento_{id}").Trim('"');
+
+                    Response.Headers["Content-Disposition"] = $"inline; filename=\"{fileName}\"";
+                    return File(bytes, contentType);
+                }
+            }
+            catch (Exception ex)
+            {
+                return Content(
+                    $"[WEB] EXCEPTION\n{ex.Message}\n{ex.InnerException?.Message}\n{ex.StackTrace}",
+                    "text/plain"
+                );
+            }
+        }
+
+        [HttpGet]
+        public IActionResult DescargarDocumento(int id)
+        {
+            try
+            {
+                using (var context = CrearClienteConToken())
+                {
+                    var url1 = Api($"Estudiante/DescargarDocumento/{id}");
+                    var resp = context.GetAsync(url1).Result;
+
+                    if (!resp.IsSuccessStatusCode)
+                    {
+                        var url2 = Api($"Estudiante/DescargarDocumento?id={id}");
+                        resp = context.GetAsync(url2).Result;
+
+                        if (!resp.IsSuccessStatusCode)
+                        {
+                            var bodyFail = resp.Content.ReadAsStringAsync().Result;
+                            return Content(
+                                $"[WEB] API falló\n" +
+                                $"URL probada 1: {url1}\n" +
+                                $"URL probada 2: {url2}\n" +
+                                $"Status: {(int)resp.StatusCode} {resp.StatusCode}\n" +
+                                $"Body:\n{bodyFail}",
+                                "text/plain"
+                            );
+                        }
+                    }
+
+                    var bytes = resp.Content.ReadAsByteArrayAsync().Result;
+                    var contentType = resp.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
+
+                    var cd = resp.Content.Headers.ContentDisposition;
+                    var fileName = (cd?.FileNameStar ?? cd?.FileName ?? $"documento_{id}").Trim('"');
+
+                    return File(bytes, contentType, fileName);
+                }
+            }
+            catch (Exception ex)
+            {
+                return Content(
+                    $"[WEB] EXCEPTION\n{ex.Message}\n{ex.InnerException?.Message}\n{ex.StackTrace}",
+                    "text/plain"
+                );
+            }
+        }
+
+        #endregion
+
+
         #endregion
 
         #region Actualizar Estado Académico
         [HttpPost]
         public IActionResult ActualizarEstadoAcademico(int idUsuario, int nuevoEstadoId)
         {
-            using (var context = _http.CreateClient())
+            using (var context = CrearClienteConToken())
             {
-                context.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
-
                 var url = Api("Estudiante/ActualizarEstadoAcademico");
                 var modelo = new { IdUsuario = idUsuario, NuevoEstadoId = nuevoEstadoId };
 
@@ -212,11 +329,8 @@ namespace SIGEP_ProyectoFinal.Controllers
         [HttpPost]
         public IActionResult EliminarDocumento(int id)
         {
-            using (var context = _http.CreateClient())
+            using (var context = CrearClienteConToken())
             {
-                context.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", HttpContext.Session.GetString("Token"));
-
                 var url = Api("Estudiante/EliminarDocumento");
                 var modelo = new { IdDocumento = id };
 

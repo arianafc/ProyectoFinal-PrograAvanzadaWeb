@@ -57,24 +57,20 @@
                 dataSrc: 'data'
             },
             columns: [
-                { data: 'cedula' },  
-                { data: 'nombreCompleto' },  
-                { data: 'especialidadNombre' },  
-                { data: 'telefono' },  
+                { data: 'cedula' },
+                { data: 'nombreCompleto' },
+                { data: 'especialidadNombre' },
+                { data: 'telefono' },
                 {
-                    data: 'estadoAcademico',  
+                    data: 'estadoAcademico',
                     render: function (data) {
-                        if (data === true) {
-                            return crearBadge('badge-aprobado', 'Aprobada');
-                        } else if (data === false) {
-                            return crearBadge('badge-rezagado', 'Rezagado');
-                        } else {
-                            return crearBadge('badge-no-asignada', 'Sin Estado');
-                        }
+                        if (data === true) return crearBadge('badge-aprobado', 'Aprobada');
+                        if (data === false) return crearBadge('badge-rezagado', 'Rezagado');
+                        return crearBadge('badge-no-asignada', 'Sin Estado');
                     }
                 },
                 {
-                    data: 'estadoPractica',  
+                    data: 'estadoPractica',
                     render: function (data) {
                         var estado = (data || '').toString().trim().toLowerCase();
 
@@ -93,23 +89,21 @@
 
                         var tieneProcesoActivo = procesosActivos.some(e => estado.includes(e));
 
-                        if (tieneProcesoActivo) {
-                            return crearBadge('badge-procesos-activos', 'Con Procesos Activos');
-                        } else {
-                            return crearBadge('badge-no-asignada', 'Sin Procesos Activos');
-                        }
+                        if (tieneProcesoActivo) return crearBadge('badge-procesos-activos', 'Con Procesos Activos');
+                        return crearBadge('badge-no-asignada', 'Sin Procesos Activos');
                     }
                 },
                 {
-                    data: 'idUsuario',  
+                    data: 'idUsuario',
                     render: function (data, type, row) {
                         var html =
-                            '<button class="btn bg-transparent btn-accion verPerfil" data-id="' + data + '" style="color:#2d594d" title="Ver perfil">' +
+                            '<button type="button" class="btn bg-transparent btn-accion verPerfil" data-id="' + data + '" style="color:#2d594d" title="Ver perfil">' +
                             '<i class="fas fa-eye"></i>' +
                             '</button>';
+
                         if (rol === 2 || rol === 3) {
                             html +=
-                                '<button class="btn bg-transparent btn-accion btn-actualizar-estado" data-id="' + data + '" data-estado="' + (row.idEstado || 0) + '" style="color:#2d594d" title="Actualizar estado">' +  // ⭐ camelCase
+                                '<button type="button" class="btn bg-transparent btn-accion btn-actualizar-estado" data-id="' + data + '" data-estado="' + (row.idEstado || 0) + '" style="color:#2d594d" title="Actualizar estado">' +
                                 '<i class="fas fa-sync-alt"></i>' +
                                 '</button>';
                         }
@@ -118,12 +112,37 @@
                 }
             ],
             columnDefs: [{ targets: -1, orderable: false, searchable: false, width: "100px" }],
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
-            }
+            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json' }
         });
     }
 
+    // ===============================
+    // ✅ FIX: VER / DESCARGAR DOCUMENTOS (contenido dinámico del modal)
+    // ===============================
+    $(document).on('click', '#modalPerfil a.btn-ver-doc', function (e) {
+        // Si otro script bloquea, igual lo rescatamos
+        e.preventDefault();
+        e.stopPropagation();
+
+        const href = $(this).attr('href');
+        if (!href) return;
+
+        window.open(href, '_blank', 'noopener');
+    });
+
+    $(document).on('click', '#modalPerfil a.btn-descargar-doc', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const href = $(this).attr('href');
+        if (!href) return;
+
+        window.location.href = href;
+    });
+
+    // ===============================
+    // FILTROS
+    // ===============================
     $('#filtroEstado').on('change', function () {
         if (tabla) tabla.ajax.reload();
     });
@@ -134,6 +153,9 @@
         });
     }
 
+    // ===============================
+    // MODAL PERFIL
+    // ===============================
     $(document).on('click', '.verPerfil', function () {
         const id = $(this).data('id');
         const modalPerfilEl = document.getElementById('modalPerfil');
@@ -167,6 +189,9 @@
         });
     });
 
+    // ===============================
+    // MODAL ACTUALIZAR ESTADO
+    // ===============================
     $(document).on("click", ".btn-actualizar-estado", function () {
         var idUsuario = $(this).data("id");
         var estadoActual = $(this).data("estado");
@@ -199,6 +224,9 @@
         });
     });
 
+    // ===============================
+    // ELIMINAR DOCUMENTO
+    // ===============================
     $(document).on("click", ".btn-eliminar-doc", function (e) {
         e.preventDefault();
         var boton = $(this);
@@ -240,6 +268,9 @@
         });
     });
 
+    // ===============================
+    // DESASIGNAR PRÁCTICA
+    // ===============================
     $(document).on("click", ".BtnDesasignarPracticaEstudiante", function (e) {
         e.preventDefault();
 

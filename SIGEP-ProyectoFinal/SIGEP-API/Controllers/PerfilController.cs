@@ -380,7 +380,7 @@ namespace SIGEP_API.Controllers
             }
         }
 
-    
+
 
 
         [HttpDelete]
@@ -391,12 +391,33 @@ namespace SIGEP_API.Controllers
             {
                 using (var connection = new SqlConnection(_configuration["ConnectionStrings:BDConnection"]))
                 {
-                    var parametros = new DynamicParameters();
-                    parametros.Add("@IdDocumento", IdDocumento);
+                    connection.Open();
+
+                    // 1) Obtener ruta del archivo por SP
+                    var pRuta = new DynamicParameters();
+                    pRuta.Add("@IdDocumento", IdDocumento);
+
+                    var rutaResp = connection.QueryFirstOrDefault<RutaDocumentoResponse>(
+                        "ObtenerRutaDocumentoPorIdSP",
+                        pRuta,
+                        commandType: CommandType.StoredProcedure
+                    );
+
+                    var ruta = NormalizarRutaLocal(rutaResp?.RutaDocumento);
+
+                    // 2) Borrar archivo físico si existe
+                    if (!string.IsNullOrWhiteSpace(ruta) && System.IO.File.Exists(ruta))
+                    {
+                        System.IO.File.Delete(ruta);
+                    }
+
+                    // 3) Borrar registro en BD (tu SP actual)
+                    var p = new DynamicParameters();
+                    p.Add("@IdDocumento", IdDocumento);
 
                     connection.Execute(
                         "EliminarDocumentoSP",
-                        parametros,
+                        p,
                         commandType: CommandType.StoredProcedure
                     );
                 }
@@ -413,6 +434,25 @@ namespace SIGEP_API.Controllers
                 });
             }
         }
+
+        // ===== helpers dentro del mismo controller =====
+        private static string NormalizarRutaLocal(string? ruta)
+        {
+            if (string.IsNullOrWhiteSpace(ruta)) return "";
+
+            ruta = ruta.Trim();
+
+            if (ruta.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
+                ruta = ruta.Replace("file:///", "");
+
+            return ruta.Replace("/", "\\").Trim();
+        }
+
+        private class RutaDocumentoResponse
+        {
+            public string RutaDocumento { get; set; } = "";
+        }
+
 
     }
 }
