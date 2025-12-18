@@ -1,4 +1,244 @@
-﻿/* Estilos generales */
+﻿:root {
+    --sigep-verde: #2D594D;
+    --sigep-verde-2: #244A40;
+    --sigep-bg: #F2F2F2;
+    --sigep-card: #ffffff;
+    --sigep-borde: rgba(45, 89, 77, .18);
+    --sigep-suave: rgba(45, 89, 77, .08);
+    --sigep-text: #1f2b27;
+    --sigep-muted: rgba(31,43,39,.65);
+    --sigep-shadow: 0 12px 28px rgba(0,0,0,.08);
+    --sigep-shadow-soft: 0 6px 18px rgba(0,0,0,.06);
+    --sigep-radius: 22px;
+    --sigep-radius-sm: 14px;
+    --sigep-focus: 0 0 0 .25rem rgba(45, 89, 77, .22);
+}
+
+
+.vacantes-titulo.titulo-principal {
+    margin: 10px 0 14px;
+}
+
+h2.vacantes-titulo.titulo-principal {
+    color: var(--sigep-verde);
+    text-shadow: 0 1px 0 rgba(255,255,255,.65);
+}
+
+
+.vacantes-titulo.titulo-principal.d-flex.justify-content-between {
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+
+#filtroDropdown.btn {
+    border-radius: 999px;
+    padding: 10px 14px;
+    border: 1px solid var(--sigep-borde);
+    color: var(--sigep-verde);
+    background: #fff;
+    transition: .18s ease;
+}
+
+    #filtroDropdown.btn:hover {
+        transform: translateY(-1px);
+        background: rgba(45,89,77,.06);
+        border-color: rgba(45,89,77,.28);
+    }
+
+    #filtroDropdown.btn:focus {
+        box-shadow: var(--sigep-focus);
+    }
+
+/* Dropdown */
+.dropdown-menu {
+    border-radius: var(--sigep-radius);
+    border: 1px solid var(--sigep-borde);
+    background: #fff;
+    box-shadow: var(--sigep-shadow);
+    padding: 14px !important;
+}
+
+    .dropdown-menu .form-label {
+        color: var(--sigep-verde);
+        margin-bottom: 6px;
+        font-size: 13px;
+    }
+
+    .dropdown-menu .form-control,
+    .dropdown-menu .form-select {
+        border-radius: 14px;
+        border: 1px solid rgba(45,89,77,.22);
+        padding: 10px 12px;
+        transition: .18s ease;
+        background: #fff;
+    }
+
+        .dropdown-menu .form-control:focus,
+        .dropdown-menu .form-select:focus {
+            border-color: rgba(45,89,77,.45);
+            box-shadow: var(--sigep-focus);
+        }
+
+
+.card.rounded-5.p-3 {
+    border: 1px solid var(--sigep-borde);
+    border-radius: var(--sigep-radius) !important;
+    background: linear-gradient(180deg, #fff, rgba(242,242,242,.35));
+    box-shadow: var(--sigep-shadow-soft);
+    padding: 16px !important;
+    overflow: hidden;
+}
+
+
+table.dataTable {
+    border-collapse: separate !important;
+    border-spacing: 0 10px !important;
+}
+
+    table.dataTable thead th {
+        background: var(--sigep-verde);
+        color: #fff !important;
+        border: 0 !important;
+        padding: 14px 12px !important;
+        font-size: 13px;
+        letter-spacing: .3px;
+    }
+
+        table.dataTable thead th:first-child {
+            border-top-left-radius: 14px;
+            border-bottom-left-radius: 14px;
+        }
+
+        table.dataTable thead th:last-child {
+            border-top-right-radius: 14px;
+            border-bottom-right-radius: 14px;
+        }
+
+    table.dataTable tbody td {
+        background: #fff;
+        border-top: 1px solid rgba(0,0,0,0) !important;
+        border-bottom: 1px solid rgba(0,0,0,0) !important;
+        padding: 14px 12px !important;
+        color: var(--sigep-text);
+        vertical-align: middle;
+    }
+
+    table.dataTable tbody tr {
+        filter: drop-shadow(0 6px 14px rgba(0,0,0,.06));
+        transition: .15s ease;
+    }
+
+        table.dataTable tbody tr:hover {
+            transform: translateY(-1px);
+        }
+
+            table.dataTable tbody tr:hover td {
+                background: rgba(45,89,77,.045);
+            }
+
+        table.dataTable tbody tr td:first-child {
+            border-top-left-radius: 14px;
+            border-bottom-left-radius: 14px;
+        }
+
+        table.dataTable tbody tr td:last-child {
+            border-top-right-radius: 14px;
+            border-bottom-right-radius: 14px;
+        }
+
+.dataTables_wrapper .dataTables_filter input,
+.dataTables_wrapper .dataTables_length select {
+    border-radius: 999px !important;
+    border: 1px solid rgba(45,89,77,.22) !important;
+    padding: 8px 12px !important;
+    outline: none;
+}
+
+    .dataTables_wrapper .dataTables_filter input:focus,
+    .dataTables_wrapper .dataTables_length select:focus {
+        box-shadow: var(--sigep-focus) !important;
+        border-color: rgba(45,89,77,.45) !important;
+    }
+
+.dataTables_wrapper .dataTables_info {
+    color: var(--sigep-muted) !important;
+    padding-top: 12px !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    border-radius: 999px !important;
+    border: 1px solid rgba(45,89,77,.18) !important;
+    background: #fff !important;
+    color: var(--sigep-verde) !important;
+    padding: 6px 10px !important;
+    margin: 0 3px !important;
+    transition: .15s ease;
+}
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: rgba(45,89,77,.08) !important;
+        border-color: rgba(45,89,77,.35) !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: var(--sigep-verde) !important;
+        color: #fff !important;
+        border-color: var(--sigep-verde) !important;
+    }
+
+/* Modales */
+.modal-content {
+    border: 1px solid var(--sigep-borde);
+    box-shadow: var(--sigep-shadow);
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(45,89,77,.12);
+    background: rgba(242,242,242,.55);
+}
+
+.btn.CerrarModal {
+    background: var(--sigep-verde);
+    color: #fff;
+    border: 1px solid var(--sigep-verde);
+    border-radius: 999px;
+    padding: 10px 14px;
+    transition: .15s ease;
+}
+
+    .btn.CerrarModal:hover {
+        background: var(--sigep-verde-2);
+        border-color: var(--sigep-verde-2);
+        transform: translateY(-1px);
+    }
+
+    .btn.CerrarModal:focus {
+        box-shadow: var(--sigep-focus);
+    }
+
+.modal-footer .btn.btn-secondary {
+    border-radius: 999px;
+    padding: 10px 14px;
+}
+
+@@media (max-width: 768px) {
+    table.dataTable thead th {
+        font-size: 12px;
+        padding: 12px 10px !important;
+    }
+
+    table.dataTable tbody td {
+        padding: 12px 10px !important;
+    }
+}
+
+/* Estilos generales */
 body {
     background-color: #f1f8e9;
     margin: 0;

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using SIGEP_API.Models;
 using System.Data;
+using System.IO;
 
 namespace SIGEP_API.Controllers
 {
@@ -201,6 +202,128 @@ namespace SIGEP_API.Controllers
             }
         }
         #endregion
+
+        // ==========================================================
+        // ✅ NUEVO: Visualizar / Descargar Documento (sin SQL directo)
+        // Usa SP: ObtenerRutaDocumentoSP
+        // ==========================================================
+
+        #region Visualizar Documento (inline)
+        [HttpGet]
+        [Route("VisualizarDocumento/{id}")]
+        public IActionResult VisualizarDocumento(int id)
+        {
+            try
+            {
+                using (var db = Conn())
+                {
+                    db.Open();
+
+                    var p = new DynamicParameters();
+                    p.Add("@IdDocumento", id);
+
+                    // SP debe devolver al menos: UrlDocumento
+                    var doc = db.QueryFirstOrDefault<DocumentoRutaResponse>(
+                        "ObtenerRutaDocumentoSP",
+                        p,
+                        commandType: CommandType.StoredProcedure
+                    );
+
+                    if (doc == null || string.IsNullOrWhiteSpace(doc.Documento))
+                        return NotFound(new { message = "Documento no encontrado o sin ruta" });
+
+                    var ruta = NormalizarRutaLocal(doc.Documento);
+
+                    if (!System.IO.File.Exists(ruta))
+                        return NotFound(new { message = "Archivo no existe en disco", ruta });
+
+                    var bytes = System.IO.File.ReadAllBytes(ruta);
+                    var mime = ObtenerMimePorExtension(ruta);
+                    var fileName = Path.GetFileName(ruta);
+
+                    Response.Headers["Content-Disposition"] = $"inline; filename=\"{fileName}\"";
+                    return File(bytes, mime);
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message, inner = ex.InnerException?.Message });
+            }
+        }
+        #endregion
+
+        #region Descargar Documento (attachment)
+        [HttpGet]
+        [Route("DescargarDocumento/{id}")]
+        public IActionResult DescargarDocumento(int id)
+        {
+            try
+            {
+                using (var db = Conn())
+                {
+                    db.Open();
+
+                    var p = new DynamicParameters();
+                    p.Add("@IdDocumento", id);
+
+                    var doc = db.QueryFirstOrDefault<DocumentoRutaResponse>(
+                        "ObtenerRutaDocumentoSP",
+                        p,
+                        commandType: CommandType.StoredProcedure
+                    );
+
+                    if (doc == null || string.IsNullOrWhiteSpace(doc.Documento))
+                        return NotFound(new { message = "Documento no encontrado o sin ruta" });
+
+                    var ruta = NormalizarRutaLocal(doc.Documento);
+
+                    if (!System.IO.File.Exists(ruta))
+                        return NotFound(new { message = "Archivo no existe en disco", ruta });
+
+                    var bytes = System.IO.File.ReadAllBytes(ruta);
+                    var mime = ObtenerMimePorExtension(ruta);
+                    var fileName = Path.GetFileName(ruta);
+
+                    return File(bytes, mime, fileName);
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message, inner = ex.InnerException?.Message });
+            }
+        }
+        #endregion
+
+        // ===== Helpers =====
+
+        private static string NormalizarRutaLocal(string ruta)
+        {
+            if (string.IsNullOrWhiteSpace(ruta)) return ruta;
+
+            // Soporta file:///C:/carpeta/archivo.pdf
+            if (ruta.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
+                ruta = ruta.Replace("file:///", "");
+
+            // URL-style a Windows-style
+            ruta = ruta.Replace("/", "\\");
+
+            return ruta.Trim();
+        }
+
+        private static string ObtenerMimePorExtension(string ruta)
+        {
+            var ext = Path.GetExtension(ruta).ToLowerInvariant();
+            return ext switch
+            {
+                ".pdf" => "application/pdf",
+                ".png" => "image/png",
+                ".jpg" => "image/jpeg",
+                ".jpeg" => "image/jpeg",
+                ".doc" => "application/msword",
+                ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                _ => "application/octet-stream"
+            };
+        }
     }
 
     #region Request Models
@@ -219,6 +342,14 @@ namespace SIGEP_API.Controllers
     {
         public int Resultado { get; set; }
         public string Mensaje { get; set; } = "";
+    }
+    #endregion
+
+    #region SP Response Models
+    // Respuesta del SP ObtenerRutaDocumentoSP
+    public class DocumentoRutaResponse
+    {
+        public string Documento { get; set; } = "";
     }
     #endregion
 }
